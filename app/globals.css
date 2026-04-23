@@ -128,3 +128,27 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes nessa-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.nessa-marquee {
+  animation: nessa-marquee var(--nessa-marquee-duration, 45s) linear infinite;
+}
+
+.nessa-marquee:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nessa-marquee {
+    animation: none;
+    transform: none;
+  }
+}

@@ -3,6 +3,7 @@
 import { heroSection } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 
 export default function HeroSection() {
   const containerVariants = {
@@ -29,8 +30,8 @@ export default function HeroSection() {
     <section className="relative min-h-screen overflow-hidden bg-black pt-32">
       {/* Background gradient effects */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-gradient-to-br from-purple-600/30 to-violet-600/20 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-gradient-to-br from-purple-600/20 to-violet-600/30 blur-3xl" />
+        <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-linear-to-br from-purple-600/30 to-violet-600/20 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-linear-to-br from-purple-600/20 to-violet-600/30 blur-3xl" />
       </div>
 
       {/* Content */}
@@ -47,7 +48,7 @@ export default function HeroSection() {
           </motion.div>
 
           {/* Headline */}
-          <motion.h1 variants={itemVariants} className="bg-gradient-to-r from-white via-purple-200 to-white bg-clip-text text-5xl sm:text-6xl lg:text-7xl font-bold text-transparent leading-tight mb-6">
+          <motion.h1 variants={itemVariants} className="bg-linear-to-r from-white via-purple-200 to-white bg-clip-text text-5xl sm:text-6xl lg:text-7xl font-bold text-transparent leading-tight mb-6">
             {heroSection.title}
           </motion.h1>
 
@@ -60,7 +61,7 @@ export default function HeroSection() {
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button 
               size="lg"
-              className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white font-semibold px-8"
+              className="bg-linear-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white font-semibold px-8"
             >
               {heroSection.cta1}
             </Button>
@@ -78,13 +79,18 @@ export default function HeroSection() {
             {heroSection.ctaSubtext}
           </motion.p>
 
-          {/* Hero Image Placeholder */}
+          {/* Hero Image */}
           <motion.div variants={itemVariants} className="mt-20">
-            <div className="mx-auto max-w-3xl rounded-2xl bg-gradient-to-b from-white/5 to-white/0 border border-white/10 aspect-video flex items-center justify-center">
-              <div className="text-center">
-                <p className="text-gray-500 text-sm">Hero Image Placeholder</p>
-                <p className="text-gray-600 text-xs mt-2">Replace with your NessaChat screenshots or demo video</p>
-              </div>
+            <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+              <Image
+                src="/images/hero-section.png"
+                alt="NessaChat preview"
+                width={1920}
+                height={1080}
+                priority
+                sizes="(max-width: 1024px) 100vw, 1024px"
+                className="h-auto w-full object-contain"
+              />
             </div>
           </motion.div>
         </div>

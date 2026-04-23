@@ -127,25 +127,37 @@ export const testimonials = [
     quote: 'NessaChat changed how I stay in touch with my family across the globe. The quality is amazing!',
     author: 'Sarah Johnson',
     role: 'Product Manager',
-    avatar: '👩‍💼',
+    avatarSrc: '/avatars/4.svg',
   },
   {
     quote: 'Best messaging app I\'ve used. The word lookup feature helped me learn so much while chatting.',
     author: 'David Chen',
     role: 'Student',
-    avatar: '👨‍🎓',
+    avatarSrc: '/avatars/1.svg',
   },
   {
     quote: 'The group chat and video call features are seamless. Our team uses it every single day.',
-    author: 'Emma Rodriguez',
+    author: 'Ethan Rodriguez',
     role: 'Team Lead',
-    avatar: '👩‍💼',
+    avatarSrc: '/avatars/6.svg',
   },
   {
     quote: 'Simple, fast, and reliable. NessaChat is everything I need in a messaging app.',
     author: 'Michael Thompson',
     role: 'Entrepreneur',
-    avatar: '👨‍💼',
+    avatarSrc: '/avatars/2.svg',
+  },
+  {
+    quote: 'Instant Chat links are a game-changer. I can share a room in seconds and jump right in.',
+    author: 'Omar Siddiqui',
+    role: 'Sales Lead',
+    avatarSrc: '/avatars/3.svg',
+  },
+  {
+    quote: 'Clean UI, quick replies, and notifications that feel smart—not annoying.',
+    author: 'Rohan Sharma',
+    role: 'Designer',
+    avatarSrc: '/avatars/8.svg',
   },
 ]
 
