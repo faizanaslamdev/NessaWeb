@@ -7,8 +7,8 @@ export const siteConfig = {
 }
 
 export const heroSection = {
-  title: 'Your conversations, amplified',
-  subtitle: 'Experience seamless messaging with crystal-clear calls, instant sharing, and real-time connections. Start chatting now—no signup required.',
+  title: 'Chat beyond language barriers',
+  subtitle: 'Talk to anyone, in any language. NessaChat auto-translates your messages in real time—plus crystal-clear calls, instant sharing, and seamless group chat.',
   cta1: 'Sign Up',
   cta2: 'Start Instant Chat',
   ctaSubtext: 'Create an account for full features or jump right into a conversation with Instant Chat'
@@ -16,10 +16,16 @@ export const heroSection = {
 
 export const features = [
   {
-    id: 1,
+    id: 0,
     icon: '💬',
     title: '1:1 & Group Chat',
     description: 'Send unlimited messages, create groups, and stay connected with everyone that matters.'
+  },
+  {
+    id: 1,
+    icon: '🌐',
+    title: 'Auto-Translate Messages',
+    description: 'Send messages in your language—everyone sees them translated into theirs. Turn translation on or off per chat.'
   },
   {
     id: 2,
@@ -164,13 +170,13 @@ export const testimonials = [
 export const appStores = [
   {
     name: 'App Store',
-    url: 'https://apps.apple.com',
+    url: 'https://apps.apple.com/us/app/nessa-chat/id6759522140',
     iconSrc: '/app-store.svg',
     label: 'Download on App Store',
   },
   {
     name: 'Google Play',
-    url: 'https://play.google.com',
+    url: 'https://play.google.com/store/apps/details?id=com.nessachat&hl=en_US',
     iconSrc: '/google-play.svg',
     label: 'Get it on Google Play',
   },

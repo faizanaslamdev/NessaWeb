@@ -44,7 +44,7 @@ export default function HeroSection() {
         <div className="text-center">
           {/* Badge */}
           <motion.div variants={itemVariants} className="mb-6 inline-block rounded-full bg-white/5 px-4 py-1.5 border border-white/10">
-            <p className="text-xs font-medium text-purple-400">The messaging revolution</p>
+            <p className="text-xs font-medium text-purple-400">Beyond language</p>
           </motion.div>
 
           {/* Headline */}

@@ -48,18 +48,30 @@ export default function FeaturesSection() {
           viewport={{ once: true, margin: '-100px' }}
           variants={containerVariants}
         >
-          {features.map((feature) => (
+          {features.map((feature, index) => {
+            const isLastSolo =
+              features.length % 3 === 1 && index === features.length - 1
+
+            return (
             <motion.div
               key={feature.id}
               variants={itemVariants}
-              className="group relative rounded-xl border border-white/10 bg-gradient-to-br from-white/5 to-white/0 p-8 transition-all hover:border-purple-500/50 hover:bg-gradient-to-br hover:from-purple-500/10 hover:to-white/5"
+              className={[
+                'group relative rounded-xl border border-white/10 bg-linear-to-br from-white/5 to-white/0 p-8 transition-all hover:border-purple-500/50 hover:bg-linear-to-br hover:from-purple-500/10 hover:to-white/5',
+                // If the last row would have a single item on lg (3-col), make it span and center.
+                isLastSolo
+                  ? 'md:col-span-2 md:justify-self-stretch lg:col-span-3'
+                  : '',
+              ].join(' ')}
             >
               {/* Background glow on hover */}
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-600/0 to-violet-600/0 group-hover:from-purple-600/20 group-hover:to-violet-600/10 transition-all opacity-0 group-hover:opacity-100" />
+              <div className="absolute inset-0 rounded-xl bg-linear-to-br from-purple-600/0 to-violet-600/0 group-hover:from-purple-600/20 group-hover:to-violet-600/10 transition-all opacity-0 group-hover:opacity-100" />
               
               {/* Content */}
-              <div className="relative z-10">
-                <div className="mb-4 text-3xl sm:text-4xl">{feature.icon}</div>
+              <div className={['relative z-10', isLastSolo ? 'sm:text-center' : ''].join(' ')}>
+                <div className={['mb-4 text-3xl sm:text-4xl', isLastSolo ? 'sm:mx-auto' : ''].join(' ')}>
+                  {feature.icon}
+                </div>
                 <h3 className="mb-2 text-lg sm:text-xl font-bold text-white">
                   {feature.title}
                 </h3>
@@ -68,7 +80,8 @@ export default function FeaturesSection() {
                 </p>
               </div>
             </motion.div>
-          ))}
+            )
+          })}
         </motion.div>
       </div>
     </section>
