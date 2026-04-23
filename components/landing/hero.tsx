@@ -3,7 +3,6 @@
 import { heroSection } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 
 export default function HeroSection() {
   const containerVariants = {
@@ -27,16 +26,15 @@ export default function HeroSection() {
   }
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-black pt-32">
+    <section className="relative overflow-hidden bg-black pt-24 sm:pt-28">
       {/* Background gradient effects */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-linear-to-br from-purple-600/30 to-violet-600/20 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-linear-to-br from-purple-600/20 to-violet-600/30 blur-3xl" />
       </div>
 
       {/* Content */}
       <motion.div 
-        className="relative z-10 mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-20"
+        className="relative z-10 mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-14 sm:py-16"
         initial="hidden"
         animate="visible"
         variants={containerVariants}
@@ -78,21 +76,6 @@ export default function HeroSection() {
           <motion.p variants={itemVariants} className="mt-4 text-sm text-gray-500">
             {heroSection.ctaSubtext}
           </motion.p>
-
-          {/* Hero Image */}
-          <motion.div variants={itemVariants} className="mt-20">
-            <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-              <Image
-                src="/images/hero-section.png"
-                alt="NessaChat preview"
-                width={1920}
-                height={1080}
-                priority
-                sizes="(max-width: 1024px) 100vw, 1024px"
-                className="h-auto w-full object-contain"
-              />
-            </div>
-          </motion.div>
         </div>
       </motion.div>
     </section>

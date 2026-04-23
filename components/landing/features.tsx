@@ -26,6 +26,10 @@ export default function FeaturesSection() {
 
   return (
     <section id="features" className="relative bg-black py-20 sm:py-32">
+      {/* Background gradient effects */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-20 -left-40 h-96 w-96 rounded-full bg-linear-to-br from-purple-600/20 to-violet-600/10 blur-3xl" />
+      </div>
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="mb-12 sm:mb-16 text-center px-2">

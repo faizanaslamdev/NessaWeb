@@ -28,7 +28,7 @@ export default function SocialProofSection() {
     <section className="relative bg-black py-20 sm:py-32">
       {/* Background effects */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/2 right-0 h-96 w-96 rounded-full bg-gradient-to-l from-purple-600/10 to-transparent blur-3xl" />
+        <div className="absolute top-1/3 right-0 h-96 w-96 rounded-full bg-linear-to-l from-purple-600/10 to-transparent blur-3xl" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -57,10 +57,10 @@ export default function SocialProofSection() {
             <motion.div
               key={index}
               variants={itemVariants}
-              className="rounded-xl border border-white/10 bg-gradient-to-br from-white/5 to-white/0 p-4 sm:p-6 lg:p-8 text-center transition-all hover:border-purple-500/50 hover:bg-gradient-to-br hover:from-purple-500/10 hover:to-white/5"
+              className="rounded-xl border border-white/10 bg-linear-to-br from-white/5 to-white/0 p-4 sm:p-6 lg:p-8 text-center transition-all hover:border-purple-500/50 hover:bg-linear-to-br hover:from-purple-500/10 hover:to-white/5"
             >
               <div className="mb-2 sm:mb-3 text-2xl sm:text-3xl lg:text-4xl">{stat.icon}</div>
-              <div className="mb-1 text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-purple-300 to-white bg-clip-text text-transparent">
+              <div className="mb-1 text-xl sm:text-2xl lg:text-3xl font-bold bg-linear-to-r from-purple-300 to-white bg-clip-text text-transparent">
                 {stat.number}
               </div>
               <p className="text-xs sm:text-sm text-gray-400">

@@ -4,6 +4,7 @@ export const siteConfig = {
   name: 'NessaChat',
   description: 'Connect, communicate, and share like never before',
   tagline: 'The messaging app that keeps you connected',
+  supportEmail: 'nessachat@gmail.com',
 }
 
 export const heroSection = {
@@ -185,6 +186,7 @@ export const appStores = [
 export const navLinks = [
   { label: 'Features', href: '#features' },
   { label: 'How It Works', href: '#how-it-works' },
+  { label: 'Feedback', href: '#feedback' },
   { label: 'Download', href: '#download' },
 ]
 
