@@ -66,14 +66,6 @@ export default function EntryModal({
             className="fixed inset-0 flex items-center justify-center z-50 p-4"
           >
             <div className="w-full max-w-2xl rounded-2xl border border-white/20 bg-linear-to-br from-white/10 to-white/5 overflow-hidden">
-              {/* Close Button */}
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
-              >
-                ✕
-              </button>
-
               {/* Content Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 min-h-96 md:min-h-auto">
                 {/* Left Section - QR Code & Share */}
@@ -114,19 +106,6 @@ export default function EntryModal({
                       />
                     </div>
                     <CopyLinkButton textToCopy={roomLink} className="w-full" />
-                  </div>
-
-                  {/* Share Buttons */}
-                  <div className="w-full mt-4 grid grid-cols-3 gap-2">
-                    <button className="py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-xs text-gray-300 font-medium">
-                      📧
-                    </button>
-                    <button className="py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-xs text-gray-300 font-medium">
-                      💬
-                    </button>
-                    <button className="py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-xs text-gray-300 font-medium">
-                      🔗
-                    </button>
                   </div>
                 </motion.div>
 
@@ -186,6 +165,16 @@ export default function EntryModal({
                       className="w-full mt-6 bg-linear-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white font-semibold py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Enter Chat
+                    </Button>
+
+                    {/* Back / cancel */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full border-white/20 text-white hover:bg-white/10"
+                      onClick={onClose}
+                    >
+                      Back
                     </Button>
                   </div>
 

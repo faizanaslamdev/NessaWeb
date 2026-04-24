@@ -181,7 +181,7 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
       <EntryModal
         roomId={roomId}
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => router.push('/chat')}
         onJoin={handleJoinChat}
       />
 
