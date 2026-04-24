@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import CopyLinkButton from '@/components/chat/copy-link-button'
 
 interface EntryModalProps {
   roomId: string
@@ -31,7 +32,6 @@ export default function EntryModal({
 }: EntryModalProps) {
   const [name, setName] = useState('')
   const [language, setLanguage] = useState('en')
-  const [copied, setCopied] = useState(false)
 
   const handleJoin = () => {
     if (name.trim()) {
@@ -39,12 +39,10 @@ export default function EntryModal({
     }
   }
 
-  const handleCopyLink = () => {
-    const link = `${window.location.origin}/chat/${roomId}`
-    navigator.clipboard.writeText(link)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
+  const roomLink =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/chat/${roomId}`
+      : `/chat/${roomId}`
 
   return (
     <AnimatePresence>
@@ -115,13 +113,7 @@ export default function EntryModal({
                         className="text-xs text-gray-300"
                       />
                     </div>
-                    <Button
-                      onClick={handleCopyLink}
-                      size="sm"
-                      className="w-full bg-linear-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white font-medium"
-                    >
-                      {copied ? '✓ Copied' : 'Copy Link'}
-                    </Button>
+                    <CopyLinkButton textToCopy={roomLink} className="w-full" />
                   </div>
 
                   {/* Share Buttons */}

@@ -2,12 +2,14 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useRouter } from 'next/navigation'
 import MessageBubble from './message-bubble'
 import ChatHeader from './chat-header'
 import ParticipantsSidebar from './participants-sidebar'
 import EntryModal from './entry-modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import CopyLinkButton from '@/components/chat/copy-link-button'
 
 interface Message {
   id: string
@@ -73,12 +75,20 @@ const dummyParticipants: Participant[] = [
 ]
 
 export default function ChatRoom({ roomId }: ChatRoomProps) {
+  const router = useRouter()
   const [messages, setMessages] = useState<Message[]>(dummyMessages)
-  const [participants, setParticipants] = useState<Participant[]>(dummyParticipants)
+  const [participants] = useState<Participant[]>(dummyParticipants)
   const [inputValue, setInputValue] = useState('')
   const [showModal, setShowModal] = useState(true)
+  const [showSettings, setShowSettings] = useState(false)
+  const [copyNotice, setCopyNotice] = useState<null | { kind: 'success' | 'error'; text: string }>(null)
   const [userName, setUserName] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const roomLink =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/chat/${roomId}`
+      : `/chat/${roomId}`
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -111,8 +121,52 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
     setShowModal(false)
   }
 
+  const showNotice = (kind: 'success' | 'error', text: string) => {
+    setCopyNotice({ kind, text })
+    setTimeout(() => setCopyNotice(null), 1800)
+  }
+
+  const handleShare = async () => {
+    // If available, use native share sheet first (mobile).
+    try {
+      if (typeof navigator !== 'undefined' && 'share' in navigator) {
+        await (navigator as Navigator & { share: (data: { title?: string; text?: string; url?: string }) => Promise<void> }).share({
+          title: 'NessaChat room',
+          url: roomLink,
+        })
+        return
+      }
+    } catch {
+      // If share is cancelled/blocked, fallback to copy.
+    }
+
+    // Trigger copy flow via modal button (consistent behavior + styling).
+    setShowSettings(true)
+    showNotice('success', 'Open settings to copy link')
+  }
+
+  const handleLeaveRoom = () => {
+    router.push('/chat')
+  }
+
   return (
     <div className="h-screen flex flex-col bg-black overflow-hidden">
+      {/* Copy feedback toast */}
+      {copyNotice && (
+        <div className="fixed top-4 right-4 z-60">
+          <div
+            className={[
+              'rounded-xl border px-4 py-2 text-sm backdrop-blur-md',
+              copyNotice.kind === 'success'
+                ? 'border-white/15 bg-black/60 text-white'
+                : 'border-red-500/30 bg-black/70 text-red-200',
+            ].join(' ')}
+          >
+            {copyNotice.text}
+          </div>
+        </div>
+      )}
+
       {/* Entry Modal */}
       <EntryModal
         roomId={roomId}
@@ -125,9 +179,87 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
       <ChatHeader
         roomId={roomId}
         participantCount={participants.filter((p) => p.isOnline).length}
-        onShare={() => console.log('Share clicked')}
-        onSettings={() => console.log('Settings clicked')}
+        onShare={handleShare}
+        onSettings={() => setShowSettings(true)}
       />
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 z-50">
+          <button
+            aria-label="Close settings"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowSettings(false)}
+          />
+          <div className="absolute left-1/2 top-1/2 w-[min(560px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className="rounded-2xl border border-white/15 bg-linear-to-br from-white/10 to-white/5 p-5 sm:p-6"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Room settings</h2>
+                  <p className="text-sm text-gray-400">
+                    Room ID: <span className="font-mono text-purple-300">{roomId}</span>
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-white/20 text-white hover:bg-white/10"
+                  onClick={() => setShowSettings(false)}
+                >
+                  Close
+                </Button>
+              </div>
+
+              <div className="mt-5 space-y-3">
+                <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+                  <p className="text-xs font-medium text-gray-300 mb-2">Share link</p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      readOnly
+                      value={roomLink}
+                      variant="landing"
+                      className="text-xs text-gray-300"
+                    />
+                    <CopyLinkButton
+                      textToCopy={roomLink}
+                      size="default"
+                      label="Copy Link"
+                      onCopied={(ok) =>
+                        showNotice(ok ? 'success' : 'error', ok ? 'Link copied' : 'Copy blocked by browser')
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <CopyLinkButton
+                    textToCopy={roomId}
+                    size="default"
+                    styleVariant="outline"
+                    label="Copy Room ID"
+                    copiedLabel="✓ Copied"
+                    onCopied={(ok) =>
+                      showNotice(ok ? 'success' : 'error', ok ? 'Room ID copied' : 'Copy blocked by browser')
+                    }
+                  />
+                  <Button
+                    variant="destructive"
+                    className="sm:ml-auto"
+                    onClick={handleLeaveRoom}
+                  >
+                    Leave room
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      )}
 
       {/* Main Chat Area */}
       <div className="flex flex-1 overflow-hidden">
