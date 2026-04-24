@@ -25,7 +25,7 @@ export default function MessageBubble({
       className={`flex gap-2 mb-4 ${isSent ? 'justify-end' : 'justify-start'}`}
     >
       {!isSent && avatar && (
-        <div className="h-8 w-8 rounded-full bg-linear-to-br from-purple-600 to-violet-600 flex-shrink-0 flex items-center justify-center text-xs font-semibold text-white">
+        <div className="h-8 w-8 rounded-full bg-linear-to-br from-purple-600 to-violet-600 shrink-0 flex items-center justify-center text-xs font-semibold text-white">
           {avatar}
         </div>
       )}

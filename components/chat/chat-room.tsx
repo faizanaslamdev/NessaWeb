@@ -136,8 +136,18 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
         })
         return
       }
-    } catch {
-      // If share is cancelled/blocked, fallback to copy.
+    } catch (err) {
+      // User closed the share sheet → do nothing (no fallback).
+      if (
+        err &&
+        typeof err === 'object' &&
+        'name' in err &&
+        // Safari/Chrome commonly use AbortError for user-cancelled share
+        (err as { name?: string }).name === 'AbortError'
+      ) {
+        return
+      }
+      // For genuine failures, fall back below.
     }
 
     // Trigger copy flow via modal button (consistent behavior + styling).
