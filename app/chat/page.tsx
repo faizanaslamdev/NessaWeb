@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import Link from 'next/link'
 
 export default function ChatIndexPage() {
   const router = useRouter()
@@ -26,6 +27,34 @@ export default function ChatIndexPage() {
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-linear-to-br from-purple-600/30 to-violet-600/20 blur-3xl" />
         <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-linear-to-br from-purple-600/20 to-violet-600/30 blur-3xl" />
+      </div>
+
+      {/* Back to landing */}
+      <div className="absolute top-6 left-6 z-20">
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="group border-white/15 bg-black/20 text-white hover:bg-white/10 hover:border-purple-500/30 transition-colors"
+        >
+          <Link href="/" className="gap-2">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+              className="size-4 text-white/80 group-hover:text-white transition-colors"
+            >
+              <path
+                d="M15 18l-6-6 6-6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Back
+          </Link>
+        </Button>
       </div>
 
       {/* Content */}
