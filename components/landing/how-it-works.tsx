@@ -52,12 +52,12 @@ export default function HowItWorksSection() {
             <motion.div key={index} variants={itemVariants} className="relative">
               {/* Connecting line for desktop */}
               {index % 2 === 0 && (
-                <div className="hidden lg:block absolute top-1/2 -right-4 w-8 h-0.5 bg-gradient-to-r from-purple-600/50 to-transparent" />
+                <div className="hidden lg:block absolute top-1/2 -right-4 w-8 h-0.5 bg-linear-to-r from-purple-600/50 to-transparent" />
               )}
 
-              <div className="rounded-xl border border-white/10 bg-gradient-to-br from-white/5 to-white/0 p-6 sm:p-8">
+              <div className="rounded-xl border border-white/10 bg-linear-to-br from-white/5 to-white/0 p-6 sm:p-8">
                 {/* Step Number */}
-                <div className="mb-4 flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-gradient-to-br from-purple-600 to-violet-600">
+                <div className="mb-4 flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-linear-to-br from-purple-600 to-violet-600">
                   <span className="text-base sm:text-lg font-bold text-white">{item.step}</span>
                 </div>
 

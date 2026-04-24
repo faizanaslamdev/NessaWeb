@@ -3,6 +3,7 @@
 import { heroSection } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 
 export default function HeroSection() {
   const containerVariants = {
@@ -63,12 +64,13 @@ export default function HeroSection() {
             >
               {heroSection.cta1}
             </Button>
-            <Button 
+            <Button
+              asChild
               size="lg"
               variant="outline"
               className="border-white/20 text-white hover:bg-white/10 font-semibold px-8"
             >
-              {heroSection.cta2}
+              <Link href="/chat">{heroSection.cta2}</Link>
             </Button>
           </motion.div>
 

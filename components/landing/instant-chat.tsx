@@ -28,7 +28,7 @@ export default function InstantChatSection() {
     <section className="relative bg-black py-20 sm:py-32">
       {/* Background gradient effects */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/2 -left-64 h-96 w-96 rounded-full bg-gradient-to-br from-violet-600/20 to-purple-600/10 blur-3xl" />
+        <div className="absolute top-1/2 -left-64 h-96 w-96 rounded-full bg-linear-to-br from-violet-600/20 to-purple-600/10 blur-3xl" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -57,7 +57,7 @@ export default function InstantChatSection() {
             <motion.div 
               key={index}
               variants={itemVariants}
-              className="rounded-xl border border-white/10 bg-gradient-to-br from-white/5 to-white/0 p-6 sm:p-8 hover:border-purple-500/30 transition-colors"
+              className="rounded-xl border border-white/10 bg-linear-to-br from-white/5 to-white/0 p-6 sm:p-8 hover:border-purple-500/30 transition-colors"
             >
               <div className="text-3xl sm:text-4xl mb-4">{feature.icon}</div>
               <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
@@ -71,15 +71,15 @@ export default function InstantChatSection() {
         </motion.div>
 
         {/* Visual Demo Section */}
-        <div className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/5 to-white/0 p-6 sm:p-8 md:p-12">
+        <div className="rounded-2xl border border-white/10 bg-linear-to-b from-white/5 to-white/0 p-6 sm:p-8 md:p-12">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 items-center">
             {/* Left side - Demo visual */}
             <div className="flex flex-col items-center justify-center space-y-6">
               <div className="relative">
-                <div className="w-32 h-32 rounded-lg bg-gradient-to-br from-purple-600/30 to-violet-600/20 flex items-center justify-center border border-white/10">
+                <div className="w-32 h-32 rounded-lg bg-linear-to-br from-purple-600/30 to-violet-600/20 flex items-center justify-center border border-white/10">
                   <div className="text-6xl opacity-60">📱</div>
                 </div>
-                <div className="absolute -top-2 -right-2 w-12 h-12 rounded-lg bg-gradient-to-br from-purple-600 to-violet-600 flex items-center justify-center text-white font-bold">
+                <div className="absolute -top-2 -right-2 w-12 h-12 rounded-lg bg-linear-to-br from-purple-600 to-violet-600 flex items-center justify-center text-white font-bold">
                   ✓
                 </div>
               </div>
@@ -89,7 +89,7 @@ export default function InstantChatSection() {
             {/* Right side - Steps */}
             <div className="space-y-4">
               <div className="flex gap-4">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-violet-600 flex items-center justify-center text-white font-bold text-sm">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-linear-to-br from-purple-600 to-violet-600 flex items-center justify-center text-white font-bold text-sm">
                   1
                 </div>
                 <div>
@@ -99,7 +99,7 @@ export default function InstantChatSection() {
               </div>
 
               <div className="flex gap-4">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-violet-600 flex items-center justify-center text-white font-bold text-sm">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-linear-to-br from-purple-600 to-violet-600 flex items-center justify-center text-white font-bold text-sm">
                   2
                 </div>
                 <div>
@@ -109,7 +109,7 @@ export default function InstantChatSection() {
               </div>
 
               <div className="flex gap-4">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-violet-600 flex items-center justify-center text-white font-bold text-sm">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-linear-to-br from-purple-600 to-violet-600 flex items-center justify-center text-white font-bold text-sm">
                   3
                 </div>
                 <div>

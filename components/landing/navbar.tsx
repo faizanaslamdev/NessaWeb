@@ -37,7 +37,7 @@ export default function Navbar() {
 
           {/* CTA Button */}
           <Button 
-            className="bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700"
+            className="bg-linear-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700"
           >
             Download
           </Button>
