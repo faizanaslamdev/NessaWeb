@@ -163,7 +163,7 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
     <div className="h-screen flex flex-col bg-black overflow-hidden">
       {/* Copy feedback toast */}
       {copyNotice && (
-        <div className="fixed top-4 right-4 z-60">
+        <div className="fixed top-4 right-4 z-120 max-w-[min(calc(100vw-2rem),20rem)]">
           <div
             className={[
               'rounded-xl border px-4 py-2 text-sm backdrop-blur-md',
@@ -195,13 +195,13 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-100">
           <button
             aria-label="Close settings"
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setShowSettings(false)}
           />
-          <div className="absolute left-1/2 top-1/2 w-[min(560px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2">
+          <div className="absolute left-1/2 top-1/2 z-110 w-[min(560px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2">
             <motion.div
               initial={{ opacity: 0, scale: 0.98, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
