@@ -98,6 +98,20 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
     scrollToBottom()
   }, [messages])
 
+  /** One scroll surface: lock document scroll on mobile / iOS while in a room. */
+  useEffect(() => {
+    const html = document.documentElement
+    const body = document.body
+    const prevHtml = html.style.overflow
+    const prevBody = body.style.overflow
+    html.style.overflow = 'hidden'
+    body.style.overflow = 'hidden'
+    return () => {
+      html.style.overflow = prevHtml
+      body.style.overflow = prevBody
+    }
+  }, [])
+
   const handleSendMessage = () => {
     if (inputValue.trim()) {
       const newMessage: Message = {
@@ -160,7 +174,7 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-black overflow-hidden">
+    <div className="fixed inset-0 z-0 flex flex-col overflow-hidden bg-black">
       {/* Copy feedback toast */}
       {copyNotice && (
         <div className="fixed top-4 right-4 z-120 max-w-[min(calc(100vw-2rem),20rem)]">
@@ -271,17 +285,17 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
         </div>
       )}
 
-      {/* Main Chat Area */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* Main Chat Area — min-h-0 so only the messages pane scrolls, not the page */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Messages Area */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3, delay: 0.1 }}
-          className="flex-1 flex flex-col bg-linear-to-b from-black via-black to-black/80 overflow-hidden"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden bg-linear-to-b from-black via-black to-black/80"
         >
           {/* Messages Container */}
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-2">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-6 sm:px-6 sm:py-6">
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center">
@@ -311,7 +325,7 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.2 }}
-            className="border-t border-white/10 bg-black/50 backdrop-blur-sm p-4 sm:p-6"
+            className="shrink-0 border-t border-white/10 bg-black/50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:p-6"
           >
             <div className="flex gap-2 sm:gap-3">
               <Input
