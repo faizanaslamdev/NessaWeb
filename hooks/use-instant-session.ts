@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { doc, onSnapshot, type DocumentSnapshot } from 'firebase/firestore'
+import { onSnapshot, type DocumentSnapshot } from 'firebase/firestore'
 import { getFirebaseClient } from '@/lib/firebase'
+import { deferredFirestoreSubscribe } from '@/lib/deferred-firestore-subscribe'
 import { sessionDocRef } from '@/lib/chat/session'
 import type { ChatSession, ChatMember } from '@/lib/chat/types'
 import type { Timestamp } from 'firebase/firestore'
@@ -43,26 +44,45 @@ export function useInstantSession(sessionId: string | undefined) {
 
   useEffect(() => {
     if (!sessionId) {
-      setSession(null)
-      setLoading(false)
+      setTimeout(() => {
+        setSession(null)
+        setLoading(false)
+      }, 0)
       return
     }
-    setLoading(true)
-    const { firestore } = getFirebaseClient()
-    const ref = sessionDocRef(firestore, sessionId)
-    const unsub = onSnapshot(
-      ref,
-      (snap) => {
-        setSession(toSession(snap))
-        setError(null)
-        setLoading(false)
-      },
-      (e) => {
-        setError(e)
-        setLoading(false)
-      },
-    )
-    return () => unsub()
+
+    let cancelled = false
+    setTimeout(() => {
+      setLoading(true)
+    }, 0)
+
+    const cleanupOuter = deferredFirestoreSubscribe(() => {
+      if (cancelled) {
+        return () => {}
+      }
+      const { firestore } = getFirebaseClient()
+      const ref = sessionDocRef(firestore, sessionId)
+      return onSnapshot(
+        ref,
+        (snap) => {
+          if (cancelled) return
+          setSession(toSession(snap))
+          setError(null)
+          setLoading(false)
+        },
+        (e) => {
+          if (!cancelled) {
+            setError(e)
+            setLoading(false)
+          }
+        },
+      )
+    })
+
+    return () => {
+      cancelled = true
+      cleanupOuter()
+    }
   }, [sessionId])
 
   return { session, loading, error }

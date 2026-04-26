@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { waitForPendingWrites } from 'firebase/firestore'
 import { motion } from 'framer-motion'
 import QRCode from 'react-qr-code'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -47,6 +48,27 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
     if (!user || !session) return false
     return Boolean(session.members[user.uid])
   }, [user, session])
+
+  /** Until this client’s writes (e.g. join) are committed, message rules’ `get(session)` can deny reads while the snapshot already shows you in `members`. */
+  const [memberFirestoreSynced, setMemberFirestoreSynced] = useState(false)
+  useEffect(() => {
+    if (!member || !user) {
+      queueMicrotask(() => setMemberFirestoreSynced(false))
+      return
+    }
+    let cancelled = false
+    const { firestore } = getFirebaseClient()
+    queueMicrotask(() => {
+      if (cancelled) return
+      setMemberFirestoreSynced(false)
+      void waitForPendingWrites(firestore).finally(() => {
+        if (!cancelled) setMemberFirestoreSynced(true)
+      })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [member, user])
 
   const timeEnded = useMemo(() => {
     if (!session) return false
@@ -194,6 +216,12 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
 
       {ended && <ChatEndedOverlay variant={statusEnded ? 'expired' : 'time'} />}
 
+      {member && !memberFirestoreSynced && !ended && (
+        <div className="fixed inset-0 z-95 flex items-center justify-center bg-black/90 text-gray-300">
+          <p className="text-sm">Connecting to chat…</p>
+        </div>
+      )}
+
       <EntryModal
         roomId={roomId}
         isOpen={entryModalOpen}
@@ -203,7 +231,7 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
         onJoin={handleJoinChat}
       />
 
-      {!entryModalOpen && member && (
+      {!entryModalOpen && member && memberFirestoreSynced && (
         <>
           <ChatHeader
             roomId={roomId}

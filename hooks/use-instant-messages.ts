@@ -9,6 +9,7 @@ import {
   type QuerySnapshot,
 } from 'firebase/firestore'
 import { getFirebaseClient } from '@/lib/firebase'
+import { deferredFirestoreSubscribe } from '@/lib/deferred-firestore-subscribe'
 import { messagesCollectionRef } from '@/lib/chat/session'
 import type { ChatMessage, ChatMessageTranslationStatus } from '@/lib/chat/types'
 import type { Timestamp } from 'firebase/firestore'
@@ -50,22 +51,28 @@ export function useInstantMessages(sessionId: string | undefined, enabled: boole
     }
 
     let cancelled = false
-    const { firestore } = getFirebaseClient()
-    const q = query(messagesCollectionRef(firestore, sessionId), orderBy('createdAt', 'asc'), limit(PAGE))
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        if (cancelled) return
-        setMessages(mapMessages(snap))
-        setLoading(false)
-      },
-      () => {
-        if (!cancelled) setLoading(false)
-      },
-    )
+    const cleanupOuter = deferredFirestoreSubscribe(() => {
+      if (cancelled) {
+        return () => {}
+      }
+      const { firestore } = getFirebaseClient()
+      const q = query(messagesCollectionRef(firestore, sessionId), orderBy('createdAt', 'asc'), limit(PAGE))
+      return onSnapshot(
+        q,
+        (snap) => {
+          if (cancelled) return
+          setMessages(mapMessages(snap))
+          setLoading(false)
+        },
+        () => {
+          if (!cancelled) setLoading(false)
+        },
+      )
+    })
+
     return () => {
       cancelled = true
-      unsub()
+      cleanupOuter()
     }
   }, [sessionId, enabled])
 

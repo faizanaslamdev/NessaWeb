@@ -98,7 +98,7 @@ export default function ChatIndexPage() {
               value={createLang}
               onChange={(e) => setCreateLang(e.target.value)}
               disabled={authLoading || busy}
-              className="mb-3 w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="mb-3 w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all appearance-none cursor-pointer"
             >
               {APP_CHAT_LANGUAGES.map((lang) => (
                 <option key={lang.code} value={lang.code}>
