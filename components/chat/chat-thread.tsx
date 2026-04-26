@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { User } from 'firebase/auth'
 import MessageBubble from '@/components/chat/message-bubble'
+import DownloadAppFeaturesModal from '@/components/chat/download-app-features-modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useInstantMessages } from '@/hooks/use-instant-messages'
@@ -40,7 +41,9 @@ export default function ChatThread({
   const { messages, loading: messagesLoading } = useInstantMessages(roomId, messagesActive)
 
   const [inputValue, setInputValue] = useState('')
+  const [downloadAppModalOpen, setDownloadAppModalOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const composerDisabled = ended || session.status !== 'active'
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -51,7 +54,7 @@ export default function ChatThread({
   }, [messages])
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || ended || session.status !== 'active') return
+    if (!inputValue.trim() || composerDisabled) return
     const text = inputValue
     setInputValue('')
     try {
@@ -116,6 +119,18 @@ export default function ChatThread({
         className="shrink-0 border-t border-white/10 bg-black/50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:p-6"
       >
         <div className="flex gap-2 sm:gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Attachments — available in the mobile app"
+            title="Attachments"
+            disabled={composerDisabled}
+            className="shrink-0 border-white/20 text-white hover:bg-white/10 disabled:opacity-50"
+            onClick={() => setDownloadAppModalOpen(true)}
+          >
+            <PaperclipIcon className="size-5" />
+          </Button>
           <Input
             type="text"
             placeholder="Type a message..."
@@ -124,17 +139,42 @@ export default function ChatThread({
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && void handleSendMessage()}
             variant="landing"
             className="flex-1 text-sm"
-            disabled={ended || session.status !== 'active'}
+            disabled={composerDisabled}
           />
           <Button
             onClick={() => void handleSendMessage()}
-            disabled={!inputValue.trim() || ended || session.status !== 'active'}
+            disabled={!inputValue.trim() || composerDisabled}
             className="bg-linear-to-r from-purple-600 to-violet-600 px-4 font-medium text-white hover:from-purple-700 hover:to-violet-700 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6"
           >
             Send
           </Button>
         </div>
       </motion.div>
+
+      <DownloadAppFeaturesModal
+        open={downloadAppModalOpen}
+        onClose={() => setDownloadAppModalOpen(false)}
+      />
     </motion.div>
+  )
+}
+
+function PaperclipIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <path
+        d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }
