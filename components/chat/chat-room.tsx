@@ -246,6 +246,9 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
               setShowSettings(true)
             }}
             onOpenParticipants={() => setShowParticipantsSheet(true)}
+            onRoomIdCopied={(ok) =>
+              showNotice(ok ? 'success' : 'error', ok ? 'Room ID copied' : 'Copy blocked by browser')
+            }
           />
 
           <ParticipantsSheet

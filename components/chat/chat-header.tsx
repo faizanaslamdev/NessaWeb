@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 
@@ -10,6 +11,35 @@ interface ChatHeaderProps {
   onSettings?: () => void
   /** Shown only below `lg` — opens full participant list (sidebar is desktop-only). */
   onOpenParticipants?: () => void
+  /** After room ID copy attempt (`true` = success). Parent usually shows a toast. */
+  onRoomIdCopied?: (ok: boolean) => void
+}
+
+async function copyTextToClipboard(text: string): Promise<boolean> {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch {
+    // fall through
+  }
+  try {
+    if (typeof document === 'undefined') return false
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.setAttribute('readonly', '')
+    ta.style.position = 'fixed'
+    ta.style.left = '-9999px'
+    ta.style.top = '-9999px'
+    document.body.appendChild(ta)
+    ta.select()
+    const ok = document.execCommand('copy')
+    document.body.removeChild(ta)
+    return ok
+  } catch {
+    return false
+  }
 }
 
 export default function ChatHeader({
@@ -18,7 +48,13 @@ export default function ChatHeader({
   onShare,
   onSettings,
   onOpenParticipants,
+  onRoomIdCopied,
 }: ChatHeaderProps) {
+  const handleCopyRoomId = useCallback(async () => {
+    const ok = await copyTextToClipboard(roomId)
+    onRoomIdCopied?.(ok)
+  }, [roomId, onRoomIdCopied])
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
@@ -31,10 +67,19 @@ export default function ChatHeader({
           <h1 className="text-lg sm:text-xl font-bold text-white mb-1">
             Chat Room
           </h1>
-          <div className="flex items-center gap-2">
-            <p className="text-xs sm:text-sm text-gray-400">
-              Room ID: <span className="font-mono text-purple-400">{roomId}</span>
-            </p>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void handleCopyRoomId()}
+              title="Copy room ID"
+              aria-label={`Copy room ID ${roomId}`}
+              className="group max-w-full cursor-pointer rounded-md px-1 py-0.5 text-left text-xs text-gray-400 -mx-1 transition-colors hover:bg-white/10 hover:text-gray-200 sm:text-sm"
+            >
+              Room ID:{' '}
+              <span className="break-all font-mono text-purple-400 group-hover:text-purple-200">
+                {roomId}
+              </span>
+            </button>
             <span className="text-xs text-gray-500">•</span>
             <p className="text-xs sm:text-sm text-gray-400">
               <span className="text-green-400 font-semibold">{participantCount}</span> online
