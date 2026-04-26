@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 interface ChatHeaderProps {
   roomId: string
   participantCount: number
+  /** Timer badge next to “Chat Room” (e.g. `10m`…`1m`, `45s`…; hidden until ≤10 min; `…` when ending). */
+  sessionRemainingLabel?: string | null
   onShare?: () => void
   onSettings?: () => void
   /** Shown only below `lg` — opens full participant list (sidebar is desktop-only). */
@@ -45,6 +47,7 @@ async function copyTextToClipboard(text: string): Promise<boolean> {
 export default function ChatHeader({
   roomId,
   participantCount,
+  sessionRemainingLabel,
   onShare,
   onSettings,
   onOpenParticipants,
@@ -64,8 +67,17 @@ export default function ChatHeader({
     >
       <div className="px-4 sm:px-6 py-4 flex items-center justify-between">
         <div className="flex-1">
-          <h1 className="text-lg sm:text-xl font-bold text-white mb-1">
-            Chat Room
+          <h1 className="mb-1 flex min-w-0 flex-wrap items-center gap-2 text-lg font-bold text-white sm:text-xl">
+            <span className="min-w-0">Chat Room</span>
+            {sessionRemainingLabel ? (
+              <span
+                className="inline-flex shrink-0 items-center gap-1 rounded border border-amber-500/35 bg-amber-500/10 px-1.5 py-0.5 font-mono text-xs font-semibold tabular-nums text-amber-200 sm:text-sm"
+                title="Time left before this room reaches its session limit."
+              >
+                <TimerIcon className="size-3.5 shrink-0 opacity-90 sm:size-4" aria-hidden />
+                {sessionRemainingLabel}
+              </span>
+            ) : null}
           </h1>
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <button
@@ -127,6 +139,21 @@ export default function ChatHeader({
         </div>
       </div>
     </motion.div>
+  )
+}
+
+function TimerIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+      <path d="M12 7v6l3 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 

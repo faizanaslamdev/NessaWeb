@@ -48,7 +48,7 @@ export default function ChatEndedOverlay({ variant = 'expired' }: Props) {
         <p className="mt-3 max-w-md text-gray-300">This was a temporary chat.</p>
         {variant === 'time' && (
           <p className="mt-2 max-w-sm text-sm text-gray-500">
-            This room hit its time or inactivity limit. You can start a new one anytime.
+            This room reached its time limit. You can start a new one anytime.
           </p>
         )}
         <div className="mt-10 flex w-full max-w-sm flex-col gap-6">

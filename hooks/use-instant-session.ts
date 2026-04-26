@@ -42,7 +42,7 @@ function toSession(snap: DocumentSnapshot): ChatSession | null {
  * Live session document + **when it is safe to run client-only expiry UI** (`isTimeBasedExpired`).
  *
  * Firestore can emit a **cache-first** snapshot (`metadata.fromCache`) or one that still includes
- * **local pending writes** (`metadata.hasPendingWrites`). Absolute / inactivity expiry uses
+ * **local pending writes** (`metadata.hasPendingWrites`). Absolute `expiresAt` expiry uses
  * `Date.now()` and document timestamps; evaluating that on cache-only or mid-write data can flash
  * “Chat ended” incorrectly. We therefore expose `clientTimeBasedExpiryAllowed`, which becomes
  * true once we see a server-aligned snapshot, or after {@link INSTANT_SESSION_SERVER_READ_FALLBACK_MS}

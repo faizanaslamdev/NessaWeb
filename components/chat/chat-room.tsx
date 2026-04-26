@@ -20,9 +20,10 @@ import { useInstantAuth } from '@/hooks/use-instant-auth'
 import { useInstantSession } from '@/hooks/use-instant-session'
 import { usePresenceByUserIds, useInstantPresenceTracking } from '@/hooks/use-presence-web'
 import { getFirebaseClient } from '@/lib/firebase'
-import { isTimeBasedExpired } from '@/lib/chat/expiry'
+import { getSessionEndMillis, isTimeBasedExpired } from '@/lib/chat/expiry'
 import { joinSessionMember, expireSessionAsUser } from '@/lib/chat/session'
-import { shareUrlWithoutScheme } from '@/lib/chat/format'
+import { SESSION_HEADER_COUNTDOWN_MAX_MS } from '@/lib/chat/constants'
+import { formatSessionHeaderCountdown, shareUrlWithoutScheme } from '@/lib/chat/format'
 
 interface ChatRoomProps {
   roomId: string
@@ -37,7 +38,7 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
 
   const [nowMs, setNowMs] = useState(() => Date.now())
   useEffect(() => {
-    const t = setInterval(() => setNowMs(Date.now()), 20_000)
+    const t = setInterval(() => setNowMs(Date.now()), 1000)
     return () => clearInterval(t)
   }, [])
 
@@ -78,12 +79,21 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
     return isTimeBasedExpired({
       nowMs,
       expiresAt: session.expiresAt,
-      lastActivityAt: session.lastActivityAt,
     })
   }, [session, nowMs, clientTimeBasedExpiryAllowed])
 
   const statusEnded = session?.status === 'expired'
   const ended = Boolean(statusEnded || timeEnded)
+
+  const sessionRemainingLabel = useMemo(() => {
+    if (!session || ended || !clientTimeBasedExpiryAllowed) return null
+    const end = getSessionEndMillis(session.expiresAt)
+    if (end === null) return null
+    const remaining = end - nowMs
+    if (remaining > SESSION_HEADER_COUNTDOWN_MAX_MS) return null
+    if (remaining <= 0) return '…'
+    return formatSessionHeaderCountdown(remaining)
+  }, [session, ended, clientTimeBasedExpiryAllowed, nowMs])
 
   const memberUids = useMemo(() => (session ? Object.keys(session.members) : []), [session])
   const presenceByUser = usePresenceByUserIds(memberUids)
@@ -240,6 +250,7 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
           <ChatHeader
             roomId={roomId}
             participantCount={participants.filter((p) => p.isOnline).length}
+            sessionRemainingLabel={sessionRemainingLabel}
             onShare={handleShare}
             onSettings={() => {
               setShowParticipantsSheet(false)
