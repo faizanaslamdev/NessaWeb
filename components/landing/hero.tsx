@@ -5,7 +5,11 @@ import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 
-export default function HeroSection() {
+type HeroSectionProps = {
+  onOpenDownload: () => void
+}
+
+export default function HeroSection({ onOpenDownload }: HeroSectionProps) {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -58,8 +62,10 @@ export default function HeroSection() {
 
           {/* CTA Buttons */}
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button 
+            <Button
+              type="button"
               size="lg"
+              onClick={onOpenDownload}
               className="bg-linear-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white font-semibold px-8"
             >
               {heroSection.cta1}

@@ -89,7 +89,7 @@ export default function ChatIndexPage() {
 
           <div className="mb-5 rounded-xl border border-white/10 bg-black/30 p-3 sm:mb-6 sm:p-4">
             <Input
-              placeholder="Your display name"
+              placeholder="Display Name"
               value={createName}
               onChange={(e) => setCreateName(e.target.value)}
               variant="landing"
@@ -122,7 +122,7 @@ export default function ChatIndexPage() {
               <div className="w-full border-t border-white/10"></div>
             </div>
             <div className="relative flex justify-center text-xs sm:text-sm">
-              <span className="bg-black px-2 text-gray-400">Or join existing</span>
+              <span className="bg-black rounded-md px-2 text-gray-400">Or join existing</span>
             </div>
           </div>
 

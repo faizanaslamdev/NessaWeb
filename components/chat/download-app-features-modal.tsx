@@ -9,11 +9,22 @@ import AppStoreButtons from '@/components/landing/app-store-buttons'
 type DownloadAppFeaturesModalProps = {
   open: boolean
   onClose: () => void
+  /** `chat` = web-room upsell; `landing` = generic header CTA. */
+  placement?: 'chat' | 'landing'
 }
 
-export default function DownloadAppFeaturesModal({ open, onClose }: DownloadAppFeaturesModalProps) {
+export default function DownloadAppFeaturesModal({
+  open,
+  onClose,
+  placement = 'chat',
+}: DownloadAppFeaturesModalProps) {
   const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
+  useEffect(() => {
+    const id = globalThis.setTimeout(() => {
+      setMounted(true)
+    }, 0)
+    return () => globalThis.clearTimeout(id)
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -48,15 +59,33 @@ export default function DownloadAppFeaturesModal({ open, onClose }: DownloadAppF
           className="relative z-10 w-full max-w-md rounded-2xl border border-white/15 bg-linear-to-br from-white/12 to-white/5 p-5 shadow-2xl shadow-black/50 sm:p-6"
         >
           <div className="mb-1 flex items-center gap-2 text-purple-200">
-            <PaperclipIcon className="size-5 shrink-0" aria-hidden />
-            <span className="text-xs font-medium uppercase tracking-wide">Instant web chat</span>
+            {placement === 'chat' ? (
+              <>
+                <PaperclipIcon className="size-5 shrink-0" aria-hidden />
+                <span className="text-xs font-medium uppercase tracking-wide">Instant web chat</span>
+              </>
+            ) : (
+              <>
+                <PhoneIcon className="size-5 shrink-0" aria-hidden />
+                <span className="text-xs font-medium uppercase tracking-wide">iOS & Android</span>
+              </>
+            )}
           </div>
           <h2 id="download-app-features-title" className="text-lg font-semibold text-white sm:text-xl">
-            Full features in the app
+            {placement === 'chat' ? 'Full features in the app' : 'Download NessaChat'}
           </h2>
           <p className="mt-2 text-sm text-gray-400">
-            Attachments, camera, voice, and more work in the NessaChat mobile app. Web instant chat is text-only for
-            now — download the app to unlock the full experience.
+            {placement === 'chat' ? (
+              <>
+                Attachments, camera, voice, and more work in the NessaChat mobile app. Web instant chat is text-only for
+                now — download the app to unlock the full experience.
+              </>
+            ) : (
+              <>
+                Get the full experience on your phone: real-time translation, calls, media, and groups. Pick your store
+                below — it&apos;s free to install.
+              </>
+            )}
           </p>
           <div className="mt-6">
             <p className="mb-3 text-center text-xs text-gray-500">Download NessaChat</p>
@@ -68,12 +97,21 @@ export default function DownloadAppFeaturesModal({ open, onClose }: DownloadAppF
             className="mt-5 w-full border-white/20 text-white hover:bg-white/10"
             onClick={onClose}
           >
-            Continue in browser
+            {placement === 'chat' ? 'Continue in browser' : 'Close'}
           </Button>
         </motion.div>
       </div>
     </div>,
     document.body,
+  )
+}
+
+function PhoneIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <rect x="6" y="3" width="12" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M10 18h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
   )
 }
 

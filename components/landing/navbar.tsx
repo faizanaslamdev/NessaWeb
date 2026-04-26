@@ -4,7 +4,11 @@ import { navLinks } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 
-export default function Navbar() {
+type NavbarProps = {
+  onOpenDownload: () => void
+}
+
+export default function Navbar({ onOpenDownload }: NavbarProps) {
   return (
     <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-black/40 backdrop-blur-md">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -35,8 +39,10 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* CTA Button */}
-          <Button 
+          {/* CTA — opens same download modal as instant chat (store links) */}
+          <Button
+            type="button"
+            onClick={onOpenDownload}
             className="bg-linear-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700"
           >
             Download
