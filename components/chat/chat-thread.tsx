@@ -144,7 +144,7 @@ export default function ChatThread({
             variant="landing"
             rows={1}
             disabled={composerDisabled}
-            className="field-sizing-content max-h-[calc(1.25rem*5+1rem)] min-h-9 flex-1 resize-none overflow-y-auto py-2 text-sm leading-5"
+            className="field-sizing-content max-h-[calc(1.25rem*5+1rem)] min-h-9 flex-1 resize-none overflow-y-auto py-2 text-base leading-5 md:text-base"
           />
           <Button
             type="button"
