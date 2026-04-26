@@ -28,48 +28,50 @@ export default function DownloadAppFeaturesModal({ open, onClose }: DownloadAppF
 
   return createPortal(
     <div
-      className="fixed inset-0 z-118 flex items-end justify-center px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-16 sm:items-center sm:p-6"
+      className="fixed inset-0 z-118 overflow-y-auto overscroll-contain"
       role="presentation"
     >
-      <button
-        type="button"
-        aria-label="Close"
-        className="absolute inset-0 bg-black/75 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <motion.div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="download-app-features-title"
-        initial={{ opacity: 0, y: 16, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.22, ease: 'easeOut' }}
-        className="relative z-10 w-full max-w-md rounded-2xl border border-white/15 bg-linear-to-br from-white/12 to-white/5 p-5 shadow-2xl shadow-black/50 sm:p-6"
-      >
-        <div className="mb-1 flex items-center gap-2 text-purple-200">
-          <PaperclipIcon className="size-5 shrink-0" aria-hidden />
-          <span className="text-xs font-medium uppercase tracking-wide">Instant web chat</span>
-        </div>
-        <h2 id="download-app-features-title" className="text-lg font-semibold text-white sm:text-xl">
-          Full features in the app
-        </h2>
-        <p className="mt-2 text-sm text-gray-400">
-          Attachments, camera, voice, and more work in the NessaChat mobile app. Web instant chat is text-only for
-          now — download the app to unlock the full experience.
-        </p>
-        <div className="mt-6">
-          <p className="mb-3 text-center text-xs text-gray-500">Download NessaChat</p>
-          <AppStoreButtons />
-        </div>
-        <Button
+      <div className="relative flex min-h-dvh items-center justify-center px-3 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-6">
+        <button
           type="button"
-          variant="outline"
-          className="mt-5 w-full border-white/20 text-white hover:bg-white/10"
+          aria-label="Close"
+          className="absolute inset-0 min-h-full bg-black/75 backdrop-blur-sm"
           onClick={onClose}
+        />
+        <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="download-app-features-title"
+          initial={{ opacity: 0, y: 16, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="relative z-10 w-full max-w-md rounded-2xl border border-white/15 bg-linear-to-br from-white/12 to-white/5 p-5 shadow-2xl shadow-black/50 sm:p-6"
         >
-          Continue in browser
-        </Button>
-      </motion.div>
+          <div className="mb-1 flex items-center gap-2 text-purple-200">
+            <PaperclipIcon className="size-5 shrink-0" aria-hidden />
+            <span className="text-xs font-medium uppercase tracking-wide">Instant web chat</span>
+          </div>
+          <h2 id="download-app-features-title" className="text-lg font-semibold text-white sm:text-xl">
+            Full features in the app
+          </h2>
+          <p className="mt-2 text-sm text-gray-400">
+            Attachments, camera, voice, and more work in the NessaChat mobile app. Web instant chat is text-only for
+            now — download the app to unlock the full experience.
+          </p>
+          <div className="mt-6">
+            <p className="mb-3 text-center text-xs text-gray-500">Download NessaChat</p>
+            <AppStoreButtons />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-5 w-full border-white/20 text-white hover:bg-white/10"
+            onClick={onClose}
+          >
+            Continue in browser
+          </Button>
+        </motion.div>
+      </div>
     </div>,
     document.body,
   )

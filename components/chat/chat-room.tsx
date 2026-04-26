@@ -9,6 +9,7 @@ import Link from 'next/link'
 import ChatHeader from './chat-header'
 import ChatThread from './chat-thread'
 import ParticipantsSidebar from './participants-sidebar'
+import ParticipantsSheet from './participants-sheet'
 import EntryModal from './entry-modal'
 import AuthErrorPanel from './auth-error-panel'
 import ChatEndedOverlay from './chat-ended-overlay'
@@ -110,6 +111,7 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
   const entryModalOpen = guestEntryOpen || hostInviteOpen
 
   const [showSettings, setShowSettings] = useState(false)
+  const [showParticipantsSheet, setShowParticipantsSheet] = useState(false)
   const [copyNotice, setCopyNotice] = useState<null | { kind: 'success' | 'error'; text: string }>(null)
 
   const myMember = user && session ? session.members[user.uid] : undefined
@@ -239,7 +241,17 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
             roomId={roomId}
             participantCount={participants.filter((p) => p.isOnline).length}
             onShare={handleShare}
-            onSettings={() => setShowSettings(true)}
+            onSettings={() => {
+              setShowParticipantsSheet(false)
+              setShowSettings(true)
+            }}
+            onOpenParticipants={() => setShowParticipantsSheet(true)}
+          />
+
+          <ParticipantsSheet
+            open={showParticipantsSheet}
+            onClose={() => setShowParticipantsSheet(false)}
+            participants={participants}
           />
 
           {showSettings && (
