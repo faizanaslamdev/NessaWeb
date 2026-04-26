@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import QRCode from 'react-qr-code'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import MessageBubble from './message-bubble'
 import ChatHeader from './chat-header'
+import ChatThread from './chat-thread'
 import ParticipantsSidebar from './participants-sidebar'
 import EntryModal from './entry-modal'
 import AuthErrorPanel from './auth-error-panel'
@@ -16,12 +16,10 @@ import { Input } from '@/components/ui/input'
 import CopyLinkButton from '@/components/chat/copy-link-button'
 import { useInstantAuth } from '@/hooks/use-instant-auth'
 import { useInstantSession } from '@/hooks/use-instant-session'
-import { useInstantMessages } from '@/hooks/use-instant-messages'
 import { usePresenceByUserIds, useInstantPresenceTracking } from '@/hooks/use-presence-web'
 import { getFirebaseClient } from '@/lib/firebase'
 import { isTimeBasedExpired } from '@/lib/chat/expiry'
-import { joinSessionMember, sendChatMessage, expireSessionAsUser } from '@/lib/chat/session'
-import { formatMessageTime } from '@/lib/chat/format'
+import { joinSessionMember, expireSessionAsUser } from '@/lib/chat/session'
 
 interface ChatRoomProps {
   roomId: string
@@ -67,9 +65,6 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
 
   useInstantPresenceTracking(user?.uid, Boolean(user && session && session.status === 'active' && member && !ended))
 
-  const messagesEnabled = Boolean(session && member)
-  const { messages, loading: messagesLoading } = useInstantMessages(roomId, messagesEnabled && !ended)
-
   const participants = useMemo(() => {
     if (!session) return []
     return memberUids.map((uid) => {
@@ -90,20 +85,10 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
   const hostInviteOpen = Boolean(session && user && !ended && member && shareInviteIntent && isRoomCreator)
   const entryModalOpen = guestEntryOpen || hostInviteOpen
 
-  const [inputValue, setInputValue] = useState('')
   const [showSettings, setShowSettings] = useState(false)
   const [copyNotice, setCopyNotice] = useState<null | { kind: 'success' | 'error'; text: string }>(null)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const myMember = user && session ? session.members[user.uid] : undefined
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
 
   useEffect(() => {
     const html = document.documentElement
@@ -130,18 +115,6 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
       await joinSessionMember(firestore, roomId, user.uid, data.name, data.language)
     } catch (e) {
       showNotice('error', e instanceof Error ? e.message : 'Join failed')
-    }
-  }
-
-  const handleSendMessage = async () => {
-    if (!user || !inputValue.trim() || ended || session?.status !== 'active') return
-    const text = inputValue
-    setInputValue('')
-    try {
-      const { firestore } = getFirebaseClient()
-      await sendChatMessage(firestore, roomId, user.uid, text)
-    } catch (e) {
-      showNotice('error', e instanceof Error ? e.message : 'Send failed')
     }
   }
 
@@ -240,95 +213,95 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
           />
 
           {showSettings && (
-            <div className="fixed inset-0 z-100 flex items-end justify-center sm:items-center sm:p-6">
+            <div className="fixed inset-0 z-100 flex items-center justify-center px-3 py-6 sm:p-6">
               <button
                 aria-label="Close settings"
                 type="button"
                 className="absolute inset-0 bg-black/70 backdrop-blur-sm"
                 onClick={() => setShowSettings(false)}
               />
-              <div className="relative z-110 w-full max-h-[min(92dvh,920px)] overflow-y-auto overscroll-contain px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:max-w-xl sm:px-0 sm:pb-0 sm:pt-0 lg:max-w-3xl">
+              <div className="relative z-110 w-full max-h-[min(calc(100dvh-3rem),900px)] overflow-y-auto overscroll-contain sm:max-w-xl lg:max-w-3xl">
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.98, y: 12 }}
+                  initial={{ opacity: 0, scale: 0.98, y: 8 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   transition={{ duration: 0.2, ease: 'easeOut' }}
-                  className="rounded-t-2xl border border-white/15 border-b-0 bg-linear-to-br from-white/12 to-white/5 p-5 shadow-2xl shadow-black/50 sm:rounded-2xl sm:border-b sm:p-6 md:p-8"
+                  className="rounded-2xl border border-white/15 bg-linear-to-br from-white/12 to-white/5 p-4 shadow-2xl shadow-black/50 sm:p-6 md:p-8"
                 >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-                    <div className="min-w-0 flex-1">
-                      <h2 className="text-xl font-semibold tracking-tight text-white md:text-2xl">Room settings</h2>
-                    </div>
+                  <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
+                    <h2 className="min-w-0 truncate text-lg font-semibold tracking-tight text-white sm:text-xl md:text-2xl">
+                      Room settings
+                    </h2>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="shrink-0 self-end border-white/20 text-white hover:bg-white/10 sm:self-start"
+                      className="shrink-0 border-white/20 text-white hover:bg-white/10"
                       onClick={() => setShowSettings(false)}
                     >
                       Close
                     </Button>
                   </div>
 
-                  <div className="mt-4 border-t border-white/10 pt-4 md:mt-5 md:pt-5">
+                  <div className="mt-4 sm:mt-5 md:mt-6">
                     <p className="text-sm font-medium text-gray-200 md:text-base">Invite others</p>
-                    <p className="mt-0.5 text-xs text-gray-500">QR or link — same join screen for guests.</p>
-                    <div className="mt-3 grid grid-cols-1 items-start gap-4 md:mt-4 md:grid-cols-[minmax(0,11rem)_1fr] md:items-stretch md:gap-6 lg:grid-cols-[minmax(0,13rem)_1fr]">
-                      <div className="mx-auto flex w-[min(11rem,72vw)] max-w-52 shrink-0 justify-center md:mx-0 md:w-full md:max-w-52 md:items-center md:self-stretch">
-                        <div className="flex aspect-square w-full max-w-52 items-center justify-center rounded-2xl border-2 border-dashed border-purple-400/45 bg-white/6 p-2.5">
-                        {origin ? (
-                          <div className="flex h-full w-full max-h-50 max-w-50 items-center justify-center rounded-xl bg-white p-2">
-                            <QRCode
-                              value={roomLink}
-                              size={168}
-                              style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
-                            />
-                          </div>
-                        ) : (
-                          <div className="px-2 text-center">
-                            <p className="mb-1 text-2xl" aria-hidden>
-                              📱
-                            </p>
-                            <p className="text-[11px] text-gray-500">Open in the browser for a scannable QR.</p>
-                          </div>
-                        )}
+                    <p className="mt-0.5 text-[11px] text-gray-500 sm:text-xs">QR or link — same join screen for guests.</p>
+                    <div className="mt-2.5 grid grid-cols-1 items-start gap-3 sm:mt-3 sm:gap-4 md:grid-cols-[minmax(0,11rem)_1fr] md:items-stretch md:gap-6 lg:grid-cols-[minmax(0,13rem)_1fr]">
+                      <div className="mx-auto flex w-[min(9.5rem,64vw)] max-w-44 shrink-0 justify-center sm:w-[min(11rem,72vw)] sm:max-w-52 md:mx-0 md:w-full md:max-w-52 md:items-center md:self-stretch">
+                        <div className="flex aspect-square w-full max-w-44 items-center justify-center rounded-xl border-2 border-dashed border-purple-400/45 bg-white/6 p-1.5 sm:max-w-52 sm:rounded-2xl sm:p-2.5">
+                          {origin ? (
+                            <div className="flex h-full w-full max-h-44 max-w-44 items-center justify-center rounded-lg bg-white p-1.5 sm:max-h-50 sm:max-w-50 sm:rounded-xl sm:p-2">
+                              <QRCode
+                                value={roomLink}
+                                size={152}
+                                style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
+                              />
+                            </div>
+                          ) : (
+                            <div className="px-2 text-center">
+                              <p className="mb-1 text-2xl" aria-hidden>
+                                📱
+                              </p>
+                              <p className="text-[11px] text-gray-500">Open in the browser for a scannable QR.</p>
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <div className="flex min-h-0 min-w-0 flex-col gap-5 md:gap-6">
-                        <div className="min-w-0 space-y-2">
+                      <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
+                        <div className="min-w-0">
                           <span className="text-xs font-medium text-gray-400 md:text-sm">Share link</span>
-                          <div className="flex flex-col gap-2 lg:flex-row lg:items-stretch">
+                          <div className="mt-1.5 flex flex-row items-stretch gap-2">
                             <Input
                               readOnly
                               value={roomLink}
                               variant="landing"
-                              className="min-h-10 min-w-0 flex-1 font-mono text-xs leading-normal text-gray-200 md:text-sm"
+                              className="min-h-9 min-w-0 flex-1 font-mono text-[11px] leading-normal text-gray-200 sm:min-h-10 sm:text-xs md:text-sm"
                             />
                             <CopyLinkButton
                               textToCopy={roomLink}
-                              size="default"
+                              size="sm"
                               label="Copy link"
-                              className="shrink-0 lg:self-stretch"
+                              className="h-9 shrink-0 self-stretch sm:h-10"
                               onCopied={(ok) =>
                                 showNotice(ok ? 'success' : 'error', ok ? 'Link copied' : 'Copy blocked by browser')
                               }
                             />
                           </div>
                         </div>
-                        <div className="min-w-0 space-y-2">
+                        <div className="min-w-0">
                           <span className="text-xs font-medium text-gray-400 md:text-sm">Room ID</span>
-                          <div className="flex flex-col gap-2 lg:flex-row lg:items-stretch">
+                          <div className="mt-1.5 flex flex-row items-stretch gap-2">
                             <Input
                               readOnly
                               value={roomId}
                               variant="landing"
-                              className="min-h-10 min-w-0 flex-1 font-mono text-xs leading-normal text-purple-200 md:text-sm"
+                              className="min-h-9 min-w-0 flex-1 font-mono text-[11px] leading-normal text-purple-200 sm:min-h-10 sm:text-xs md:text-sm"
                             />
                             <CopyLinkButton
                               textToCopy={roomId}
-                              size="default"
+                              size="sm"
                               styleVariant="outline"
                               label="Copy ID"
                               copiedLabel="✓ Copied"
-                              className="shrink-0 border-white/20 lg:self-stretch"
+                              className="h-9 shrink-0 self-stretch border-white/20 sm:h-10"
                               onCopied={(ok) =>
                                 showNotice(ok ? 'success' : 'error', ok ? 'Room ID copied' : 'Copy blocked by browser')
                               }
@@ -339,7 +312,7 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex flex-col gap-2 border-t border-white/10 pt-4 md:mt-5 md:flex-row md:justify-end md:gap-3 md:pt-4">
+                  <div className="mt-5 flex flex-col gap-2 border-t border-white/10 pt-4 sm:mt-6 md:flex-row md:justify-end md:gap-3">
                     <Button variant="destructive" className="w-full md:w-auto" onClick={() => void handleEndRoom()}>
                       End chat for everyone
                     </Button>
@@ -353,79 +326,18 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
           )}
 
           <div className="flex min-h-0 flex-1 overflow-hidden">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              className="flex min-h-0 flex-1 flex-col overflow-hidden bg-linear-to-b from-black via-black to-black/80"
-            >
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-6 sm:px-6 sm:py-6">
-                {messagesLoading && messages.length === 0 ? (
-                  <div className="h-full flex items-center justify-center">
-                    <p className="text-gray-400 text-sm">Loading messages…</p>
-                  </div>
-                ) : messages.length === 0 ? (
-                  <div className="h-full flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-4xl mb-4">💬</div>
-                      <p className="text-gray-400">No messages yet. Start the conversation!</p>
-                    </div>
-                  </div>
-                ) : (
-                  messages.map((m) => {
-                    const isSent = m.senderId === user?.uid
-                    const name = session.members[m.senderId]?.displayName ?? 'Guest'
-                    const av = name[0]?.toUpperCase() ?? '?'
-                    return (
-                      <MessageBubble
-                        key={m.id}
-                        message={m.text}
-                        isSent={isSent}
-                        senderName={name}
-                        timestamp={formatMessageTime(m.createdAt)}
-                        avatar={av}
-                        preferredLanguage={myMember?.language ?? 'en'}
-                        viewerUserId={user?.uid ?? 'me'}
-                        isGroupChat={memberUids.length > 1}
-                        translation={m.translation}
-                        translationStatus={m.translationStatus}
-                        translationLanguage={m.translationLanguage}
-                        sourceLanguage={m.sourceLanguage}
-                        translationsByUser={m.translationsByUser}
-                      />
-                    )
-                  })
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
-                className="shrink-0 border-t border-white/10 bg-black/50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:p-6"
-              >
-                <div className="flex gap-2 sm:gap-3">
-                  <Input
-                    type="text"
-                    placeholder="Type a message..."
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && void handleSendMessage()}
-                    variant="landing"
-                    className="flex-1 text-sm"
-                    disabled={ended || session.status !== 'active'}
-                  />
-                  <Button
-                    onClick={() => void handleSendMessage()}
-                    disabled={!inputValue.trim() || ended || session.status !== 'active'}
-                    className="bg-linear-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed px-4 sm:px-6"
-                  >
-                    Send
-                  </Button>
-                </div>
-              </motion.div>
-            </motion.div>
+            {user && myMember ? (
+              <ChatThread
+                key={roomId}
+                roomId={roomId}
+                ended={ended}
+                session={session}
+                user={user}
+                myMember={myMember}
+                memberUids={memberUids}
+                onSendError={(msg) => showNotice('error', msg)}
+              />
+            ) : null}
 
             <ParticipantsSidebar participants={participants} />
           </div>

@@ -86,7 +86,6 @@ export default function ChatIndexPage() {
           </div>
 
           <div className="mb-6 rounded-xl border border-white/10 bg-black/30 p-4">
-            <p className="text-xs font-medium text-gray-300 mb-2">Start a new room</p>
             <Input
               placeholder="Your display name"
               value={createName}

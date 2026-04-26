@@ -42,42 +42,36 @@ function mapMessages(snap: QuerySnapshot): ChatMessage[] {
 
 export function useInstantMessages(sessionId: string | undefined, enabled: boolean) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  /** When this equals `sessionId`, `messages` are for the active listener (avoids stale rows on id / toggle). */
-  const [messagesSessionId, setMessagesSessionId] = useState<string | null>(null)
-  /** Set only from Firestore `onSnapshot` error callback (not in effect body). */
-  const [listenerFailed, setListenerFailed] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!sessionId || !enabled) {
       return
     }
 
+    let cancelled = false
     const { firestore } = getFirebaseClient()
     const q = query(messagesCollectionRef(firestore, sessionId), orderBy('createdAt', 'asc'), limit(PAGE))
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setListenerFailed(false)
+        if (cancelled) return
         setMessages(mapMessages(snap))
-        setMessagesSessionId(sessionId)
+        setLoading(false)
       },
       () => {
-        setMessages([])
-        setMessagesSessionId(sessionId)
-        setListenerFailed(true)
+        if (!cancelled) setLoading(false)
       },
     )
     return () => {
+      cancelled = true
       unsub()
-      setMessagesSessionId(null)
-      setListenerFailed(false)
     }
   }, [sessionId, enabled])
 
   const active = Boolean(sessionId && enabled)
-  const inSync = active && messagesSessionId === sessionId
-  const messagesOut = inSync ? messages : []
-  const loadingOut = active && !inSync && !listenerFailed
-
-  return { messages: messagesOut, loading: loadingOut }
+  return {
+    messages: active ? messages : [],
+    loading: active && loading,
+  }
 }

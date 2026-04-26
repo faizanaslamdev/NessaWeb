@@ -1,8 +1,7 @@
 'use client'
 
-import { appStores } from '@/lib/constants'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
+import AppStoreButtons from '@/components/landing/app-store-buttons'
 
 export default function AppDownloadSection() {
   const containerVariants = {
@@ -37,30 +36,7 @@ export default function AppDownloadSection() {
             Download NessaChat today and start messaging in seconds. Available on iOS and Android.
           </p>
 
-          {/* Download Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-8 w-full">
-            {appStores.map((store) => (
-              <a
-                key={store.name}
-                href={store.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-3 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 transition-colors w-full sm:w-auto sm:flex-1"
-              >
-                <Image
-                  src={store.iconSrc}
-                  alt=""
-                  width={22}
-                  height={22}
-                  className="h-[22px] w-[22px]"
-                />
-                <div className="text-left">
-                  <p className="text-xs text-gray-400">Download on</p>
-                  <p className="font-semibold text-white text-sm">{store.name}</p>
-                </div>
-              </a>
-            ))}
-          </div>
+          <AppStoreButtons className="mb-8" />
 
           {/* Additional info */}
           <p className="text-xs sm:text-sm text-gray-500">
