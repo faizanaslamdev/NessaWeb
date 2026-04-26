@@ -7,6 +7,13 @@ export const SESSION_ABSOLUTE_MS = 60 * 60 * 1000
 /** Inactivity window after last message (`lastActivityAt`). */
 export const SESSION_INACTIVITY_MS = 60 * 60 * 1000
 
+/**
+ * If we never get a Firestore session snapshot with `fromCache: false` and `hasPendingWrites: false`
+ * (e.g. long-lived offline cache), still allow client-side time/inactivity UI after this delay so
+ * the room does not stay “live” forever with stale cache. See `useInstantSession`.
+ */
+export const INSTANT_SESSION_SERVER_READ_FALLBACK_MS = 4000
+
 /** RTDB path segment (same convention as NessaChat `RTDB_PATHS.PRESENCE`). */
 export function rtdbPresencePath(uid: string) {
   return `realtime/presence/${uid}`

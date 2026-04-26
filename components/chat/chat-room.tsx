@@ -31,7 +31,8 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading: authLoading, error: authError } = useInstantAuth()
-  const { session, loading: sessionLoading, error: sessionError } = useInstantSession(roomId)
+  const { session, loading: sessionLoading, error: sessionError, clientTimeBasedExpiryAllowed } =
+    useInstantSession(roomId)
 
   const [nowMs, setNowMs] = useState(() => Date.now())
   useEffect(() => {
@@ -72,13 +73,13 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
   }, [member, user])
 
   const timeEnded = useMemo(() => {
-    if (!session) return false
+    if (!session || !clientTimeBasedExpiryAllowed) return false
     return isTimeBasedExpired({
       nowMs,
       expiresAt: session.expiresAt,
       lastActivityAt: session.lastActivityAt,
     })
-  }, [session, nowMs])
+  }, [session, nowMs, clientTimeBasedExpiryAllowed])
 
   const statusEnded = session?.status === 'expired'
   const ended = Boolean(statusEnded || timeEnded)
