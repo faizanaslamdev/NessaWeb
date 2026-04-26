@@ -10,16 +10,18 @@ interface ParticipantsSidebarProps {
 export default function ParticipantsSidebar({ participants }: ParticipantsSidebarProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.4, delay: 0.2 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       className="hidden w-64 flex-col border-l border-white/10 bg-black/50 lg:flex"
     >
       <div className="shrink-0 border-b border-white/10 p-4">
         <h2 className="text-sm font-semibold text-white">Participants ({participants.length})</h2>
       </div>
 
-      <ParticipantsList participants={participants} className="min-h-0 flex-1" />
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain">
+        <ParticipantsList participants={participants} />
+      </div>
     </motion.div>
   )
 }

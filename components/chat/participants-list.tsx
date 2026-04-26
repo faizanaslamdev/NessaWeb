@@ -1,6 +1,5 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 export interface ChatParticipant {
@@ -18,13 +17,10 @@ export function ParticipantsList({
   className?: string
 }) {
   return (
-    <div className={cn('overflow-y-auto overscroll-contain', className)}>
-      {participants.map((participant, index) => (
-        <motion.div
+    <div className={cn('overflow-x-hidden', className)}>
+      {participants.map((participant) => (
+        <div
           key={participant.id}
-          initial={{ opacity: 0, x: 10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, delay: index * 0.04 }}
           className="border-b border-white/5 px-4 py-3 transition-colors last:border-b-0 hover:bg-white/5"
         >
           <div className="flex items-center gap-3">
@@ -41,7 +37,7 @@ export function ParticipantsList({
               <p className="text-xs text-gray-500">{participant.isOnline ? 'Online' : 'Away'}</p>
             </div>
           </div>
-        </motion.div>
+        </div>
       ))}
     </div>
   )
