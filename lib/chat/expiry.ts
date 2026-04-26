@@ -1,17 +1,23 @@
 import type { Timestamp } from 'firebase/firestore'
-import { SESSION_INACTIVITY_MS } from '@/lib/chat/constants'
+
+/** Ignore bogus / sentinel timestamps so we never flash “ended” on bad first reads. */
+const MIN_REASONABLE_MS = Date.UTC(2020, 0, 1)
 
 /**
- * Client-side mirror of plan §4.2 (UI only; Firestore `status` is source of truth).
+ * Client-side mirror of absolute `expiresAt` only (UI hint; Firestore `status` is source of truth).
  */
-export function isTimeBasedExpired(args: {
-  nowMs: number
-  expiresAt: Timestamp | null
-  lastActivityAt: Timestamp | null
-}): boolean {
-  const { nowMs, expiresAt, lastActivityAt } = args
-  if (!expiresAt || !lastActivityAt) return false
-  if (nowMs >= expiresAt.toMillis()) return true
-  if (nowMs - lastActivityAt.toMillis() > SESSION_INACTIVITY_MS) return true
-  return false
+export function isTimeBasedExpired(args: { nowMs: number; expiresAt: Timestamp | null }): boolean {
+  const { nowMs, expiresAt } = args
+  if (!expiresAt) return false
+  const expMs = expiresAt.toMillis()
+  if (expMs < MIN_REASONABLE_MS) return false
+  return nowMs >= expMs
+}
+
+/** Wall-clock ms when `expiresAt` fires. */
+export function getSessionEndMillis(expiresAt: Timestamp | null): number | null {
+  if (!expiresAt) return null
+  const expMs = expiresAt.toMillis()
+  if (expMs < MIN_REASONABLE_MS) return null
+  return expMs
 }

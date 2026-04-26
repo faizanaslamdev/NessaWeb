@@ -15,3 +15,15 @@ export function formatMessageTime(ts: { toDate: () => Date } | null | undefined)
   if (!ts || typeof ts.toDate !== 'function') return ''
   return ts.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
+
+/**
+ * Header timer for the last-10-minutes window: `10m` … `1m`, then `60s` … `1s`
+ * (ceil so the label ticks down cleanly). Caller hides when more than 10 minutes remain.
+ */
+export function formatSessionHeaderCountdown(remainingMs: number): string {
+  if (remainingMs < 60_000) {
+    const s = Math.max(1, Math.ceil(remainingMs / 1000))
+    return `${s}s`
+  }
+  return `${Math.ceil(remainingMs / 60_000)}m`
+}

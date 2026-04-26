@@ -9,6 +9,7 @@ import Link from 'next/link'
 import ChatHeader from './chat-header'
 import ChatThread from './chat-thread'
 import ParticipantsSidebar from './participants-sidebar'
+import ParticipantsSheet from './participants-sheet'
 import EntryModal from './entry-modal'
 import AuthErrorPanel from './auth-error-panel'
 import ChatEndedOverlay from './chat-ended-overlay'
@@ -19,9 +20,10 @@ import { useInstantAuth } from '@/hooks/use-instant-auth'
 import { useInstantSession } from '@/hooks/use-instant-session'
 import { usePresenceByUserIds, useInstantPresenceTracking } from '@/hooks/use-presence-web'
 import { getFirebaseClient } from '@/lib/firebase'
-import { isTimeBasedExpired } from '@/lib/chat/expiry'
+import { getSessionEndMillis, isTimeBasedExpired } from '@/lib/chat/expiry'
 import { joinSessionMember, expireSessionAsUser } from '@/lib/chat/session'
-import { shareUrlWithoutScheme } from '@/lib/chat/format'
+import { SESSION_HEADER_COUNTDOWN_MAX_MS } from '@/lib/chat/constants'
+import { formatSessionHeaderCountdown, shareUrlWithoutScheme } from '@/lib/chat/format'
 
 interface ChatRoomProps {
   roomId: string
@@ -31,11 +33,12 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading: authLoading, error: authError } = useInstantAuth()
-  const { session, loading: sessionLoading, error: sessionError } = useInstantSession(roomId)
+  const { session, loading: sessionLoading, error: sessionError, clientTimeBasedExpiryAllowed } =
+    useInstantSession(roomId)
 
   const [nowMs, setNowMs] = useState(() => Date.now())
   useEffect(() => {
-    const t = setInterval(() => setNowMs(Date.now()), 20_000)
+    const t = setInterval(() => setNowMs(Date.now()), 1000)
     return () => clearInterval(t)
   }, [])
 
@@ -72,16 +75,25 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
   }, [member, user])
 
   const timeEnded = useMemo(() => {
-    if (!session) return false
+    if (!session || !clientTimeBasedExpiryAllowed) return false
     return isTimeBasedExpired({
       nowMs,
       expiresAt: session.expiresAt,
-      lastActivityAt: session.lastActivityAt,
     })
-  }, [session, nowMs])
+  }, [session, nowMs, clientTimeBasedExpiryAllowed])
 
   const statusEnded = session?.status === 'expired'
   const ended = Boolean(statusEnded || timeEnded)
+
+  const sessionRemainingLabel = useMemo(() => {
+    if (!session || ended || !clientTimeBasedExpiryAllowed) return null
+    const end = getSessionEndMillis(session.expiresAt)
+    if (end === null) return null
+    const remaining = end - nowMs
+    if (remaining > SESSION_HEADER_COUNTDOWN_MAX_MS) return null
+    if (remaining <= 0) return '…'
+    return formatSessionHeaderCountdown(remaining)
+  }, [session, ended, clientTimeBasedExpiryAllowed, nowMs])
 
   const memberUids = useMemo(() => (session ? Object.keys(session.members) : []), [session])
   const presenceByUser = usePresenceByUserIds(memberUids)
@@ -109,6 +121,7 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
   const entryModalOpen = guestEntryOpen || hostInviteOpen
 
   const [showSettings, setShowSettings] = useState(false)
+  const [showParticipantsSheet, setShowParticipantsSheet] = useState(false)
   const [copyNotice, setCopyNotice] = useState<null | { kind: 'success' | 'error'; text: string }>(null)
 
   const myMember = user && session ? session.members[user.uid] : undefined
@@ -237,8 +250,22 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
           <ChatHeader
             roomId={roomId}
             participantCount={participants.filter((p) => p.isOnline).length}
+            sessionRemainingLabel={sessionRemainingLabel}
             onShare={handleShare}
-            onSettings={() => setShowSettings(true)}
+            onSettings={() => {
+              setShowParticipantsSheet(false)
+              setShowSettings(true)
+            }}
+            onOpenParticipants={() => setShowParticipantsSheet(true)}
+            onRoomIdCopied={(ok) =>
+              showNotice(ok ? 'success' : 'error', ok ? 'Room ID copied' : 'Copy blocked by browser')
+            }
+          />
+
+          <ParticipantsSheet
+            open={showParticipantsSheet}
+            onClose={() => setShowParticipantsSheet(false)}
+            participants={participants}
           />
 
           {showSettings && (

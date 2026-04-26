@@ -25,7 +25,7 @@ export function messagesCollectionRef(db: Firestore, sessionId: string) {
 
 /**
  * New session fields. Caller must be signed in (anonymous ok).
- * `lastActivityAt` and `createdAt` use serverTimestamp in one set (see plan §5.2).
+ * `lastActivityAt` and `createdAt` use serverTimestamp in one set; `lastActivityAt` updates on each message send (rules), not used for session end (end is `expiresAt` only).
  */
 export function buildNewSessionFields(args: {
   sessionId: string
