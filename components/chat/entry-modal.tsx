@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import CopyLinkButton from '@/components/chat/copy-link-button'
 import { APP_CHAT_LANGUAGES, DEFAULT_CHAT_LANGUAGE_CODE } from '@/lib/chat/languages'
+import { shareUrlWithoutScheme } from '@/lib/chat/format'
 
 export type EntryModalVariant = 'join' | 'invite-host'
 
@@ -109,10 +110,15 @@ export default function EntryModal({
                     <div className="flex flex-row items-stretch gap-2">
                       <Input
                         type="text"
-                        value={roomLink}
+                        value={shareUrlWithoutScheme(roomLink)}
+                        title={roomLink}
                         readOnly
                         variant="landing"
                         className="min-w-0 flex-1 truncate text-xs text-gray-300"
+                        onCopy={(e) => {
+                          e.preventDefault()
+                          e.clipboardData?.setData('text/plain', roomLink)
+                        }}
                       />
                       <CopyLinkButton
                         textToCopy={roomLink}
@@ -154,7 +160,7 @@ export default function EntryModal({
                         </Button>
                       </div>
                       <p className="text-xs text-gray-500 text-center mt-4">
-                        No signup for guests — same join screen when they open your link.
+                        No signup for guests
                       </p>
                     </>
                   ) : (

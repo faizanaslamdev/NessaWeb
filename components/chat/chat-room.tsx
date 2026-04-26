@@ -21,6 +21,7 @@ import { usePresenceByUserIds, useInstantPresenceTracking } from '@/hooks/use-pr
 import { getFirebaseClient } from '@/lib/firebase'
 import { isTimeBasedExpired } from '@/lib/chat/expiry'
 import { joinSessionMember, expireSessionAsUser } from '@/lib/chat/session'
+import { shareUrlWithoutScheme } from '@/lib/chat/format'
 
 interface ChatRoomProps {
   roomId: string
@@ -299,9 +300,14 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
                           <div className="mt-1.5 flex flex-row items-stretch gap-2">
                             <Input
                               readOnly
-                              value={roomLink}
+                              value={shareUrlWithoutScheme(roomLink)}
+                              title={roomLink}
                               variant="landing"
                               className="min-h-9 min-w-0 flex-1 font-mono text-[11px] leading-normal text-gray-200 sm:min-h-10 sm:text-xs md:text-sm"
+                              onCopy={(e) => {
+                                e.preventDefault()
+                                e.clipboardData?.setData('text/plain', roomLink)
+                              }}
                             />
                             <CopyLinkButton
                               textToCopy={roomLink}
