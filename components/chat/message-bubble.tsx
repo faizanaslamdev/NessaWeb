@@ -156,7 +156,7 @@ export default function MessageBubble({
               : 'rounded-bl-none border border-white/20 bg-white/10 text-gray-100'
           }`}
         >
-          <p className="text-sm">{message}</p>
+          <p className="whitespace-pre-wrap wrap-break-word text-sm">{message}</p>
 
           {!isSent && showTranslationPending && (
             <div className="mt-2 flex items-center gap-2 border-t border-white/20 pt-2">
@@ -170,7 +170,7 @@ export default function MessageBubble({
 
           {!isSent && showTranslation && translationToShow?.trim() && (
             <div className="mt-2 border-t border-white/20 pt-2">
-              <p className="text-[13px] italic text-white/80">
+              <p className="whitespace-pre-wrap wrap-break-word text-[13px] italic text-white/80">
                 {translationToShow}
               </p>
             </div>
@@ -211,7 +211,7 @@ export default function MessageBubble({
                           {ownTranslationLanguageLabel}
                         </p>
                       ) : null}
-                      <p className="text-[13px] leading-snug italic text-white/95">
+                      <p className="whitespace-pre-wrap wrap-break-word text-[13px] leading-snug italic text-white/95">
                         {translation}
                       </p>
                     </>
@@ -219,7 +219,7 @@ export default function MessageBubble({
                     <div className="space-y-2.5">
                       {recipientTranslationEntries.map(([uid, txt]) => (
                         <div key={uid}>
-                          <p className="text-[13px] leading-snug italic text-white/95">
+                          <p className="whitespace-pre-wrap wrap-break-word text-[13px] leading-snug italic text-white/95">
                             {txt}
                           </p>
                         </div>
@@ -232,7 +232,7 @@ export default function MessageBubble({
                           {ownTranslationLanguageLabel}
                         </p>
                       ) : null}
-                      <p className="text-[13px] leading-snug italic text-white/95">
+                      <p className="whitespace-pre-wrap wrap-break-word text-[13px] leading-snug italic text-white/95">
                         {translation}
                       </p>
                     </>
