@@ -347,7 +347,11 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
                   </div>
 
                   <div className="mt-5 flex flex-col gap-2 border-t border-white/10 pt-4 sm:mt-6 md:flex-row md:justify-end md:gap-3">
-                    <Button variant="destructive" className="w-full md:w-auto" onClick={() => void handleEndRoom()}>
+                    <Button
+                      variant="outline"
+                      className="w-full border-red-500/30 text-red-200 hover:bg-red-500/10 hover:text-red-100 md:w-auto"
+                      onClick={() => void handleEndRoom()}
+                    >
                       End chat for everyone
                     </Button>
                     <Button variant="destructive" className="w-full md:w-auto" onClick={handleLeaveRoom}>
