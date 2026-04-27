@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { FirebaseError } from 'firebase/app'
 import { onSnapshot, type DocumentSnapshot } from 'firebase/firestore'
 import { getFirebaseClient } from '@/lib/firebase'
 import { deferredFirestoreSubscribe } from '@/lib/deferred-firestore-subscribe'
@@ -47,14 +48,24 @@ function toSession(snap: DocumentSnapshot): ChatSession | null {
  * “Chat ended” incorrectly. We therefore expose `clientTimeBasedExpiryAllowed`, which becomes
  * true once we see a server-aligned snapshot, or after {@link INSTANT_SESSION_SERVER_READ_FALLBACK_MS}
  * if we never do (offline edge case). `status === 'expired'` remains authoritative regardless.
+ *
+ * @param firestoreEnabled When false, the snapshot listener is not started (keeps `loading` true).
+ * Use while Auth is still initializing so reads do not run before `request.auth` is available.
  */
-export function useInstantSession(sessionId: string | undefined) {
+export function useInstantSession(sessionId: string | undefined, firestoreEnabled = true) {
   const [session, setSession] = useState<ChatSession | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [clientTimeBasedExpiryAllowed, setClientTimeBasedExpiryAllowed] = useState(false)
+  /** Bumps to re-attach the listener after a one-shot `permission-denied` recovery (token / auth timing). */
+  const [snapshotRetryEpoch, setSnapshotRetryEpoch] = useState(0)
 
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const permissionDeniedRetryDoneRef = useRef(false)
+
+  useEffect(() => {
+    permissionDeniedRetryDoneRef.current = false
+  }, [sessionId, firestoreEnabled])
 
   useEffect(() => {
     const clearFallbackTimer = () => {
@@ -75,11 +86,25 @@ export function useInstantSession(sessionId: string | undefined) {
       return
     }
 
+    if (!firestoreEnabled) {
+      clearFallbackTimer()
+      queueMicrotask(() => {
+        setSession(null)
+        setError(null)
+        setClientTimeBasedExpiryAllowed(false)
+        setLoading(true)
+      })
+      return () => {
+        clearFallbackTimer()
+      }
+    }
+
     let cancelled = false
     clearFallbackTimer()
     queueMicrotask(() => {
       if (cancelled) return
       setClientTimeBasedExpiryAllowed(false)
+      setError(null)
       setLoading(true)
     })
 
@@ -127,12 +152,34 @@ export function useInstantSession(sessionId: string | undefined) {
           }
         },
         (e) => {
-          if (!cancelled) {
-            clearFallbackTimer()
-            setClientTimeBasedExpiryAllowed(false)
-            setError(e)
-            setLoading(false)
+          if (cancelled) return
+          clearFallbackTimer()
+          setClientTimeBasedExpiryAllowed(false)
+
+          const canRetryPermissionDenied =
+            e instanceof FirebaseError &&
+            e.code === 'permission-denied' &&
+            !permissionDeniedRetryDoneRef.current
+
+          if (canRetryPermissionDenied) {
+            permissionDeniedRetryDoneRef.current = true
+            void (async () => {
+              try {
+                const { auth } = getFirebaseClient()
+                await auth.authStateReady()
+                await auth.currentUser?.getIdToken(true)
+              } catch {
+                /* best-effort: re-subscribe anyway */
+              }
+              if (!cancelled) {
+                setSnapshotRetryEpoch((n) => n + 1)
+              }
+            })()
+            return
           }
+
+          setError(e)
+          setLoading(false)
         },
       )
     })
@@ -142,7 +189,7 @@ export function useInstantSession(sessionId: string | undefined) {
       clearFallbackTimer()
       cleanupOuter()
     }
-  }, [sessionId])
+  }, [sessionId, firestoreEnabled, snapshotRetryEpoch])
 
   return { session, loading, error, clientTimeBasedExpiryAllowed }
 }

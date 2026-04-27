@@ -34,7 +34,7 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
   const searchParams = useSearchParams()
   const { user, loading: authLoading, error: authError } = useInstantAuth()
   const { session, loading: sessionLoading, error: sessionError, clientTimeBasedExpiryAllowed } =
-    useInstantSession(roomId)
+    useInstantSession(roomId, !authLoading && !authError)
 
   const [nowMs, setNowMs] = useState(() => Date.now())
   useEffect(() => {
