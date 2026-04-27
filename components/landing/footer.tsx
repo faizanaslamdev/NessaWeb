@@ -1,7 +1,25 @@
 'use client'
 
-import { siteConfig, footerLinks } from '@/lib/constants'
 import Image from 'next/image'
+import Link from 'next/link'
+
+import { footerLinks, siteConfig } from '@/lib/constants'
+
+function FooterLink({ href, label }: { href: string; label: string }) {
+  const className = 'text-sm text-gray-400 transition-colors hover:text-white'
+  if (href.startsWith('/')) {
+    return (
+      <Link href={href} className={className}>
+        {label}
+      </Link>
+    )
+  }
+  return (
+    <a href={href} className={className}>
+      {label}
+    </a>
+  )
+}
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -33,12 +51,7 @@ export default function Footer() {
             <ul className="space-y-2">
               {footerLinks.company.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-gray-400 hover:text-white transition-colors"
-                  >
-                    {link.label}
-                  </a>
+                  <FooterLink href={link.href} label={link.label} />
                 </li>
               ))}
             </ul>
@@ -50,12 +63,7 @@ export default function Footer() {
             <ul className="space-y-2">
               {footerLinks.legal.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-gray-400 hover:text-white transition-colors"
-                  >
-                    {link.label}
-                  </a>
+                  <FooterLink href={link.href} label={link.label} />
                 </li>
               ))}
             </ul>

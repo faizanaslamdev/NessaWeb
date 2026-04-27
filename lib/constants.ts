@@ -190,16 +190,24 @@ export const navLinks = [
   { label: 'Download', href: '#download' },
 ]
 
+/** Marketing / legal routes (linked from landing footer). */
+export const siteRoutes = {
+  about: '/about',
+  privacyPolicy: '/privacy-policy',
+  termsOfService: '/terms-of-service',
+  cookiePolicy: '/cookie-policy',
+} as const
+
 export const footerLinks = {
   company: [
-    { label: 'About', href: '#' },
+    { label: 'About', href: siteRoutes.about },
     { label: 'Blog', href: '#' },
     { label: 'Careers', href: '#' },
   ],
   legal: [
-    { label: 'Privacy Policy', href: '#' },
-    { label: 'Terms of Service', href: '#' },
-    { label: 'Cookie Policy', href: '#' },
+    { label: 'Privacy Policy', href: siteRoutes.privacyPolicy },
+    { label: 'Terms of Service', href: siteRoutes.termsOfService },
+    { label: 'Cookie Policy', href: siteRoutes.cookiePolicy },
   ],
   social: [
     { label: 'Twitter', href: '#' },
