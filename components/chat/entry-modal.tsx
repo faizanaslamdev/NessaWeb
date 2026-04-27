@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import CopyLinkButton from '@/components/chat/copy-link-button'
 import { APP_CHAT_LANGUAGES, DEFAULT_CHAT_LANGUAGE_CODE } from '@/lib/chat/languages'
 import { shareUrlWithoutScheme } from '@/lib/chat/format'
+import { cn } from '@/lib/utils'
 
 export type EntryModalVariant = 'join' | 'invite-host'
 
@@ -66,81 +67,88 @@ export default function EntryModal({
             transition={{ duration: 0.3, ease: 'easeOut' }}
             className="fixed inset-0 z-110 flex items-stretch justify-center overflow-y-auto overscroll-contain px-3 py-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] sm:items-center sm:px-4 sm:py-4"
           >
-            <div className="my-auto w-full max-w-2xl max-h-[min(92dvh,900px)] rounded-2xl border border-white/20 bg-linear-to-br from-white/10 to-white/5 overflow-hidden flex flex-col shadow-2xl shadow-black/40">
-              {/* Content Grid */}
-              <div className="grid flex-1 min-h-0 grid-cols-1 md:grid-cols-2 md:min-h-[min(520px,80dvh)]">
-                {/* Left Section - QR Code & Share */}
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: 0.1 }}
-                  className="bg-linear-to-b from-white/5 to-white/0 p-4 sm:p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-white/10 shrink-0"
-                >
-                  <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">
-                    Share This Chat
-                  </h3>
+            <div
+              className={cn(
+                'my-auto w-full max-h-[min(92dvh,900px)] rounded-2xl border border-white/20 bg-linear-to-br from-white/10 to-white/5 overflow-hidden flex flex-col shadow-2xl shadow-black/40',
+                variant === 'invite-host' ? 'max-w-2xl' : 'max-w-md',
+              )}
+            >
+              {/* Join: name + language only (share/QR lives in room settings). Invite-host: QR + link + room-ready CTA. */}
+              <div
+                className={cn(
+                  'grid flex-1 min-h-0 grid-cols-1',
+                  variant === 'invite-host' && 'md:grid-cols-2 md:min-h-[min(520px,80dvh)]',
+                )}
+              >
+                {variant === 'invite-host' ? (
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: 0.1 }}
+                    className="bg-linear-to-b from-white/5 to-white/0 p-4 sm:p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-white/10 shrink-0"
+                  >
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">
+                      Share This Chat
+                    </h3>
 
-                  <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-lg border-2 border-dashed border-purple-400/50 bg-white/5 flex items-center justify-center mb-4 sm:mb-6 p-2 sm:p-2.5">
-                    {showLiveQr ? (
-                      <div className="flex max-h-full max-w-full items-center justify-center rounded-md bg-white p-1.5">
-                        <QRCode
-                          value={roomLink}
-                          size={128}
-                          style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
-                          className="sm:max-h-38"
+                    <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-lg border-2 border-dashed border-purple-400/50 bg-white/5 flex items-center justify-center mb-4 sm:mb-6 p-2 sm:p-2.5">
+                      {showLiveQr ? (
+                        <div className="flex max-h-full max-w-full items-center justify-center rounded-md bg-white p-1.5">
+                          <QRCode
+                            value={roomLink}
+                            size={128}
+                            style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
+                            className="sm:max-h-38"
+                          />
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <div className="text-2xl sm:text-3xl mb-2">📱</div>
+                          <p className="text-xs text-gray-400">QR Code</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="text-xs sm:text-sm text-gray-400 text-center mb-4 sm:mb-6 px-1">
+                      Scan to join this chat instantly
+                    </p>
+
+                    <div className="w-full space-y-2">
+                      <p className="text-xs font-medium text-gray-300">Or share this link:</p>
+                      <div className="flex flex-row items-stretch gap-2">
+                        <Input
+                          type="text"
+                          value={shareUrlWithoutScheme(roomLink)}
+                          title={roomLink}
+                          readOnly
+                          variant="landing"
+                          className="min-w-0 flex-1 truncate text-xs text-gray-300"
+                          onCopy={(e) => {
+                            e.preventDefault()
+                            e.clipboardData?.setData('text/plain', roomLink)
+                          }}
+                        />
+                        <CopyLinkButton
+                          textToCopy={roomLink}
+                          size="sm"
+                          className="shrink-0 self-center whitespace-nowrap px-3 text-xs sm:px-4 sm:text-sm"
                         />
                       </div>
-                    ) : (
-                      <div className="text-center">
-                        <div className="text-2xl sm:text-3xl mb-2">📱</div>
-                        <p className="text-xs text-gray-400">QR Code</p>
-                      </div>
-                    )}
-                  </div>
-
-                  <p className="text-xs sm:text-sm text-gray-400 text-center mb-4 sm:mb-6 px-1">
-                    Scan to join this chat instantly
-                  </p>
-
-                  {/* Copy Link — URL + button one row (saves vertical space on mobile) */}
-                  <div className="w-full space-y-2">
-                    <p className="text-xs font-medium text-gray-300">
-                      Or share this link:
-                    </p>
-                    <div className="flex flex-row items-stretch gap-2">
-                      <Input
-                        type="text"
-                        value={shareUrlWithoutScheme(roomLink)}
-                        title={roomLink}
-                        readOnly
-                        variant="landing"
-                        className="min-w-0 flex-1 truncate text-xs text-gray-300"
-                        onCopy={(e) => {
-                          e.preventDefault()
-                          e.clipboardData?.setData('text/plain', roomLink)
-                        }}
-                      />
-                      <CopyLinkButton
-                        textToCopy={roomLink}
-                        size="sm"
-                        className="shrink-0 self-center whitespace-nowrap px-3 text-xs sm:px-4 sm:text-sm"
-                      />
                     </div>
-                  </div>
-                </motion.div>
+                  </motion.div>
+                ) : null}
 
-                {/* Right Section — join form or host “room ready” */}
                 <motion.div
-                  initial={{ opacity: 0, x: 20 }}
+                  initial={{ opacity: 0, x: variant === 'invite-host' ? 20 : 0 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: 0.2 }}
+                  transition={{ duration: 0.4, delay: variant === 'invite-host' ? 0.2 : 0.1 }}
                   className="p-4 sm:p-8 flex flex-col justify-center min-h-0 overflow-y-auto"
                 >
                   {variant === 'invite-host' ? (
                     <>
                       <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Room ready</h2>
                       <p className="text-gray-400 text-sm mb-5 sm:mb-6">
-                        Have someone scan the QR or use the link on the left. When you’re done sharing, continue to the chat.
+                        Have someone scan the QR or copy the chat link. When you’re done sharing, continue to the chat.
                       </p>
                       <div className="mt-2 flex flex-row-reverse items-stretch gap-2 md:flex-col md:gap-3">
                         <Button
