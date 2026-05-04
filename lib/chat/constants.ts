@@ -2,7 +2,7 @@
 export const CHAT_SESSIONS_COLLECTION = 'instant_chat_sessions'
 
 /** Absolute session ceiling from create (`expiresAt`; client + rules). */
-export const SESSION_ABSOLUTE_MS = 60 * 60 * 1000
+export const SESSION_ABSOLUTE_MS = 24 * 60 * 60 * 1000
 
 /** Header countdown appears only when remaining is at most this long (`10m` … `1m` / seconds). */
 export const SESSION_HEADER_COUNTDOWN_MAX_MS = 10 * 60 * 1000
