@@ -34,19 +34,21 @@ function toLastChangedMs(raw: unknown): number | undefined {
  * Subscribe to RTDB presence for many uids (plan §7.1 — read path, mirrors mobile `usePresence`).
  */
 export function usePresenceByUserIds(userIds: string[]) {
+  const userIdsKey = userIds.join('|')
   const key = useMemo(
     () => Array.from(new Set(userIds.filter(Boolean))).sort().join('|'),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [userIds.join('|')],
+    // `userIdsKey` avoids unstable `userIds` array identity while tracking content changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: depend on serialized ids
+    [userIdsKey],
   )
-  const stable = key ? key.split('|').filter(Boolean) : []
+  const stable = useMemo(() => (key ? key.split('|').filter(Boolean) : []), [key])
 
   const [byUser, setByUser] = useState<Record<string, PresenceRecord>>({})
 
   useEffect(() => {
     if (!stable.length) {
-      setByUser({})
-      return
+      const t = window.setTimeout(() => setByUser({}), 0)
+      return () => window.clearTimeout(t)
     }
     const { rtdb } = getFirebaseClient()
     const unsubs: Array<() => void> = []
@@ -65,7 +67,7 @@ export function usePresenceByUserIds(userIds: string[]) {
     return () => {
       for (const u of unsubs) u()
     }
-  }, [key])
+  }, [stable])
 
   return byUser
 }
