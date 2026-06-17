@@ -21,6 +21,7 @@ export const APP_CHAT_LANGUAGES: AppChatLanguage[] = [
   { code: 'ko', name: 'Korean', flag: '🇰🇷' },
   { code: 'ar', name: 'Arabic', flag: '🇸🇦' },
   { code: 'hi', name: 'Hindi', flag: '🇮🇳' },
+  { code: 'ur', name: 'Urdu', flag: '🇵🇰' },
   { code: 'tr', name: 'Turkish', flag: '🇹🇷' },
   { code: 'nl', name: 'Dutch', flag: '🇳🇱' },
   { code: 'pl', name: 'Polish', flag: '🇵🇱' },
