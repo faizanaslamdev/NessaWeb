@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/secrets/firebase-adminsdk.json
 
 # next.js
 /.next/
