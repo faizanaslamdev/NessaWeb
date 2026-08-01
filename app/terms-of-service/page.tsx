@@ -38,6 +38,13 @@ export default function TermsOfServicePage() {
           <li>No attempts to disrupt, reverse engineer, or overload the Service.</li>
           <li>No scraping or automated access that violates our policies or applicable law.</li>
         </ul>
+        <p className="mt-3">
+          See the full{' '}
+          <a href="/acceptable-use" className="text-purple-400 underline hover:text-purple-300">
+            Acceptable Use Policy
+          </a>
+          .
+        </p>
       </section>
 
       <section>

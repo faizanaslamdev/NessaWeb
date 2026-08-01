@@ -4,8 +4,17 @@ export const siteConfig = {
   name: 'NessaChat',
   description: 'Connect, communicate, and share like never before',
   tagline: 'The messaging app that keeps you connected',
-  supportEmail: 'nessachat@gmail.com',
+  /** Public support address (deletion requests, legal pages). */
+  supportEmail: 'support@nessachat.com',
 }
+
+/**
+ * Generic “open the app” deep link (host `open`).
+ * Must stay in sync with AndroidManifest intent-filter + iOS URL scheme.
+ * Do not use bare `nessachat://` — Android requires a host.
+ */
+export const APP_OPEN_DEEP_LINK = 'nessachat://open' as const
+
 
 export const heroSection = {
   title: 'Chat beyond language barriers',
@@ -190,12 +199,21 @@ export const navLinks = [
   { label: 'Download', href: '#download' },
 ]
 
-/** Marketing / legal routes (linked from landing footer). */
+/**
+ * Marketing / legal routes.
+ * Privacy & terms: content at the long paths; `/privacy` and `/terms` redirect (see next.config).
+ */
 export const siteRoutes = {
   about: '/about',
+  /** Canonical privacy content (Play / store URL). */
   privacyPolicy: '/privacy-policy',
+  /** Canonical terms content. */
   termsOfService: '/terms-of-service',
   cookiePolicy: '/cookie-policy',
+  acceptableUse: '/acceptable-use',
+  requestDeletion: '/request-deletion',
+  /** Custom Firebase Auth email action handler (password reset). */
+  authAction: '/auth/action',
 } as const
 
 export const footerLinks = {
@@ -207,6 +225,7 @@ export const footerLinks = {
   legal: [
     { label: 'Privacy Policy', href: siteRoutes.privacyPolicy },
     { label: 'Terms of Service', href: siteRoutes.termsOfService },
+    { label: 'Acceptable Use', href: siteRoutes.acceptableUse },
     { label: 'Cookie Policy', href: siteRoutes.cookiePolicy },
   ],
   social: [

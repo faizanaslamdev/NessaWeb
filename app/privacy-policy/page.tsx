@@ -76,7 +76,11 @@ export default function PrivacyPolicyPage() {
         <h2 className="mb-3 text-xl font-semibold text-white">Your choices</h2>
         <p>
           Where applicable, you may access, update, or delete certain account information in the app. You can
-          control cookies through your browser. Contact us at{' '}
+          delete your account under Settings → Delete account, or use our{' '}
+          <a href="/request-deletion" className="text-purple-400 underline hover:text-purple-300">
+            account &amp; data deletion request page
+          </a>
+          . You can control cookies through your browser. Contact us at{' '}
           <a href={`mailto:${siteConfig.supportEmail}`} className="text-purple-400 underline hover:text-purple-300">
             {siteConfig.supportEmail}
           </a>{' '}
