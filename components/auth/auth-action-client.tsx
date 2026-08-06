@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import {
+  applyActionCode,
   confirmPasswordReset,
   verifyPasswordResetCode,
   type AuthError,
@@ -20,19 +21,27 @@ type AsyncState =
   | { kind: 'invalid'; message: string }
   | { kind: 'expired'; message: string }
 
-function mapAuthError(err: unknown): { kind: 'invalid' | 'expired'; message: string } {
+type ActionKind = 'resetPassword' | 'verifyEmail'
+
+function mapAuthError(
+  err: unknown,
+  action: ActionKind,
+): { kind: 'invalid' | 'expired'; message: string } {
   const code = (err as AuthError)?.code ?? ''
+  const resetHint = 'Request a new password reset from the app.'
+  const verifyHint = 'Request a new verification email from the app.'
+  const hint = action === 'resetPassword' ? resetHint : verifyHint
+
   if (code === 'auth/expired-action-code') {
     return {
       kind: 'expired',
-      message: 'This link has expired. Request a new password reset from the app.',
+      message: `This link has expired. ${hint}`,
     }
   }
   if (code === 'auth/invalid-action-code') {
     return {
       kind: 'invalid',
-      message:
-        'This link is invalid or has already been used. Request a new password reset from the app.',
+      message: `This link is invalid or has already been used. ${hint}`,
     }
   }
   if (code === 'auth/weak-password') {
@@ -40,7 +49,7 @@ function mapAuthError(err: unknown): { kind: 'invalid' | 'expired'; message: str
   }
   return {
     kind: 'invalid',
-    message: 'Something went wrong. Try again or request a new reset link from the app.',
+    message: `Something went wrong. Try again or ${hint.charAt(0).toLowerCase()}${hint.slice(1)}`,
   }
 }
 
@@ -77,8 +86,8 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 /**
  * Firebase Auth email action handler (custom).
- * Active today: password reset (`mode=resetPassword`).
- * Other modes are acknowledged but not implemented (app does not send those emails).
+ * Supports password reset (`resetPassword`) and email verification (`verifyEmail`).
+ * Never logs or displays oobCode.
  */
 export function AuthActionClient() {
   const searchParams = useSearchParams()
@@ -87,8 +96,8 @@ export function AuthActionClient() {
 
   const gate = useMemo(() => {
     if (!mode || !oobCode) return 'missing' as const
-    if (mode !== 'resetPassword') return 'unsupported' as const
-    return 'ok' as const
+    if (mode === 'resetPassword' || mode === 'verifyEmail') return 'ok' as const
+    return 'unsupported' as const
   }, [mode, oobCode])
 
   if (gate === 'missing') {
@@ -96,7 +105,7 @@ export function AuthActionClient() {
       <Shell>
         <StatusBlock
           title="Incomplete link"
-          body="This page needs a valid action link from your email. Open the reset link from your inbox, or request a new one in the app (Settings → Account security)."
+          body="This page needs a valid action link from your email. Open the link from your inbox, or request a new one in the app."
         />
       </Shell>
     )
@@ -107,13 +116,63 @@ export function AuthActionClient() {
       <Shell>
         <StatusBlock
           title="Unsupported action"
-          body={`This email action (${mode || 'unknown'}) isn’t used by ${siteConfig.name} right now. If you were resetting your password, request a new reset from the app.`}
+          body={`This email action (${mode || 'unknown'}) isn’t used by ${siteConfig.name} right now. If you were resetting your password or verifying your email, request a new link from the app.`}
         />
       </Shell>
     )
   }
 
+  if (mode === 'verifyEmail') {
+    return <VerifyEmailAction oobCode={oobCode} />
+  }
+
   return <PasswordResetForm oobCode={oobCode} />
+}
+
+function VerifyEmailAction({ oobCode }: { oobCode: string }) {
+  const [state, setState] = useState<AsyncState>({ kind: 'loading' })
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const { auth } = getFirebaseClient()
+        // Applies oobCode via Firebase; never log or display the code.
+        await applyActionCode(auth, oobCode)
+        if (cancelled) return
+        setState({ kind: 'success' })
+      } catch (err) {
+        if (cancelled) return
+        const mapped = mapAuthError(err, 'verifyEmail')
+        setState({ kind: mapped.kind, message: mapped.message })
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [oobCode])
+
+  return (
+    <Shell>
+      {state.kind === 'loading' ? (
+        <p className="text-center text-sm text-gray-400">Verifying your email…</p>
+      ) : null}
+
+      {state.kind === 'invalid' || state.kind === 'expired' ? (
+        <StatusBlock
+          title={state.kind === 'expired' ? 'Link expired' : 'Invalid link'}
+          body={state.message}
+        />
+      ) : null}
+
+      {state.kind === 'success' ? (
+        <StatusBlock
+          title="Email verified"
+          body="Your email is confirmed. Open NessaChat and tap “I’ve verified” if the app is still waiting."
+        />
+      ) : null}
+    </Shell>
+  )
 }
 
 function PasswordResetForm({ oobCode }: { oobCode: string }) {
@@ -134,7 +193,7 @@ function PasswordResetForm({ oobCode }: { oobCode: string }) {
         setState({ kind: 'ready', emailHint: email || undefined })
       } catch (err) {
         if (cancelled) return
-        const mapped = mapAuthError(err)
+        const mapped = mapAuthError(err, 'resetPassword')
         setState({ kind: mapped.kind, message: mapped.message })
       }
     })()
@@ -162,7 +221,7 @@ function PasswordResetForm({ oobCode }: { oobCode: string }) {
       setPassword('')
       setConfirm('')
     } catch (err) {
-      const mapped = mapAuthError(err)
+      const mapped = mapAuthError(err, 'resetPassword')
       if (mapped.kind === 'expired' || mapped.kind === 'invalid') {
         setState({ kind: mapped.kind, message: mapped.message })
       } else {
