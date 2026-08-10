@@ -39,9 +39,6 @@ export class PublicPlaceLandingError extends Error {
 
 function mapCallableError(err: unknown): PublicPlaceLandingError {
   const code = (err as { code?: string })?.code ?? ''
-  const message =
-    (err as { message?: string })?.message ||
-    'Could not load this place. Please try again.'
 
   if (code.includes('invalid-argument')) {
     return new PublicPlaceLandingError('invalid-argument', 'Invalid place link.')
