@@ -214,8 +214,19 @@ export const siteRoutes = {
   requestDeletion: '/request-deletion',
   /** Custom Firebase Auth email action handler (password reset). */
   authAction: '/auth/action',
+  /** Public Place QR / acquisition landing. */
+  place: '/place',
 } as const
 
+/** Native deep link to open a Place in the app (Android host `place`). */
+export function placeAppDeepLink(placeId: string): string {
+  return `nessachat://place/${encodeURIComponent(placeId.trim())}`
+}
+
+/** HTTPS Place share / QR URL. */
+export function placeShareUrl(placeId: string): string {
+  return `https://nessachat.com/place/${encodeURIComponent(placeId.trim())}`
+}
 export const footerLinks = {
   company: [
     { label: 'About', href: siteRoutes.about },
