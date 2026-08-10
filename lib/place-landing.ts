@@ -64,7 +64,16 @@ function mapCallableError(err: unknown): PublicPlaceLandingError {
       'Place preview is temporarily unavailable.',
     )
   }
-  return new PublicPlaceLandingError('unknown', message)
+  if (code.includes('internal') || code.includes('unknown')) {
+    return new PublicPlaceLandingError(
+      'internal',
+      'Could not load this place. Please try again.',
+    )
+  }
+  return new PublicPlaceLandingError(
+    'unknown',
+    'Could not load this place. Please try again.',
+  )
 }
 
 /** Typical Google Place ID prefix (Places API). */

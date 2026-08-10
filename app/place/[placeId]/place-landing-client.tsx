@@ -99,10 +99,6 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
     }
   }, [placeId, placeIdValid])
 
-  const openInApp = () => {
-    window.location.href = deepLink
-  }
-
   if (!placeIdValid || state.kind === 'invalid') {
     return (
       <Shell>
@@ -120,13 +116,12 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
       <Shell>
         <StatusBlock title={state.title} body={state.body} />
         <div className="mt-6 w-full max-w-sm space-y-3">
-          <button
-            type="button"
-            onClick={openInApp}
-            className="inline-flex w-full items-center justify-center rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-gray-200 hover:bg-white/10"
+          <a
+            href={deepLink}
+            className="inline-flex w-full items-center justify-center rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-gray-200 no-underline hover:bg-white/10"
           >
             Open in Nessa
-          </button>
+          </a>
         </div>
         <StoreFallback className="mt-6" />
       </Shell>
@@ -207,24 +202,22 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
       </div>
 
       <div className="mt-6 w-full max-w-sm space-y-3">
-        <button
-          type="button"
-          onClick={openInApp}
-          className="inline-flex w-full items-center justify-center rounded-xl bg-violet-600 px-6 py-3.5 text-sm font-semibold text-white hover:bg-violet-500"
+        <a
+          href={deepLink}
+          className="inline-flex w-full items-center justify-center rounded-xl bg-violet-600 px-6 py-3.5 text-sm font-semibold text-white no-underline hover:bg-violet-500"
         >
           Recommend us on Nessa
-        </button>
+        </a>
         <p className="text-center text-xs text-gray-500">
           Opens this place in {siteConfig.name} so you can recommend it.
         </p>
 
-        <button
-          type="button"
-          onClick={openInApp}
-          className="inline-flex w-full items-center justify-center rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-gray-200 hover:bg-white/10"
+        <a
+          href={deepLink}
+          className="inline-flex w-full items-center justify-center rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-gray-200 no-underline hover:bg-white/10"
         >
           Open in Nessa
-        </button>
+        </a>
       </div>
 
       <StoreFallback className="mt-8" />
