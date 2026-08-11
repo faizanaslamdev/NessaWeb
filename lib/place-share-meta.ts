@@ -64,6 +64,10 @@ function safeHttpsUrl(value: unknown): string | undefined {
     if (url.protocol !== 'https:') {
       return undefined
     }
+    // Never put key-bearing Google Places media URLs into public HTML/OG tags.
+    if (url.searchParams.has('key') || /[?&]key=/i.test(trimmed)) {
+      return undefined
+    }
     return url.toString()
   } catch {
     return undefined
