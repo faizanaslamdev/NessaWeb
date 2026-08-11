@@ -168,7 +168,12 @@ export function TodaysPlaceChat({ placeId, placeName }: Props) {
   }
 
   return (
-    <section className="mt-8 w-full text-left">
+    <section
+      id="todays-chat"
+      tabIndex={-1}
+      className="mt-8 w-full scroll-mt-6 text-left outline-none"
+      aria-label="Today's Chat"
+    >
       <div className="mb-3">
         <h2 className="text-lg font-semibold text-gray-100">Today’s Chat</h2>
         <p className="mt-1 text-sm text-gray-400">

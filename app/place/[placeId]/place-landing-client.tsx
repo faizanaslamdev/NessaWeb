@@ -314,18 +314,29 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
         onClose={() => setCoverViewerOpen(false)}
       />
 
-      {recommenders.length > 0 ? (
-        <RecommendedBySection
-          placeId={place.googlePlaceId}
-          recommenders={recommenders}
-          recommenderCount={place.recommenderCount}
-        />
-      ) : null}
-
-      <div className="mt-6 w-full max-w-sm space-y-2">
+      <div className="mt-6 w-full max-w-sm space-y-3">
+        <button
+          type="button"
+          onClick={() => {
+            const el = document.getElementById('todays-chat')
+            if (!el) {
+              return
+            }
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            if (typeof el.focus === 'function') {
+              el.focus({ preventScroll: true })
+            }
+          }}
+          className="inline-flex w-full items-center justify-center rounded-xl bg-violet-600 px-6 py-3.5 text-sm font-semibold text-white hover:bg-violet-500"
+        >
+          Join Live Chat
+        </button>
+        <p className="text-center text-xs text-gray-500">
+          See what&apos;s happening here now · messages last 24 hours
+        </p>
         <a
           href={deepLink}
-          className="inline-flex w-full items-center justify-center rounded-xl bg-violet-600 px-6 py-3.5 text-sm font-semibold text-white no-underline hover:bg-violet-500"
+          className="inline-flex w-full items-center justify-center rounded-xl border border-white/15 bg-white/5 px-6 py-3.5 text-sm font-semibold text-gray-100 no-underline hover:bg-white/10"
         >
           Recommend us on Nessa
         </a>
@@ -334,14 +345,22 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
         </p>
       </div>
 
-      {stories.length > 0 ? (
-        <StoriesSection stories={stories} moreCount={moreStories} />
-      ) : null}
-
       <TodaysPlaceChat
         placeId={place.googlePlaceId}
         placeName={place.name}
       />
+
+      {recommenders.length > 0 ? (
+        <RecommendedBySection
+          placeId={place.googlePlaceId}
+          recommenders={recommenders}
+          recommenderCount={place.recommenderCount}
+        />
+      ) : null}
+
+      {stories.length > 0 ? (
+        <StoriesSection stories={stories} moreCount={moreStories} />
+      ) : null}
 
       <StoreFallback className="mt-8" />
     </Shell>
