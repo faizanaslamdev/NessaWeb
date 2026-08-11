@@ -14,11 +14,16 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { getFirebaseClient } from '@/lib/firebase'
 import {
+  backfillPlaceChatTranslations,
   sendPlaceChatMessage,
   subscribePlaceChatMessages,
   type PlaceChatMessage,
 } from '@/lib/place-chat/api'
 import { PLACE_CHAT_MESSAGE_TEXT_MAX } from '@/lib/place-chat/constants'
+import {
+  placeChatTranslationsByUserForBubble,
+  selectPlaceChatMessagesNeedingBackfill,
+} from '@/lib/place-chat/translation'
 import { appStores, placeAppDeepLink, siteConfig } from '@/lib/constants'
 
 type PlaceChatThreadProps = {
@@ -47,6 +52,8 @@ export default function PlaceChatThread({
   const [messagesLoading, setMessagesLoading] = useState(true)
   const [inputValue, setInputValue] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const backfillRequestedRef = useRef<Set<string>>(new Set())
+  const backfillInFlightRef = useRef(false)
 
   const onSendErrorRef = useRef(onSendError)
   onSendErrorRef.current = onSendError
@@ -68,6 +75,35 @@ export default function PlaceChatThread({
     )
     return () => unsub()
   }, [placeId])
+
+  // Late-join: backfill only missing langs for already-loaded messages.
+  useEffect(() => {
+    if (messagesLoading || messages.length === 0) return
+    const needed = selectPlaceChatMessagesNeedingBackfill(
+      messages,
+      preferredLanguage,
+    ).filter(id => !backfillRequestedRef.current.has(`${preferredLanguage}:${id}`))
+    if (needed.length === 0 || backfillInFlightRef.current) return
+
+    for (const id of needed) {
+      backfillRequestedRef.current.add(`${preferredLanguage}:${id}`)
+    }
+    backfillInFlightRef.current = true
+    void backfillPlaceChatTranslations({
+      placeId,
+      messageIds: needed,
+      targetLanguage: preferredLanguage,
+    })
+      .catch(() => {
+        // Allow one retry later if the callable failed.
+        for (const id of needed) {
+          backfillRequestedRef.current.delete(`${preferredLanguage}:${id}`)
+        }
+      })
+      .finally(() => {
+        backfillInFlightRef.current = false
+      })
+  }, [messages, messagesLoading, preferredLanguage, placeId])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -117,6 +153,11 @@ export default function PlaceChatThread({
             const isSent = m.senderId === user.uid
             const name = m.displayName || 'Traveler'
             const av = name[0]?.toUpperCase() ?? '?'
+            const translationsByUser = placeChatTranslationsByUserForBubble(
+              m,
+              user.uid,
+              preferredLanguage,
+            )
             return (
               <MessageBubble
                 key={m.id}
@@ -128,6 +169,11 @@ export default function PlaceChatThread({
                 preferredLanguage={preferredLanguage}
                 viewerUserId={user.uid}
                 isGroupChat
+                translation={m.translation}
+                translationStatus={m.translationStatus}
+                translationLanguage={m.translationLanguage}
+                sourceLanguage={m.sourceLanguage}
+                translationsByUser={translationsByUser}
               />
             )
           })

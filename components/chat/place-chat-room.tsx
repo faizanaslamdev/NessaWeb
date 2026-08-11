@@ -17,11 +17,16 @@ import { Button } from '@/components/ui/button'
 import { useInstantAuth } from '@/hooks/use-instant-auth'
 import { DEFAULT_CHAT_LANGUAGE_CODE } from '@/lib/chat/languages'
 import { getFirebaseClient } from '@/lib/firebase'
-import { ensurePlaceChatRoom } from '@/lib/place-chat/api'
 import {
+  ensurePlaceChatRoom,
+  setPlaceChatViewerLanguage,
+} from '@/lib/place-chat/api'
+import {
+  PLACE_CHAT_GUEST_LANGUAGE_KEY,
   PLACE_CHAT_GUEST_NAME_KEY,
   buildPlaceChatTitle,
 } from '@/lib/place-chat/constants'
+import { normalizePlaceChatLanguage } from '@/lib/place-chat/translation'
 
 type PlaceChatRoomProps = {
   placeId: string
@@ -36,9 +41,32 @@ function readStoredGuestName(): string {
   }
 }
 
+function readStoredGuestLanguage(): string {
+  if (typeof window === 'undefined') return DEFAULT_CHAT_LANGUAGE_CODE
+  try {
+    return normalizePlaceChatLanguage(
+      localStorage.getItem(PLACE_CHAT_GUEST_LANGUAGE_KEY) ||
+        DEFAULT_CHAT_LANGUAGE_CODE,
+    )
+  } catch {
+    return DEFAULT_CHAT_LANGUAGE_CODE
+  }
+}
+
 function storeGuestName(name: string) {
   try {
     localStorage.setItem(PLACE_CHAT_GUEST_NAME_KEY, name.trim())
+  } catch {
+    // ignore
+  }
+}
+
+function storeGuestLanguage(language: string) {
+  try {
+    localStorage.setItem(
+      PLACE_CHAT_GUEST_LANGUAGE_KEY,
+      normalizePlaceChatLanguage(language),
+    )
   } catch {
     // ignore
   }
@@ -84,6 +112,7 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
   useEffect(() => {
     queueMicrotask(() => {
       setGuestName(readStoredGuestName())
+      setGuestLanguage(readStoredGuestLanguage())
       setHydratedGuest(true)
     })
   }, [])
@@ -112,12 +141,29 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
     }
   }, [authLoading, authError, user, placeId, placeNameHint])
 
+  // Same role as Instant session members.language — drives CF translate targets.
+  useEffect(() => {
+    if (!user || !guestName || !roomReady) return
+    const { firestore } = getFirebaseClient()
+    void setPlaceChatViewerLanguage(firestore, {
+      placeId,
+      uid: user.uid,
+      language: guestLanguage,
+    }).catch(() => {
+      // Non-fatal: display still uses local preferredLanguage + language cache.
+    })
+  }, [user, guestName, guestLanguage, placeId, roomReady])
+
   const handleJoin = (data: { name: string; language: string }) => {
     const name = data.name.trim()
     if (!name) return
+    const language = normalizePlaceChatLanguage(
+      data.language || DEFAULT_CHAT_LANGUAGE_CODE,
+    )
     storeGuestName(name)
+    storeGuestLanguage(language)
     setGuestName(name)
-    setGuestLanguage(data.language || DEFAULT_CHAT_LANGUAGE_CODE)
+    setGuestLanguage(language)
   }
 
   if (authError) {

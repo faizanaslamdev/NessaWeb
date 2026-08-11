@@ -25,10 +25,12 @@ import {
   PLACE_CHAT_MESSAGE_PAGE_SIZE,
   PLACE_CHAT_MESSAGE_TEXT_MAX,
   PLACE_CHAT_SCHEMA_VERSION,
+  PLACE_CHAT_VIEWER_PREFS_SUBCOLLECTION,
   buildPlaceChatTitle,
   isGooglePlaceId,
   isPlaceChatMessageExpired,
 } from '@/lib/place-chat/constants'
+import { normalizePlaceChatLanguage } from '@/lib/place-chat/translation'
 
 export type PlaceChatMessage = {
   id: string
@@ -37,6 +39,12 @@ export type PlaceChatMessage = {
   avatarUrl?: string
   text: string
   createdAtMs: number
+  translation?: string
+  translationStatus?: 'pending' | 'completed' | 'failed'
+  translationLanguage?: string
+  sourceLanguage?: string
+  translationsByUser?: Record<string, string>
+  translationsByLanguage?: Record<string, string>
 }
 
 export function placeChatDocRef(db: Firestore, placeId: string) {
@@ -129,6 +137,25 @@ export async function sendPlaceChatMessage(args: {
   })
 }
 
+/** Late-join: backfill translationsByLanguage for already-loaded message IDs. */
+export async function backfillPlaceChatTranslations(args: {
+  placeId: string
+  messageIds: string[]
+  targetLanguage: string
+}): Promise<void> {
+  const placeId = args.placeId.trim()
+  if (!isGooglePlaceId(placeId) || args.messageIds.length === 0) {
+    return
+  }
+  const { app } = getFirebaseClient()
+  const callable = httpsCallable(getFunctions(app), 'backfillPlaceChatTranslations')
+  await callable({
+    placeId,
+    messageIds: args.messageIds.slice(0, 20),
+    targetLanguage: normalizePlaceChatLanguage(args.targetLanguage),
+  })
+}
+
 export function subscribePlaceChatMessages(
   db: Firestore,
   placeId: string,
@@ -159,6 +186,18 @@ export function subscribePlaceChatMessages(
         if (!text || !senderId) {
           continue
         }
+        const translationsByUser =
+          data.translationsByUser &&
+          typeof data.translationsByUser === 'object' &&
+          !Array.isArray(data.translationsByUser)
+            ? (data.translationsByUser as Record<string, string>)
+            : undefined
+        const translationsByLanguage =
+          data.translationsByLanguage &&
+          typeof data.translationsByLanguage === 'object' &&
+          !Array.isArray(data.translationsByLanguage)
+            ? (data.translationsByLanguage as Record<string, string>)
+            : undefined
         list.push({
           id: d.id,
           senderId,
@@ -176,10 +215,51 @@ export function subscribePlaceChatMessages(
             data.createdAt && typeof data.createdAt.toMillis === 'function'
               ? data.createdAt.toMillis()
               : nowMs,
+          translation:
+            typeof data.translation === 'string' ? data.translation : undefined,
+          translationStatus:
+            data.translationStatus === 'pending' ||
+            data.translationStatus === 'completed' ||
+            data.translationStatus === 'failed'
+              ? data.translationStatus
+              : undefined,
+          translationLanguage:
+            typeof data.translationLanguage === 'string'
+              ? data.translationLanguage
+              : undefined,
+          sourceLanguage:
+            typeof data.sourceLanguage === 'string'
+              ? data.sourceLanguage
+              : undefined,
+          translationsByUser,
+          translationsByLanguage,
         })
       }
       onUpdate(list.reverse())
     },
     err => onError?.(err as Error),
+  )
+}
+
+/** Persist viewer language for Place translation fan-out (Admin reads on message create). */
+export async function setPlaceChatViewerLanguage(
+  db: Firestore,
+  args: { placeId: string; uid: string; language: string },
+): Promise<void> {
+  const placeId = args.placeId.trim()
+  if (!isGooglePlaceId(placeId) || !args.uid) {
+    return
+  }
+  const language = normalizePlaceChatLanguage(args.language)
+  await setDoc(
+    doc(
+      db,
+      PLACE_CHATS_COLLECTION,
+      placeId,
+      PLACE_CHAT_VIEWER_PREFS_SUBCOLLECTION,
+      args.uid,
+    ),
+    { language, updatedAt: serverTimestamp() },
+    { merge: true },
   )
 }

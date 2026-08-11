@@ -8,6 +8,9 @@ export const PLACE_CHAT_MESSAGE_PAGE_SIZE = 50
 export const PLACE_CHAT_SCHEMA_VERSION = 1
 export const PLACE_CHAT_TITLE_NAME_MAX = 40
 export const PLACE_CHAT_GUEST_NAME_KEY = 'nessa_place_chat_guest_name'
+/** Same localStorage pattern as guest name — Instant stores language on session members. */
+export const PLACE_CHAT_GUEST_LANGUAGE_KEY = 'nessa_place_chat_guest_language'
+export const PLACE_CHAT_VIEWER_PREFS_SUBCOLLECTION = 'viewer_prefs'
 
 export function isGooglePlaceId(value: string | null | undefined): boolean {
   if (!value || typeof value !== 'string') {
