@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { User } from 'firebase/auth'
 import MessageBubble from '@/components/chat/message-bubble'
@@ -44,6 +44,13 @@ export default function ChatThread({
   const [downloadAppModalOpen, setDownloadAppModalOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const composerDisabled = ended || session.status !== 'active'
+  const recipientLanguages = useMemo(() => {
+    const out: Record<string, string> = {}
+    for (const [id, mem] of Object.entries(session.members)) {
+      if (mem?.language) out[id] = mem.language
+    }
+    return out
+  }, [session.members])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -105,6 +112,7 @@ export default function ChatThread({
                 translationLanguage={m.translationLanguage}
                 sourceLanguage={m.sourceLanguage}
                 translationsByUser={m.translationsByUser}
+                recipientLanguages={recipientLanguages}
               />
             )
           })

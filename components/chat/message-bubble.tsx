@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 
+import { buildHowOthersSeeRows } from '@/lib/chat/how-others-see'
+
 export type TranslationStatus = 'pending' | 'completed' | 'failed'
 
 export interface MessageBubbleTranslationProps {
@@ -11,6 +13,8 @@ export interface MessageBubbleTranslationProps {
   translationLanguage?: string
   sourceLanguage?: string
   translationsByUser?: Record<string, string>
+  translationsByLanguage?: Record<string, string>
+  recipientLanguages?: Record<string, string>
 }
 
 interface MessageBubbleProps extends MessageBubbleTranslationProps {
@@ -78,6 +82,8 @@ export default function MessageBubble({
   translationStatus,
   translationLanguage,
   translationsByUser,
+  translationsByLanguage,
+  recipientLanguages,
   viewerUserId = 'me',
   preferredLanguage = 'en',
   isGroupChat = false,
@@ -117,18 +123,32 @@ export default function MessageBubble({
 
   const showOwnTranslationPending = isSent && translationStatus === 'pending'
 
-  const recipientTranslationEntries = translationsByUser
-    ? Object.entries(translationsByUser).filter(([uid]) => uid !== viewerUserId)
-    : []
+  const howOthersSeeRows = useMemo(
+    () =>
+      buildHowOthersSeeRows({
+        originalText: message,
+        viewerUserId,
+        translation,
+        translationLanguage,
+        translationsByUser,
+        translationsByLanguage,
+        recipientLanguages,
+      }),
+    [
+      message,
+      viewerUserId,
+      translation,
+      translationLanguage,
+      translationsByUser,
+      translationsByLanguage,
+      recipientLanguages,
+    ],
+  )
 
   const hasOwnTranslationPreview =
     isSent &&
     translationStatus === 'completed' &&
-    (!!translation?.trim() || recipientTranslationEntries.length > 0)
-
-  const ownTranslationLanguageLabel = translationLanguage
-    ? translationLanguage.toUpperCase()
-    : ''
+    howOthersSeeRows.length > 0
 
   return (
     <motion.div
@@ -204,39 +224,20 @@ export default function MessageBubble({
               </button>
               {ownTranslationOpen && (
                 <div className="mt-1.5 self-stretch border-t border-white/20 pt-2">
-                  {!isGroupChat && translation?.trim() ? (
-                    <>
-                      {ownTranslationLanguageLabel ? (
-                        <p className="mb-1 text-[11px] font-semibold text-white/75">
-                          {ownTranslationLanguageLabel}
-                        </p>
-                      ) : null}
-                      <p className="whitespace-pre-wrap wrap-break-word text-[13px] leading-snug italic text-white/95">
-                        {translation}
-                      </p>
-                    </>
-                  ) : recipientTranslationEntries.length > 0 ? (
-                    <div className="space-y-2.5">
-                      {recipientTranslationEntries.map(([uid, txt]) => (
-                        <div key={uid}>
-                          <p className="whitespace-pre-wrap wrap-break-word text-[13px] leading-snug italic text-white/95">
-                            {txt}
+                  <div className="space-y-2.5">
+                    {howOthersSeeRows.map(row => (
+                      <div key={row.key}>
+                        {row.languageLabel ? (
+                          <p className="mb-1 text-[11px] font-semibold text-white/75">
+                            {row.languageLabel}
                           </p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : translation?.trim() ? (
-                    <>
-                      {ownTranslationLanguageLabel ? (
-                        <p className="mb-1 text-[11px] font-semibold text-white/75">
-                          {ownTranslationLanguageLabel}
+                        ) : null}
+                        <p className="whitespace-pre-wrap wrap-break-word text-[13px] leading-snug italic text-white/95">
+                          {row.text}
                         </p>
-                      ) : null}
-                      <p className="whitespace-pre-wrap wrap-break-word text-[13px] leading-snug italic text-white/95">
-                        {translation}
-                      </p>
-                    </>
-                  ) : null}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </>

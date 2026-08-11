@@ -174,6 +174,7 @@ export default function PlaceChatThread({
                 translationLanguage={m.translationLanguage}
                 sourceLanguage={m.sourceLanguage}
                 translationsByUser={translationsByUser}
+                translationsByLanguage={m.translationsByLanguage}
               />
             )
           })
