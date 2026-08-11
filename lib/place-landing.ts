@@ -16,10 +16,16 @@ export type PublicPlaceStoryAuthor = {
   avatarUrl?: string
 }
 
+export type PublicPlaceStoryMedia = {
+  type: 'image'
+  url: string
+}
+
 export type PublicPlaceStoryPreview = {
   id: string
   caption?: string
   type?: string
+  media?: PublicPlaceStoryMedia[]
   thumbnailUrl?: string
   createdAt?: string
   author: PublicPlaceStoryAuthor
@@ -128,7 +134,24 @@ export async function fetchPublicPlaceLanding(
     return {
       ...data,
       recommenders: Array.isArray(data.recommenders) ? data.recommenders : [],
-      stories: Array.isArray(data.stories) ? data.stories : [],
+      stories: Array.isArray(data.stories)
+        ? data.stories.map(story => ({
+            ...story,
+            media: Array.isArray(story.media)
+              ? story.media.filter(
+                  (m): m is { type: 'image'; url: string } =>
+                    Boolean(
+                      m &&
+                        m.type === 'image' &&
+                        typeof m.url === 'string' &&
+                        m.url.startsWith('https://'),
+                    ),
+                )
+              : story.thumbnailUrl
+                ? [{ type: 'image' as const, url: story.thumbnailUrl }]
+                : [],
+          }))
+        : [],
     }
   } catch (e) {
     throw mapCallableError(e)

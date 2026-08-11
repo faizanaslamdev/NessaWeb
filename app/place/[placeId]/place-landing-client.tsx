@@ -17,6 +17,8 @@ import {
   type PublicPlaceRecommender,
   type PublicPlaceStoryPreview,
 } from '@/lib/place-landing'
+import { StoryPhotoCollage } from '@/components/place/story-photo-collage'
+import { StoryMediaViewer } from '@/components/place/story-media-viewer'
 
 type PlaceLandingClientProps = {
   placeId: string
@@ -81,8 +83,38 @@ function formatStoryType(type?: string): string | null {
   if (!type?.trim()) {
     return null
   }
-  const raw = type.trim().replace(/_/g, ' ')
-  return raw.charAt(0).toUpperCase() + raw.slice(1)
+  const labels: Record<string, string> = {
+    language_question: 'Language Question',
+    travel_update: 'Travel Update',
+    recommendation: 'Recommendation',
+    daily_life: 'Daily Life',
+    cultural_post: 'Cultural Post',
+  }
+  return labels[type] ?? type.trim().replace(/_/g, ' ')
+}
+
+function storyTypeClasses(type?: string): string {
+  switch (type) {
+    case 'language_question':
+      return 'bg-violet-500/15 text-violet-300'
+    case 'travel_update':
+      return 'bg-blue-500/15 text-blue-300'
+    case 'recommendation':
+      return 'bg-emerald-500/15 text-emerald-300'
+    case 'daily_life':
+      return 'bg-amber-500/15 text-amber-300'
+    case 'cultural_post':
+      return 'bg-orange-500/15 text-orange-300'
+    default:
+      return 'bg-white/10 text-gray-300'
+  }
+}
+
+function storyMediaUris(story: PublicPlaceStoryPreview): string[] {
+  if (Array.isArray(story.media) && story.media.length > 0) {
+    return story.media.map(m => m.url).filter(Boolean)
+  }
+  return story.thumbnailUrl ? [story.thumbnailUrl] : []
 }
 
 function initialLetter(name: string): string {
@@ -333,64 +365,70 @@ function StoriesSection({
   stories: PublicPlaceStoryPreview[]
   moreCount: number
 }) {
+  const [viewer, setViewer] = useState<{
+    uris: string[]
+    index: number
+  } | null>(null)
+
   return (
     <section className="mt-6 w-full text-left">
       <h2 className="mb-3 text-sm font-semibold text-white">
         Stories from this place
       </h2>
-      <ul className="space-y-3">
-        {stories.map(story => (
-          <li
-            key={story.id}
-            className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]"
-          >
-            <div className="flex gap-3 p-3">
-              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-[#14101f]">
-                {story.thumbnailUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- Firebase download URLs
-                  <img
-                    src={story.thumbnailUrl}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    className="h-full w-full object-cover"
-                    onError={event => {
-                      event.currentTarget.style.display = 'none'
-                    }}
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-[10px] text-gray-600">
-                    Story
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1 space-y-1.5">
-                <div className="flex items-center gap-2">
+      <ul className="space-y-4">
+        {stories.map(story => {
+          const uris = storyMediaUris(story)
+          const typeLabel = formatStoryType(story.type)
+          const relative = formatRelativeDate(story.createdAt)
+
+          return (
+            <li
+              key={story.id}
+              className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
+            >
+              <div className="space-y-3 p-4">
+                <div className="flex items-start gap-3">
                   <PersonAvatar
                     name={story.author.displayName}
                     avatarUrl={story.author.avatarUrl}
-                    size="sm"
                   />
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-medium text-gray-200">
-                      {story.author.displayName}
-                    </p>
-                    <p className="text-[11px] text-gray-500">
-                      {[formatStoryType(story.type), formatRelativeDate(story.createdAt)]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="truncate text-sm font-semibold text-white">
+                        {story.author.displayName}
+                      </p>
+                      {typeLabel ? (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${storyTypeClasses(story.type)}`}
+                        >
+                          {typeLabel}
+                        </span>
+                      ) : null}
+                    </div>
+                    {relative ? (
+                      <p className="mt-0.5 text-[11px] text-gray-500">{relative}</p>
+                    ) : null}
                   </div>
                 </div>
+
                 {story.caption ? (
-                  <p className="line-clamp-2 text-xs leading-relaxed text-gray-400">
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-200">
                     {story.caption}
                   </p>
                 ) : null}
               </div>
-            </div>
-          </li>
-        ))}
+
+              {uris.length > 0 ? (
+                <div className="px-2 pb-2 sm:px-3 sm:pb-3">
+                  <StoryPhotoCollage
+                    uris={uris}
+                    onPressPhoto={index => setViewer({ uris, index })}
+                  />
+                </div>
+              ) : null}
+            </li>
+          )
+        })}
       </ul>
       {moreCount > 0 ? (
         <p className="mt-2 text-xs text-gray-500">
@@ -398,6 +436,18 @@ function StoriesSection({
           {siteConfig.name}
         </p>
       ) : null}
+
+      <StoryMediaViewer
+        key={
+          viewer
+            ? `${viewer.uris[0] ?? 'x'}-${viewer.index}-${viewer.uris.length}`
+            : 'closed'
+        }
+        open={Boolean(viewer)}
+        uris={viewer?.uris ?? []}
+        initialIndex={viewer?.index ?? 0}
+        onClose={() => setViewer(null)}
+      />
     </section>
   )
 }
@@ -467,14 +517,20 @@ function PlaceSkeleton() {
         {[0, 1].map(i => (
           <div
             key={i}
-            className="flex gap-3 rounded-xl border border-white/10 p-3"
+            className="overflow-hidden rounded-2xl border border-white/10"
           >
-            <div className="h-20 w-20 animate-pulse rounded-lg bg-white/5" />
-            <div className="flex-1 space-y-2 pt-1">
-              <div className="h-3 w-24 animate-pulse rounded bg-white/10" />
+            <div className="space-y-3 p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 animate-pulse rounded-full bg-white/10" />
+                <div className="space-y-2">
+                  <div className="h-3 w-28 animate-pulse rounded bg-white/10" />
+                  <div className="h-2.5 w-16 animate-pulse rounded bg-white/5" />
+                </div>
+              </div>
               <div className="h-3 w-full animate-pulse rounded bg-white/5" />
               <div className="h-3 w-2/3 animate-pulse rounded bg-white/5" />
             </div>
+            <div className="mx-2 mb-2 h-[260px] animate-pulse rounded-xl bg-white/5 sm:mx-3 sm:mb-3" />
           </div>
         ))}
       </div>
