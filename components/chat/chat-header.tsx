@@ -15,9 +15,11 @@ interface ChatHeaderProps {
   metaLine?: string | null
   /** Hide online count (Place Chat has no Instant membership presence). */
   hideOnlineCount?: boolean
-  /** Optional back control (e.g. return to Place landing). */
+  /** Optional back control (e.g. Instant lobby). Place Chat uses titleHref instead. */
   backHref?: string
   backLabel?: string
+  /** When set, the title navigates here (Place Chat → place landing). */
+  titleHref?: string
   onShare?: () => void
   onSettings?: () => void
   /** Shown only below `lg` — opens full participant list (sidebar is desktop-only). */
@@ -65,6 +67,7 @@ export default function ChatHeader({
   hideOnlineCount = false,
   backHref,
   backLabel = 'Back',
+  titleHref,
   onShare,
   onSettings,
   onOpenParticipants,
@@ -76,6 +79,18 @@ export default function ChatHeader({
     const ok = await copyTextToClipboard(roomId)
     onRoomIdCopied?.(ok)
   }, [roomId, onRoomIdCopied])
+
+  const titleNode = titleHref ? (
+    <a
+      href={titleHref}
+      className="min-w-0 truncate text-white no-underline hover:text-violet-200 hover:underline underline-offset-2"
+      title="Open place"
+    >
+      {title}
+    </a>
+  ) : (
+    <span className="min-w-0 truncate">{title}</span>
+  )
 
   return (
     <motion.div
@@ -96,7 +111,7 @@ export default function ChatHeader({
           ) : null}
           <div className="min-w-0 flex-1">
             <h1 className="mb-1 flex min-w-0 flex-wrap items-center gap-2 text-lg font-bold text-white sm:text-xl">
-              <span className="min-w-0">{title}</span>
+              {titleNode}
               {sessionRemainingLabel ? (
                 <span
                   className="inline-flex shrink-0 items-center gap-1 rounded border border-amber-500/35 bg-amber-500/10 px-1.5 py-0.5 font-mono text-xs font-semibold tabular-nums text-amber-200 sm:text-sm"

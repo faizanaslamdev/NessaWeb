@@ -25,12 +25,19 @@ import {
   PLACE_CHAT_MESSAGE_PAGE_SIZE,
   PLACE_CHAT_MESSAGE_TEXT_MAX,
   PLACE_CHAT_SCHEMA_VERSION,
+  PLACE_CHAT_VIEWER_ACTIVE_MS,
+  PLACE_CHAT_VIEWER_PREFS_PAGE_SIZE,
   PLACE_CHAT_VIEWER_PREFS_SUBCOLLECTION,
   buildPlaceChatTitle,
   isGooglePlaceId,
   isPlaceChatMessageExpired,
 } from '@/lib/place-chat/constants'
 import { normalizePlaceChatLanguage } from '@/lib/place-chat/translation'
+import {
+  filterRecentPlaceChatViewers,
+  mapPlaceChatViewerPrefDoc,
+  type PlaceChatViewerPref,
+} from '@/lib/place-chat/viewers'
 
 export type PlaceChatMessage = {
   id: string
@@ -241,16 +248,29 @@ export function subscribePlaceChatMessages(
   )
 }
 
-/** Persist viewer language for Place translation fan-out (Admin reads on message create). */
+/** Persist viewer language + displayName for translation fan-out and participants. */
 export async function setPlaceChatViewerLanguage(
   db: Firestore,
-  args: { placeId: string; uid: string; language: string },
+  args: {
+    placeId: string
+    uid: string
+    language: string
+    displayName?: string | null
+  },
 ): Promise<void> {
   const placeId = args.placeId.trim()
   if (!isGooglePlaceId(placeId) || !args.uid) {
     return
   }
   const language = normalizePlaceChatLanguage(args.language)
+  const payload: Record<string, unknown> = {
+    language,
+    updatedAt: serverTimestamp(),
+  }
+  const name = args.displayName?.trim()
+  if (name) {
+    payload.displayName = name.slice(0, 79)
+  }
   await setDoc(
     doc(
       db,
@@ -259,7 +279,51 @@ export async function setPlaceChatViewerLanguage(
       PLACE_CHAT_VIEWER_PREFS_SUBCOLLECTION,
       args.uid,
     ),
-    { language, updatedAt: serverTimestamp() },
+    payload,
     { merge: true },
+  )
+}
+
+/** Recent active viewers (not followers) for participants UI. */
+export function subscribePlaceChatViewers(
+  db: Firestore,
+  placeId: string,
+  onUpdate: (viewers: PlaceChatViewerPref[]) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
+  const q = query(
+    collection(
+      db,
+      PLACE_CHATS_COLLECTION,
+      placeId.trim(),
+      PLACE_CHAT_VIEWER_PREFS_SUBCOLLECTION,
+    ),
+    orderBy('updatedAt', 'desc'),
+    limit(PLACE_CHAT_VIEWER_PREFS_PAGE_SIZE),
+  )
+  return onSnapshot(
+    q,
+    snap => {
+      const nowMs = Date.now()
+      const list: PlaceChatViewerPref[] = []
+      for (const d of snap.docs) {
+        const data = d.data()
+        const updatedAtMs =
+          data.updatedAt && typeof data.updatedAt.toMillis === 'function'
+            ? data.updatedAt.toMillis()
+            : null
+        const mapped = mapPlaceChatViewerPrefDoc({
+          uid: d.id,
+          language: data.language,
+          displayName: data.displayName,
+          updatedAtMs,
+        })
+        if (mapped) list.push(mapped)
+      }
+      onUpdate(
+        filterRecentPlaceChatViewers(list, nowMs, PLACE_CHAT_VIEWER_ACTIVE_MS),
+      )
+    },
+    err => onError?.(err as Error),
   )
 }

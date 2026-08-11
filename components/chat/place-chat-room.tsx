@@ -5,28 +5,38 @@
  * Place Chat data adapter (ensure room + guest name + Place messages).
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 
 import AuthErrorPanel from '@/components/chat/auth-error-panel'
 import ChatHeader from '@/components/chat/chat-header'
 import EntryModal from '@/components/chat/entry-modal'
+import ParticipantsSheet from '@/components/chat/participants-sheet'
+import ParticipantsSidebar from '@/components/chat/participants-sidebar'
 import PlaceChatThread from '@/components/chat/place-chat-thread'
 import { Button } from '@/components/ui/button'
 import { useInstantAuth } from '@/hooks/use-instant-auth'
+import {
+  useInstantPresenceTracking,
+  usePresenceByUserIds,
+} from '@/hooks/use-presence-web'
 import { DEFAULT_CHAT_LANGUAGE_CODE } from '@/lib/chat/languages'
 import { getFirebaseClient } from '@/lib/firebase'
 import {
   ensurePlaceChatRoom,
   setPlaceChatViewerLanguage,
+  subscribePlaceChatViewers,
 } from '@/lib/place-chat/api'
 import {
   PLACE_CHAT_GUEST_LANGUAGE_KEY,
   PLACE_CHAT_GUEST_NAME_KEY,
+  PLACE_CHAT_VIEWER_HEARTBEAT_MS,
   buildPlaceChatTitle,
 } from '@/lib/place-chat/constants'
 import { normalizePlaceChatLanguage } from '@/lib/place-chat/translation'
+import type { PlaceChatViewerPref } from '@/lib/place-chat/viewers'
+import type { ChatParticipant } from '@/components/chat/participants-list'
 
 type PlaceChatRoomProps = {
   placeId: string
@@ -86,6 +96,8 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
   const [guestName, setGuestName] = useState('')
   const [guestLanguage, setGuestLanguage] = useState(DEFAULT_CHAT_LANGUAGE_CODE)
   const [hydratedGuest, setHydratedGuest] = useState(false)
+  const [viewers, setViewers] = useState<PlaceChatViewerPref[]>([])
+  const [showParticipantsSheet, setShowParticipantsSheet] = useState(false)
   const [copyNotice, setCopyNotice] = useState<null | {
     kind: 'success' | 'error'
     text: string
@@ -95,6 +107,9 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
     setCopyNotice({ kind, text })
     setTimeout(() => setCopyNotice(null), 1800)
   }, [])
+
+  const placeHref = `/place/${encodeURIComponent(placeId)}`
+  const inRoom = Boolean(user && roomReady && guestName)
 
   useEffect(() => {
     const html = document.documentElement
@@ -141,18 +156,50 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
     }
   }, [authLoading, authError, user, placeId, placeNameHint])
 
-  // Same role as Instant session members.language — drives CF translate targets.
+  // viewer_prefs = Instant-analog of session.members (language + displayName).
   useEffect(() => {
     if (!user || !guestName || !roomReady) return
     const { firestore } = getFirebaseClient()
-    void setPlaceChatViewerLanguage(firestore, {
-      placeId,
-      uid: user.uid,
-      language: guestLanguage,
-    }).catch(() => {
-      // Non-fatal: display still uses local preferredLanguage + language cache.
-    })
+    const writePrefs = () =>
+      setPlaceChatViewerLanguage(firestore, {
+        placeId,
+        uid: user.uid,
+        language: guestLanguage,
+        displayName: guestName,
+      }).catch(() => {
+        // Non-fatal
+      })
+    writePrefs()
+    const interval = window.setInterval(writePrefs, PLACE_CHAT_VIEWER_HEARTBEAT_MS)
+    return () => window.clearInterval(interval)
   }, [user, guestName, guestLanguage, placeId, roomReady])
+
+  useEffect(() => {
+    if (!inRoom) {
+      setViewers([])
+      return
+    }
+    const { firestore } = getFirebaseClient()
+    return subscribePlaceChatViewers(firestore, placeId, setViewers)
+  }, [inRoom, placeId])
+
+  useInstantPresenceTracking(user?.uid, inRoom)
+
+  const viewerUids = useMemo(() => viewers.map(v => v.uid), [viewers])
+  const presenceByUser = usePresenceByUserIds(viewerUids)
+
+  const participants: ChatParticipant[] = useMemo(
+    () =>
+      viewers.map(v => ({
+        id: v.uid,
+        name: v.displayName || 'Traveler',
+        avatar: (v.displayName || 'T')[0]?.toUpperCase() ?? '?',
+        isOnline: presenceByUser[v.uid]?.state === 'online',
+      })),
+    [viewers, presenceByUser],
+  )
+
+  const onlineCount = participants.filter(p => p.isOnline).length
 
   const handleJoin = (data: { name: string; language: string }) => {
     const name = data.name.trim()
@@ -183,7 +230,7 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
       <div className="fixed inset-0 z-0 flex flex-col items-center justify-center gap-4 bg-black px-6 text-center">
         <p className="text-gray-300">{roomError}</p>
         <Button asChild className="bg-purple-600 text-white hover:bg-purple-700">
-          <Link href={`/place/${encodeURIComponent(placeId)}`}>Back to place</Link>
+          <Link href={placeHref}>Back to place</Link>
         </Button>
       </div>
     )
@@ -213,7 +260,7 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
         isOpen={entryOpen}
         variant="join"
         onClose={() => {
-          window.location.href = `/place/${encodeURIComponent(placeId)}`
+          window.location.href = placeHref
         }}
         onJoin={handleJoin}
       />
@@ -222,14 +269,14 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
         <>
           <ChatHeader
             roomId={placeId}
-            participantCount={0}
+            participantCount={onlineCount}
             title={title}
-            metaLine="Live Place Chat · messages last 24 hours"
+            titleHref={placeHref}
+            metaLine={`Live Place Chat · ${onlineCount} online · messages last 24 hours`}
             hideOnlineCount
             hideShare
             hideSettings
-            backHref={`/place/${encodeURIComponent(placeId)}`}
-            backLabel="Place"
+            onOpenParticipants={() => setShowParticipantsSheet(true)}
             onRoomIdCopied={ok =>
               showNotice(
                 ok ? 'success' : 'error',
@@ -237,14 +284,24 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
               )
             }
           />
-          <PlaceChatThread
-            placeId={placeId}
-            placeName={placeNameHint}
-            user={user}
-            displayName={guestName}
-            preferredLanguage={guestLanguage}
-            onSendError={msg => showNotice('error', msg)}
+
+          <ParticipantsSheet
+            open={showParticipantsSheet}
+            onClose={() => setShowParticipantsSheet(false)}
+            participants={participants}
           />
+
+          <div className="flex min-h-0 flex-1 overflow-hidden">
+            <PlaceChatThread
+              placeId={placeId}
+              placeName={placeNameHint}
+              user={user}
+              displayName={guestName}
+              preferredLanguage={guestLanguage}
+              onSendError={msg => showNotice('error', msg)}
+            />
+            <ParticipantsSidebar participants={participants} />
+          </div>
         </>
       ) : null}
     </div>

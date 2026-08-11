@@ -11,6 +11,10 @@ export const PLACE_CHAT_GUEST_NAME_KEY = 'nessa_place_chat_guest_name'
 /** Same localStorage pattern as guest name — Instant stores language on session members. */
 export const PLACE_CHAT_GUEST_LANGUAGE_KEY = 'nessa_place_chat_guest_language'
 export const PLACE_CHAT_VIEWER_PREFS_SUBCOLLECTION = 'viewer_prefs'
+/** Recent viewers shown in participants list (not followers). */
+export const PLACE_CHAT_VIEWER_ACTIVE_MS = 2 * 60 * 60 * 1000
+export const PLACE_CHAT_VIEWER_PREFS_PAGE_SIZE = 50
+export const PLACE_CHAT_VIEWER_HEARTBEAT_MS = 5 * 60 * 1000
 
 export function isGooglePlaceId(value: string | null | undefined): boolean {
   if (!value || typeof value !== 'string') {
