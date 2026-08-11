@@ -153,7 +153,7 @@ export function getCachedPublicPlaceShareMeta(
 
   return unstable_cache(
     async () => fetchPublicPlaceShareMetaUncached(trimmed),
-    ['public-place-share-meta', trimmed],
+    ['public-place-share-meta-v2', trimmed],
     { revalidate: METADATA_REVALIDATE_SECONDS },
   )()
 }
