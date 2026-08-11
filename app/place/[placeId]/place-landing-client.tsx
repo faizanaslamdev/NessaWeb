@@ -23,6 +23,7 @@ import {
 import { StoryPhotoCollage } from '@/components/place/story-photo-collage'
 import { StoryMediaViewer } from '@/components/place/story-media-viewer'
 import { PlaceSheet } from '@/components/place/place-sheet'
+import { TodaysPlaceChat } from '@/components/place/todays-place-chat'
 
 type PlaceLandingClientProps = {
   placeId: string
@@ -336,6 +337,11 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
       {stories.length > 0 ? (
         <StoriesSection stories={stories} moreCount={moreStories} />
       ) : null}
+
+      <TodaysPlaceChat
+        placeId={place.googlePlaceId}
+        placeName={place.name}
+      />
 
       <StoreFallback className="mt-8" />
     </Shell>
