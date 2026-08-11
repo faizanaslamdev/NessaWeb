@@ -354,15 +354,13 @@ function RecommendedBySection({
           </li>
         ))}
       </ul>
-      {recommenderCount > 0 ? (
+      {moreCount > 0 ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
           className="mt-3 text-xs font-medium text-violet-300 hover:text-violet-200"
         >
-          {moreCount > 0
-            ? `View all ${formatCount(recommenderCount)} recommendations`
-            : `View all recommendations`}
+          View all {formatCount(recommenderCount)} recommendations
         </button>
       ) : null}
 
