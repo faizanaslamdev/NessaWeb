@@ -136,6 +136,8 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
   const [state, setState] = useState<LoadState>(() =>
     placeIdValid ? { kind: 'loading' } : { kind: 'invalid' },
   )
+  const [coverViewerOpen, setCoverViewerOpen] = useState(false)
+  const [coverBroken, setCoverBroken] = useState(false)
 
   useEffect(() => {
     if (!placeIdValid) {
@@ -152,6 +154,8 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
     fetchPublicPlaceLanding(placeId)
       .then(place => {
         if (!cancelled) {
+          setCoverBroken(false)
+          setCoverViewerOpen(false)
           setState({ kind: 'ready', place })
         }
       })
@@ -226,19 +230,33 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
   const recommenders = place.recommenders ?? []
   const stories = place.stories ?? []
   const moreStories = Math.max(0, place.storyCount - stories.length)
+  const coverUrl = place.coverImageUrl?.trim() || ''
+  const hasCover = coverUrl.startsWith('https://') && !coverBroken
 
   return (
     <Shell>
       <div className="w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5">
         <div className="relative aspect-[16/10] w-full bg-[#14101f]">
-          {place.coverImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- remote Google Places media URLs
-            <img
-              src={place.coverImageUrl}
-              alt=""
-              className="h-full w-full object-cover"
-              fetchPriority="high"
-            />
+          {hasCover ? (
+            <button
+              type="button"
+              onClick={() => setCoverViewerOpen(true)}
+              className="group relative block h-full w-full cursor-zoom-in p-0"
+              aria-label={`View photo of ${place.name}`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- remote Google Places media URLs */}
+              <img
+                src={coverUrl}
+                alt=""
+                className="h-full w-full object-cover"
+                fetchPriority="high"
+                onError={() => {
+                  setCoverBroken(true)
+                  setCoverViewerOpen(false)
+                }}
+              />
+              <span className="pointer-events-none absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
+            </button>
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-gray-500">
               {siteConfig.name}
@@ -286,6 +304,14 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
           </div>
         </div>
       </div>
+
+      <StoryMediaViewer
+        key={coverViewerOpen ? `cover-${coverUrl}` : 'cover-closed'}
+        open={coverViewerOpen && hasCover}
+        uris={hasCover ? [coverUrl] : []}
+        initialIndex={0}
+        onClose={() => setCoverViewerOpen(false)}
+      />
 
       {recommenders.length > 0 ? (
         <RecommendedBySection

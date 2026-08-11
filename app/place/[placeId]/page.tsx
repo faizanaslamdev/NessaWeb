@@ -1,8 +1,13 @@
 import type { Metadata } from 'next'
 
 import { PlaceLandingClient } from './place-landing-client'
-import { siteConfig } from '@/lib/constants'
 import { isPublicPlaceIdValid } from '@/lib/place-landing'
+import {
+  PLACE_SHARE_BRAND,
+  buildGenericPlaceMetadata,
+  buildPlaceShareDescription,
+  getCachedPublicPlaceShareMeta,
+} from '@/lib/place-share-meta'
 
 type PageProps = {
   params: Promise<{ placeId: string }>
@@ -12,27 +17,79 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { placeId: raw } = await params
   const placeId = decodeURIComponent(raw || '').trim()
   const valid = isPublicPlaceIdValid(placeId)
-  const path = `/place/${encodeURIComponent(placeId || 'unknown')}`
+
+  if (!valid) {
+    const fallback = buildGenericPlaceMetadata({ placeId, validId: false })
+    return {
+      title: fallback.title,
+      description: fallback.description,
+      alternates: { canonical: fallback.canonical },
+      robots: { index: false, follow: false },
+      openGraph: {
+        title: fallback.ogTitle,
+        description: fallback.ogDescription,
+        url: fallback.canonical,
+        siteName: PLACE_SHARE_BRAND,
+        type: 'website',
+        images: [{ url: fallback.ogImage }],
+      },
+      twitter: {
+        card: 'summary',
+        title: fallback.ogTitle,
+        description: fallback.ogDescription,
+        images: [fallback.ogImage],
+      },
+    }
+  }
+
+  const share = await getCachedPublicPlaceShareMeta(placeId)
+  const generic = buildGenericPlaceMetadata({ placeId, validId: true })
+
+  if (!share) {
+    return {
+      title: generic.title,
+      description: generic.description,
+      alternates: { canonical: generic.canonical },
+      robots: { index: true, follow: true },
+      openGraph: {
+        title: generic.ogTitle,
+        description: generic.ogDescription,
+        url: generic.canonical,
+        siteName: PLACE_SHARE_BRAND,
+        type: 'website',
+        images: [{ url: generic.ogImage }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: generic.ogTitle,
+        description: generic.ogDescription,
+        images: [generic.ogImage],
+      },
+    }
+  }
+
+  const title = `${share.name} | ${PLACE_SHARE_BRAND}`
+  const description = buildPlaceShareDescription(share)
+  const ogImage = share.coverImageUrl ?? generic.ogImage
 
   return {
-    title: valid
-      ? `Place on ${siteConfig.name}`
-      : `Invalid place | ${siteConfig.name}`,
-    description: valid
-      ? `See this place on ${siteConfig.name} and recommend it to travelers.`
-      : `This place link is not valid.`,
-    alternates: { canonical: path },
+    title,
+    description,
+    alternates: { canonical: generic.canonical },
     robots: { index: true, follow: true },
     openGraph: {
-      title: valid
-        ? `Recommend this place on ${siteConfig.name}`
-        : siteConfig.name,
-      description: valid
-        ? `Open the place page, then recommend it in the ${siteConfig.name} app.`
-        : siteConfig.description,
-      url: path,
-      siteName: siteConfig.name,
+      title,
+      description,
+      url: generic.canonical,
+      siteName: PLACE_SHARE_BRAND,
       type: 'website',
+      images: [{ url: ogImage, alt: share.name }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [ogImage],
     },
   }
 }

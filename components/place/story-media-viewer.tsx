@@ -11,9 +11,10 @@ type StoryMediaViewerProps = {
 }
 
 /**
- * Read-only fullscreen Story image viewer (lightbox).
- * Keyboard: Escape, ←/→. Touch: horizontal swipe.
- * Remount via `key` when opening a different story/index.
+ * Read-only fullscreen image viewer (lightbox).
+ * Used for Story collage photos and Place cover.
+ * Keyboard: Escape, ←/→ (multi-image). Touch: horizontal swipe.
+ * Remount via `key` when opening a different set/index.
  */
 export function StoryMediaViewer({
   uris,
@@ -111,14 +112,14 @@ export function StoryMediaViewer({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Story photo viewer"
+      aria-label="Photo viewer"
       className="fixed inset-0 z-[100] flex flex-col bg-black/95"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
       <div className="flex items-center justify-between px-4 py-3 text-white">
         <p className="text-sm text-gray-300">
-          {index + 1} / {photos.length}
+          {photos.length > 1 ? `${index + 1} / ${photos.length}` : '\u00a0'}
         </p>
         <button
           type="button"
