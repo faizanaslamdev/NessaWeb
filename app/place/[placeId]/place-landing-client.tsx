@@ -11,14 +11,18 @@ import {
 } from '@/lib/constants'
 import {
   fetchPublicPlaceLanding,
+  fetchPublicPlaceRecommenders,
+  fetchPublicStoryComments,
   isPublicPlaceIdValid,
   PublicPlaceLandingError,
+  type PublicPlaceComment,
   type PublicPlaceLanding,
   type PublicPlaceRecommender,
   type PublicPlaceStoryPreview,
 } from '@/lib/place-landing'
 import { StoryPhotoCollage } from '@/components/place/story-photo-collage'
 import { StoryMediaViewer } from '@/components/place/story-media-viewer'
+import { PlaceSheet } from '@/components/place/place-sheet'
 
 type PlaceLandingClientProps = {
   placeId: string
@@ -221,10 +225,6 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
   const location = formatLocation(place)
   const recommenders = place.recommenders ?? []
   const stories = place.stories ?? []
-  const moreRecommenders = Math.max(
-    0,
-    place.recommenderCount - recommenders.length,
-  )
   const moreStories = Math.max(0, place.storyCount - stories.length)
 
   return (
@@ -289,13 +289,10 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
 
       {recommenders.length > 0 ? (
         <RecommendedBySection
+          placeId={place.googlePlaceId}
           recommenders={recommenders}
-          moreCount={moreRecommenders}
+          recommenderCount={place.recommenderCount}
         />
-      ) : null}
-
-      {stories.length > 0 ? (
-        <StoriesSection stories={stories} moreCount={moreStories} />
       ) : null}
 
       <div className="mt-6 w-full max-w-sm space-y-3">
@@ -317,18 +314,27 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
         </a>
       </div>
 
+      {stories.length > 0 ? (
+        <StoriesSection stories={stories} moreCount={moreStories} />
+      ) : null}
+
       <StoreFallback className="mt-8" />
     </Shell>
   )
 }
 
 function RecommendedBySection({
+  placeId,
   recommenders,
-  moreCount,
+  recommenderCount,
 }: {
+  placeId: string
   recommenders: PublicPlaceRecommender[]
-  moreCount: number
+  recommenderCount: number
 }) {
+  const [open, setOpen] = useState(false)
+  const moreCount = Math.max(0, recommenderCount - recommenders.length)
+
   return (
     <section className="mt-6 w-full text-left">
       <h2 className="mb-3 text-sm font-semibold text-white">Recommended by</h2>
@@ -348,12 +354,25 @@ function RecommendedBySection({
           </li>
         ))}
       </ul>
-      {moreCount > 0 ? (
-        <p className="mt-2 text-xs text-gray-500">
-          +{formatCount(moreCount)} more recommendation
-          {moreCount === 1 ? '' : 's'}
-        </p>
+      {recommenderCount > 0 ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="mt-3 text-xs font-medium text-violet-300 hover:text-violet-200"
+        >
+          {moreCount > 0
+            ? `View all ${formatCount(recommenderCount)} recommendations`
+            : `View all recommendations`}
+        </button>
       ) : null}
+
+      <RecommendersSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        placeId={placeId}
+        initial={recommenders}
+        totalCount={recommenderCount}
+      />
     </section>
   )
 }
@@ -369,6 +388,9 @@ function StoriesSection({
     uris: string[]
     index: number
   } | null>(null)
+  const [commentsStory, setCommentsStory] = useState<PublicPlaceStoryPreview | null>(
+    null,
+  )
 
   return (
     <section className="mt-6 w-full text-left">
@@ -380,6 +402,8 @@ function StoriesSection({
           const uris = storyMediaUris(story)
           const typeLabel = formatStoryType(story.type)
           const relative = formatRelativeDate(story.createdAt)
+          const comments = story.commentsPreview ?? []
+          const commentCount = story.commentCount ?? 0
 
           return (
             <li
@@ -426,6 +450,57 @@ function StoriesSection({
                   />
                 </div>
               ) : null}
+
+              {(comments.length > 0 || commentCount > 0) && (
+                <div className="space-y-2.5 border-t border-white/10 px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    Comments
+                    {commentCount > 0 ? (
+                      <span className="ml-1 font-medium normal-case text-gray-400">
+                        · {formatCount(commentCount)}
+                      </span>
+                    ) : null}
+                  </p>
+                  {comments.length > 0 ? (
+                    <ul className="space-y-2.5">
+                      {comments.map((comment, index) => (
+                        <li
+                          key={`${story.id}-c-${index}`}
+                          className="flex gap-2.5"
+                        >
+                          <PersonAvatar
+                            name={comment.displayName}
+                            avatarUrl={comment.avatarUrl}
+                            size="sm"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs text-gray-200">
+                              <span className="font-semibold text-white">
+                                {comment.displayName}
+                              </span>{' '}
+                              <span className="text-gray-300">{comment.text}</span>
+                            </p>
+                            {formatRelativeDate(comment.createdAt) ? (
+                              <p className="mt-0.5 text-[10px] text-gray-500">
+                                {formatRelativeDate(comment.createdAt)}
+                              </p>
+                            ) : null}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {commentCount > comments.length ? (
+                    <button
+                      type="button"
+                      onClick={() => setCommentsStory(story)}
+                      className="text-xs font-medium text-violet-300 hover:text-violet-200"
+                    >
+                      View all {formatCount(commentCount)} comments
+                    </button>
+                  ) : null}
+                </div>
+              )}
             </li>
           )
         })}
@@ -448,7 +523,275 @@ function StoriesSection({
         initialIndex={viewer?.index ?? 0}
         onClose={() => setViewer(null)}
       />
+
+      <CommentsSheet
+        open={Boolean(commentsStory)}
+        onClose={() => setCommentsStory(null)}
+        story={commentsStory}
+      />
     </section>
+  )
+}
+
+function RecommendersSheet({
+  open,
+  onClose,
+  placeId,
+  initial,
+  totalCount,
+}: {
+  open: boolean
+  onClose: () => void
+  placeId: string
+  initial: PublicPlaceRecommender[]
+  totalCount: number
+}) {
+  const [items, setItems] = useState<PublicPlaceRecommender[]>(initial)
+  const [cursor, setCursor] = useState<string | undefined>()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [booted, setBooted] = useState(false)
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) {
+        return
+      }
+      setItems(initial)
+      setCursor(undefined)
+      setError(null)
+      setLoading(true)
+      setBooted(false)
+      fetchPublicPlaceRecommenders({ placeId, pageSize: 20 })
+        .then(page => {
+          if (cancelled) {
+            return
+          }
+          setItems(page.recommenders)
+          setCursor(page.nextCursor)
+          setBooted(true)
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setError('Could not load recommendations.')
+            setBooted(true)
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setLoading(false)
+          }
+        })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [open, placeId, initial])
+
+  const loadMore = () => {
+    if (!cursor || loading) {
+      return
+    }
+    setLoading(true)
+    fetchPublicPlaceRecommenders({ placeId, cursor, pageSize: 20 })
+      .then(page => {
+        setItems(prev => [...prev, ...page.recommenders])
+        setCursor(page.nextCursor)
+      })
+      .catch(() => setError('Could not load more.'))
+      .finally(() => setLoading(false))
+  }
+
+  return (
+    <PlaceSheet
+      open={open}
+      onClose={onClose}
+      title={`Recommended by · ${formatCount(totalCount)}`}
+      footer={
+        cursor ? (
+          <button
+            type="button"
+            onClick={loadMore}
+            disabled={loading}
+            className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-medium text-gray-200 hover:bg-white/10 disabled:opacity-50"
+          >
+            {loading ? 'Loading…' : 'Load more'}
+          </button>
+        ) : null
+      }
+    >
+      {loading && !booted ? (
+        <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
+      ) : error && items.length === 0 ? (
+        <p className="py-8 text-center text-sm text-gray-400">{error}</p>
+      ) : items.length === 0 ? (
+        <p className="py-8 text-center text-sm text-gray-500">
+          No recommendations yet.
+        </p>
+      ) : (
+        <ul className="space-y-2.5">
+          {items.map((person, index) => (
+            <li
+              key={`${person.displayName}-${person.createdAt ?? index}`}
+              className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5"
+            >
+              <PersonAvatar
+                name={person.displayName}
+                avatarUrl={person.avatarUrl}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-gray-100">
+                  {person.displayName}
+                </p>
+                {formatRelativeDate(person.createdAt) ? (
+                  <p className="text-[11px] text-gray-500">
+                    {formatRelativeDate(person.createdAt)}
+                  </p>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </PlaceSheet>
+  )
+}
+
+function CommentsSheet({
+  open,
+  onClose,
+  story,
+}: {
+  open: boolean
+  onClose: () => void
+  story: PublicPlaceStoryPreview | null
+}) {
+  const [items, setItems] = useState<PublicPlaceComment[]>([])
+  const [cursor, setCursor] = useState<string | undefined>()
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [booted, setBooted] = useState(false)
+
+  useEffect(() => {
+    if (!open || !story) {
+      return
+    }
+    let cancelled = false
+    queueMicrotask(() => {
+      if (cancelled) {
+        return
+      }
+      setItems(story.commentsPreview ?? [])
+      setTotal(story.commentCount ?? 0)
+      setCursor(undefined)
+      setError(null)
+      setLoading(true)
+      setBooted(false)
+      fetchPublicStoryComments({ storyId: story.id, pageSize: 20 })
+        .then(page => {
+          if (cancelled) {
+            return
+          }
+          setItems(page.comments)
+          setTotal(page.commentCount)
+          setCursor(page.nextCursor)
+          setBooted(true)
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setError('Could not load comments.')
+            setBooted(true)
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setLoading(false)
+          }
+        })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [open, story])
+
+  const loadMore = () => {
+    if (!story || !cursor || loading) {
+      return
+    }
+    setLoading(true)
+    fetchPublicStoryComments({
+      storyId: story.id,
+      cursor,
+      pageSize: 20,
+    })
+      .then(page => {
+        setItems(prev => [...prev, ...page.comments])
+        setCursor(page.nextCursor)
+        setTotal(page.commentCount)
+      })
+      .catch(() => setError('Could not load more.'))
+      .finally(() => setLoading(false))
+  }
+
+  return (
+    <PlaceSheet
+      open={open}
+      onClose={onClose}
+      title={`Comments · ${formatCount(total)}`}
+      footer={
+        cursor ? (
+          <button
+            type="button"
+            onClick={loadMore}
+            disabled={loading}
+            className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-medium text-gray-200 hover:bg-white/10 disabled:opacity-50"
+          >
+            {loading ? 'Loading…' : 'Load more'}
+          </button>
+        ) : null
+      }
+    >
+      {loading && !booted ? (
+        <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
+      ) : error && items.length === 0 ? (
+        <p className="py-8 text-center text-sm text-gray-400">{error}</p>
+      ) : items.length === 0 ? (
+        <p className="py-8 text-center text-sm text-gray-500">No comments yet.</p>
+      ) : (
+        <ul className="space-y-3">
+          {items.map((comment, index) => (
+            <li
+              key={`${comment.displayName}-${comment.createdAt ?? index}`}
+              className="flex gap-2.5"
+            >
+              <PersonAvatar
+                name={comment.displayName}
+                avatarUrl={comment.avatarUrl}
+                size="sm"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-gray-200">
+                  <span className="font-semibold text-white">
+                    {comment.displayName}
+                  </span>{' '}
+                  <span className="text-gray-300">{comment.text}</span>
+                </p>
+                {formatRelativeDate(comment.createdAt) ? (
+                  <p className="mt-0.5 text-[10px] text-gray-500">
+                    {formatRelativeDate(comment.createdAt)}
+                  </p>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </PlaceSheet>
   )
 }
 
@@ -511,6 +854,10 @@ function PlaceSkeleton() {
             <div className="h-3 w-32 animate-pulse rounded bg-white/5" />
           </div>
         ))}
+      </div>
+      <div className="mt-6 space-y-3">
+        <div className="h-11 w-full animate-pulse rounded-xl bg-violet-600/30" />
+        <div className="h-10 w-full animate-pulse rounded-xl bg-white/5" />
       </div>
       <div className="mt-6 space-y-3">
         <div className="h-4 w-40 animate-pulse rounded bg-white/10" />
