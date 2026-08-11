@@ -23,7 +23,6 @@ import {
 import { StoryPhotoCollage } from '@/components/place/story-photo-collage'
 import { StoryMediaViewer } from '@/components/place/story-media-viewer'
 import { PlaceSheet } from '@/components/place/place-sheet'
-import { TodaysPlaceChat } from '@/components/place/todays-place-chat'
 
 type PlaceLandingClientProps = {
   placeId: string
@@ -315,22 +314,12 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
       />
 
       <div className="mt-6 w-full max-w-sm space-y-3">
-        <button
-          type="button"
-          onClick={() => {
-            const el = document.getElementById('todays-chat')
-            if (!el) {
-              return
-            }
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-            if (typeof el.focus === 'function') {
-              el.focus({ preventScroll: true })
-            }
-          }}
-          className="inline-flex w-full items-center justify-center rounded-xl bg-violet-600 px-6 py-3.5 text-sm font-semibold text-white hover:bg-violet-500"
+        <a
+          href={`/chat/${encodeURIComponent(place.googlePlaceId)}?type=place&placeId=${encodeURIComponent(place.googlePlaceId)}&placeName=${encodeURIComponent(place.name)}`}
+          className="inline-flex w-full items-center justify-center rounded-xl bg-violet-600 px-6 py-3.5 text-sm font-semibold text-white no-underline hover:bg-violet-500"
         >
           Join Live Chat
-        </button>
+        </a>
         <p className="text-center text-xs text-gray-500">
           See what&apos;s happening here now · messages last 24 hours
         </p>
@@ -344,11 +333,6 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
           Opens this place in {siteConfig.name} so you can recommend it.
         </p>
       </div>
-
-      <TodaysPlaceChat
-        placeId={place.googlePlaceId}
-        placeName={place.name}
-      />
 
       {recommenders.length > 0 ? (
         <RecommendedBySection
