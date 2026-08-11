@@ -146,9 +146,44 @@
   animation-play-state: paused;
 }
 
+/** Soft shimmer used by Place landing skeletons (mirrors app SkeletonBox). */
+@keyframes nessa-skeleton-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+.nessa-skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.nessa-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    transparent 100%
+  );
+  animation: nessa-skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nessa-marquee {
     animation: none;
     transform: none;
+  }
+
+  .nessa-skeleton::after {
+    animation: none;
+    opacity: 0.35;
   }
 }

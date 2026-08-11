@@ -662,7 +662,23 @@ function RecommendersSheet({
       }
     >
       {loading && !booted ? (
-        <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
+        <ul className="space-y-2.5" aria-busy="true">
+          {[0, 1, 2, 3].map(i => (
+            <li
+              key={i}
+              className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5"
+            >
+              <div className="flex items-start gap-3">
+                <SkeletonBone className="h-9 w-9 shrink-0 rounded-full" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <SkeletonBone className="h-3.5 w-28 rounded" />
+                  <SkeletonBone className="h-3 w-full rounded" />
+                  <SkeletonBone className="h-3 w-2/3 rounded" />
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
       ) : error && items.length === 0 ? (
         <p className="py-8 text-center text-sm text-gray-400">{error}</p>
       ) : items.length === 0 ? (
@@ -779,7 +795,18 @@ function CommentsSheet({
       }
     >
       {loading && !booted ? (
-        <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
+        <ul className="space-y-3" aria-busy="true">
+          {[0, 1, 2, 3, 4].map(i => (
+            <li key={i} className="flex gap-2.5">
+              <SkeletonBone className="h-8 w-8 shrink-0 rounded-full" />
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <SkeletonBone className="h-3 w-24 rounded" />
+                <SkeletonBone className="h-3 w-full rounded" />
+                <SkeletonBone className="h-2.5 w-12 rounded" />
+              </div>
+            </li>
+          ))}
+        </ul>
       ) : error && items.length === 0 ? (
         <p className="py-8 text-center text-sm text-gray-400">{error}</p>
       ) : items.length === 0 ? (
@@ -853,56 +880,92 @@ function PersonAvatar({
   )
 }
 
+function SkeletonBone({ className }: { className?: string }) {
+  return <div className={`nessa-skeleton ${className ?? ''}`} aria-hidden />
+}
+
 function PlaceSkeleton() {
   return (
-    <div className="w-full">
+    <div className="w-full" aria-busy="true" aria-live="polite">
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-        <div className="aspect-[16/10] w-full animate-pulse bg-white/5" />
+        <SkeletonBone className="aspect-[16/10] w-full rounded-none" />
         <div className="space-y-3 p-5">
-          <div className="h-3 w-20 animate-pulse rounded bg-white/10" />
-          <div className="h-7 w-2/3 animate-pulse rounded bg-white/10" />
-          <div className="h-4 w-1/2 animate-pulse rounded bg-white/5" />
-          <div className="h-3 w-40 animate-pulse rounded bg-white/5" />
+          <SkeletonBone className="h-3 w-20 rounded" />
+          <SkeletonBone className="h-7 w-2/3 rounded-lg" />
+          <SkeletonBone className="h-4 w-1/2 rounded" />
+          <div className="flex flex-wrap gap-3 pt-1">
+            <SkeletonBone className="h-3 w-24 rounded" />
+            <SkeletonBone className="h-3 w-20 rounded" />
+            <SkeletonBone className="h-3 w-16 rounded" />
+          </div>
         </div>
       </div>
-      <div className="mt-6 space-y-2.5">
-        <div className="h-4 w-28 animate-pulse rounded bg-white/10" />
-        {[0, 1, 2].map(i => (
-          <div
-            key={i}
-            className="flex items-center gap-3 rounded-xl border border-white/10 px-3 py-2.5"
-          >
-            <div className="h-9 w-9 animate-pulse rounded-full bg-white/10" />
-            <div className="h-3 w-32 animate-pulse rounded bg-white/5" />
-          </div>
-        ))}
-      </div>
-      <div className="mt-6 space-y-3">
-        <div className="h-11 w-full animate-pulse rounded-xl bg-violet-600/30" />
-        <div className="h-10 w-full animate-pulse rounded-xl bg-white/5" />
-      </div>
-      <div className="mt-6 space-y-3">
-        <div className="h-4 w-40 animate-pulse rounded bg-white/10" />
+
+      <div className="mt-6 w-full space-y-2.5 text-left">
+        <SkeletonBone className="h-4 w-28 rounded" />
         {[0, 1].map(i => (
           <div
             key={i}
-            className="overflow-hidden rounded-2xl border border-white/10"
+            className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5"
           >
-            <div className="space-y-3 p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 animate-pulse rounded-full bg-white/10" />
-                <div className="space-y-2">
-                  <div className="h-3 w-28 animate-pulse rounded bg-white/10" />
-                  <div className="h-2.5 w-16 animate-pulse rounded bg-white/5" />
+            <div className="flex items-start gap-3">
+              <SkeletonBone className="h-9 w-9 shrink-0 rounded-full" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="flex items-center gap-2">
+                  <SkeletonBone className="h-3.5 w-28 rounded" />
+                  <SkeletonBone className="h-2.5 w-12 rounded" />
                 </div>
+                <SkeletonBone className="h-3 w-full rounded" />
+                <SkeletonBone className="h-3 w-4/5 rounded" />
               </div>
-              <div className="h-3 w-full animate-pulse rounded bg-white/5" />
-              <div className="h-3 w-2/3 animate-pulse rounded bg-white/5" />
             </div>
-            <div className="mx-2 mb-2 h-[260px] animate-pulse rounded-xl bg-white/5 sm:mx-3 sm:mb-3" />
           </div>
         ))}
       </div>
+
+      <div className="mt-6 w-full max-w-sm space-y-2">
+        <SkeletonBone className="h-11 w-full rounded-xl bg-violet-600/20" />
+        <SkeletonBone className="mx-auto h-3 w-48 rounded" />
+      </div>
+
+      <div className="mt-6 w-full space-y-4 text-left">
+        <SkeletonBone className="h-4 w-40 rounded" />
+        {[0, 1].map(i => (
+          <div
+            key={i}
+            className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
+          >
+            <div className="space-y-3 p-4">
+              <div className="flex items-start gap-3">
+                <SkeletonBone className="h-9 w-9 shrink-0 rounded-full" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <SkeletonBone className="h-3.5 w-28 rounded" />
+                    <SkeletonBone className="h-4 w-16 rounded-full" />
+                  </div>
+                  <SkeletonBone className="h-2.5 w-14 rounded" />
+                </div>
+              </div>
+              <SkeletonBone className="h-3 w-full rounded" />
+              <SkeletonBone className="h-3 w-2/3 rounded" />
+            </div>
+            <div className="px-2 pb-2 sm:px-3 sm:pb-3">
+              <SkeletonBone className="h-[220px] w-full rounded-xl sm:h-[260px]" />
+            </div>
+            <div className="space-y-2.5 border-t border-white/10 px-4 py-3">
+              <SkeletonBone className="h-2.5 w-20 rounded" />
+              <div className="flex gap-2.5">
+                <SkeletonBone className="h-7 w-7 shrink-0 rounded-full" />
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <SkeletonBone className="h-3 w-3/4 rounded" />
+                  <SkeletonBone className="h-2 w-10 rounded" />
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <p className="mt-8 text-center text-sm text-gray-500">Loading place…</p>
     </div>
   )
