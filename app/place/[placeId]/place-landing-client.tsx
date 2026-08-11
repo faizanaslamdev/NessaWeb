@@ -316,20 +316,23 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
       <div className="mt-6 w-full max-w-sm space-y-3">
         <a
           href={`/chat/${encodeURIComponent(place.googlePlaceId)}?type=place&placeId=${encodeURIComponent(place.googlePlaceId)}&placeName=${encodeURIComponent(place.name)}`}
-          className="inline-flex w-full items-center justify-center rounded-xl bg-violet-600 px-6 py-3.5 text-sm font-semibold text-white no-underline hover:bg-violet-500"
+          aria-label="Join Live Chat"
+          className="inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#8B5CF6] px-4 py-3.5 text-[15px] font-bold text-white no-underline transition-colors hover:bg-[#7C3AED] sm:min-h-[52px]"
         >
+          <MessageCircleIcon className="size-[18px] shrink-0" />
           Join Live Chat
         </a>
-        <p className="text-center text-xs text-gray-500">
+        <p className="text-center text-xs leading-4 text-[#737373]">
           See what&apos;s happening here now · messages last 24 hours
         </p>
         <a
           href={deepLink}
-          className="inline-flex w-full items-center justify-center rounded-xl border border-white/15 bg-white/5 px-6 py-3.5 text-sm font-semibold text-gray-100 no-underline hover:bg-white/10"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#2A2A2A] px-3 py-3 text-[13px] font-bold text-[#22C55E] no-underline transition-colors hover:bg-[rgba(34,197,94,0.15)]"
         >
-          Recommend us on Nessa
+          <StarIcon className="size-4 shrink-0" />
+          Recommend
         </a>
-        <p className="text-center text-xs text-gray-500">
+        <p className="text-center text-xs text-[#737373]">
           Opens this place in {siteConfig.name} so you can recommend it.
         </p>
       </div>
@@ -889,6 +892,36 @@ function PersonAvatar({
   )
 }
 
+/** Lucide Star (v0.563) — same glyph as DiscoveryPlaceScreen Recommend. */
+function StarIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path
+        d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+/** Lucide MessageCircle (v0.563) — same glyph as DiscoveryPlaceScreen Join Live Chat. */
+function MessageCircleIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path
+        d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 function SkeletonBone({ className }: { className?: string }) {
   return <div className={`nessa-skeleton ${className ?? ''}`} aria-hidden />
 }
@@ -933,8 +966,9 @@ function PlaceSkeleton() {
       </div>
 
       <div className="mt-6 w-full max-w-sm space-y-2">
-        <SkeletonBone className="h-11 w-full rounded-xl bg-violet-600/20" />
+        <SkeletonBone className="h-12 w-full rounded-xl bg-[#8B5CF6]/20" />
         <SkeletonBone className="mx-auto h-3 w-48 rounded" />
+        <SkeletonBone className="h-11 w-full rounded-xl bg-[#2A2A2A]" />
       </div>
 
       <div className="mt-6 w-full space-y-4 text-left">
