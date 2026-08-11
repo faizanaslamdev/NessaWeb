@@ -295,7 +295,7 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
         />
       ) : null}
 
-      <div className="mt-6 w-full max-w-sm space-y-3">
+      <div className="mt-6 w-full max-w-sm space-y-2">
         <a
           href={deepLink}
           className="inline-flex w-full items-center justify-center rounded-xl bg-violet-600 px-6 py-3.5 text-sm font-semibold text-white no-underline hover:bg-violet-500"
@@ -305,13 +305,6 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
         <p className="text-center text-xs text-gray-500">
           Opens this place in {siteConfig.name} so you can recommend it.
         </p>
-
-        <a
-          href={deepLink}
-          className="inline-flex w-full items-center justify-center rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-gray-200 no-underline hover:bg-white/10"
-        >
-          Open in Nessa
-        </a>
       </div>
 
       {stories.length > 0 ? (
@@ -320,6 +313,34 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
 
       <StoreFallback className="mt-8" />
     </Shell>
+  )
+}
+
+function RecommenderCard({ person }: { person: PublicPlaceRecommender }) {
+  const relative = formatRelativeDate(person.createdAt)
+  const note = person.note?.trim()
+
+  return (
+    <li className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+      <div className="flex items-start gap-3">
+        <PersonAvatar name={person.displayName} avatarUrl={person.avatarUrl} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <p className="truncate text-sm font-medium text-gray-100">
+              {person.displayName}
+            </p>
+            {relative ? (
+              <p className="text-[11px] text-gray-500">{relative}</p>
+            ) : null}
+          </div>
+          {note ? (
+            <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-gray-300">
+              {note}
+            </p>
+          ) : null}
+        </div>
+      </div>
+    </li>
   )
 }
 
@@ -340,18 +361,10 @@ function RecommendedBySection({
       <h2 className="mb-3 text-sm font-semibold text-white">Recommended by</h2>
       <ul className="space-y-2.5">
         {recommenders.map((person, index) => (
-          <li
-            key={`${person.displayName}-${index}`}
-            className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5"
-          >
-            <PersonAvatar
-              name={person.displayName}
-              avatarUrl={person.avatarUrl}
-            />
-            <p className="min-w-0 flex-1 truncate text-sm font-medium text-gray-100">
-              {person.displayName}
-            </p>
-          </li>
+          <RecommenderCard
+            key={`${person.displayName}-${person.createdAt ?? index}`}
+            person={person}
+          />
         ))}
       </ul>
       {moreCount > 0 ? (
@@ -633,25 +646,10 @@ function RecommendersSheet({
       ) : (
         <ul className="space-y-2.5">
           {items.map((person, index) => (
-            <li
+            <RecommenderCard
               key={`${person.displayName}-${person.createdAt ?? index}`}
-              className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5"
-            >
-              <PersonAvatar
-                name={person.displayName}
-                avatarUrl={person.avatarUrl}
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-gray-100">
-                  {person.displayName}
-                </p>
-                {formatRelativeDate(person.createdAt) ? (
-                  <p className="text-[11px] text-gray-500">
-                    {formatRelativeDate(person.createdAt)}
-                  </p>
-                ) : null}
-              </div>
-            </li>
+              person={person}
+            />
           ))}
         </ul>
       )}

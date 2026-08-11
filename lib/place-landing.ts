@@ -9,6 +9,8 @@ import { getFirebaseClient } from '@/lib/firebase'
 export type PublicPlaceRecommender = {
   displayName: string
   avatarUrl?: string
+  /** Optional recommendation note from place_recommendations.note */
+  note?: string
   createdAt?: string
 }
 
