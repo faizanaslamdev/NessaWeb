@@ -6,6 +6,25 @@ import { getFunctions, httpsCallable } from 'firebase/functions'
 
 import { getFirebaseClient } from '@/lib/firebase'
 
+export type PublicPlaceRecommender = {
+  displayName: string
+  avatarUrl?: string
+}
+
+export type PublicPlaceStoryAuthor = {
+  displayName: string
+  avatarUrl?: string
+}
+
+export type PublicPlaceStoryPreview = {
+  id: string
+  caption?: string
+  type?: string
+  thumbnailUrl?: string
+  createdAt?: string
+  author: PublicPlaceStoryAuthor
+}
+
 export type PublicPlaceLanding = {
   googlePlaceId: string
   name: string
@@ -17,6 +36,8 @@ export type PublicPlaceLanding = {
   recommenderCount: number
   storyCount: number
   visitedCount: number
+  recommenders?: PublicPlaceRecommender[]
+  stories?: PublicPlaceStoryPreview[]
 }
 
 export type PublicPlaceLandingErrorCode =
@@ -103,7 +124,12 @@ export async function fetchPublicPlaceLanding(
       PublicPlaceLanding
     >(functions, 'getPublicPlaceLanding')
     const result = await callable({ placeId: trimmed })
-    return result.data
+    const data = result.data
+    return {
+      ...data,
+      recommenders: Array.isArray(data.recommenders) ? data.recommenders : [],
+      stories: Array.isArray(data.stories) ? data.stories : [],
+    }
   } catch (e) {
     throw mapCallableError(e)
   }
