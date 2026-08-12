@@ -21,6 +21,7 @@ import {
   useInstantPresenceTracking,
   usePresenceByUserIds,
 } from '@/hooks/use-presence-web'
+import { useWebUiLocale } from '@/hooks/use-web-ui-locale'
 import { DEFAULT_CHAT_LANGUAGE_CODE } from '@/lib/chat/languages'
 import { getFirebaseClient } from '@/lib/firebase'
 import {
@@ -29,7 +30,6 @@ import {
   subscribePlaceChatViewers,
 } from '@/lib/place-chat/api'
 import {
-  PLACE_CHAT_GUEST_LANGUAGE_KEY,
   PLACE_CHAT_GUEST_NAME_KEY,
   PLACE_CHAT_VIEWER_HEARTBEAT_MS,
   buildPlaceChatTitle,
@@ -37,6 +37,7 @@ import {
 import { normalizePlaceChatLanguage } from '@/lib/place-chat/translation'
 import type { PlaceChatViewerPref } from '@/lib/place-chat/viewers'
 import type { ChatParticipant } from '@/components/chat/participants-list'
+import { writeStoredWebUiLanguage } from '@/lib/web-ui-locale'
 
 type PlaceChatRoomProps = {
   placeId: string
@@ -51,32 +52,9 @@ function readStoredGuestName(): string {
   }
 }
 
-function readStoredGuestLanguage(): string {
-  if (typeof window === 'undefined') return DEFAULT_CHAT_LANGUAGE_CODE
-  try {
-    return normalizePlaceChatLanguage(
-      localStorage.getItem(PLACE_CHAT_GUEST_LANGUAGE_KEY) ||
-        DEFAULT_CHAT_LANGUAGE_CODE,
-    )
-  } catch {
-    return DEFAULT_CHAT_LANGUAGE_CODE
-  }
-}
-
 function storeGuestName(name: string) {
   try {
     localStorage.setItem(PLACE_CHAT_GUEST_NAME_KEY, name.trim())
-  } catch {
-    // ignore
-  }
-}
-
-function storeGuestLanguage(language: string) {
-  try {
-    localStorage.setItem(
-      PLACE_CHAT_GUEST_LANGUAGE_KEY,
-      normalizePlaceChatLanguage(language),
-    )
   } catch {
     // ignore
   }
@@ -89,6 +67,12 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
     searchParams.get('name')?.trim() ||
     null
 
+  const {
+    language: uiLanguage,
+    setLanguage: setUiLanguage,
+    ready: localeReady,
+    copy,
+  } = useWebUiLocale()
   const { user, loading: authLoading, error: authError } = useInstantAuth()
   const [title, setTitle] = useState(() => buildPlaceChatTitle(placeNameHint))
   const [roomReady, setRoomReady] = useState(false)
@@ -125,12 +109,13 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
   }, [])
 
   useEffect(() => {
+    if (!localeReady || hydratedGuest) return
     queueMicrotask(() => {
       setGuestName(readStoredGuestName())
-      setGuestLanguage(readStoredGuestLanguage())
+      setGuestLanguage(normalizePlaceChatLanguage(uiLanguage))
       setHydratedGuest(true)
     })
-  }, [])
+  }, [localeReady, uiLanguage, hydratedGuest])
 
   useEffect(() => {
     if (authLoading || authError || !user) return
@@ -148,13 +133,15 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
       })
       .catch(e => {
         if (cancelled) return
-        setRoomError(e instanceof Error ? e.message : 'Could not open Place Chat')
+        setRoomError(
+          e instanceof Error ? e.message : copy.couldNotOpenPlaceChat,
+        )
         setRoomReady(false)
       })
     return () => {
       cancelled = true
     }
-  }, [authLoading, authError, user, placeId, placeNameHint])
+  }, [authLoading, authError, user, placeId, placeNameHint, copy.couldNotOpenPlaceChat])
 
   // viewer_prefs = Instant-analog of session.members (language + displayName).
   useEffect(() => {
@@ -208,7 +195,8 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
       data.language || DEFAULT_CHAT_LANGUAGE_CODE,
     )
     storeGuestName(name)
-    storeGuestLanguage(language)
+    writeStoredWebUiLanguage(language)
+    setUiLanguage(language)
     setGuestName(name)
     setGuestLanguage(language)
   }
@@ -217,10 +205,15 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
     return <AuthErrorPanel authError={authError} />
   }
 
-  if (authLoading || !hydratedGuest || (user && !roomReady && !roomError)) {
+  if (
+    !localeReady ||
+    authLoading ||
+    !hydratedGuest ||
+    (user && !roomReady && !roomError)
+  ) {
     return (
       <div className="fixed inset-0 z-0 flex items-center justify-center bg-black text-gray-400">
-        Loading…
+        {copy.loading}
       </div>
     )
   }
@@ -230,13 +223,14 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
       <div className="fixed inset-0 z-0 flex flex-col items-center justify-center gap-4 bg-black px-6 text-center">
         <p className="text-gray-300">{roomError}</p>
         <Button asChild className="bg-purple-600 text-white hover:bg-purple-700">
-          <Link href={placeHref}>Back to place</Link>
+          <Link href={placeHref}>{copy.backToPlace}</Link>
         </Button>
       </div>
     )
   }
 
   const entryOpen = Boolean(user && roomReady && !guestName)
+  const metaLine = `${copy.livePlaceChat} · ${onlineCount} ${copy.online} · ${copy.messagesLast24h}`
 
   return (
     <div className="fixed inset-0 z-0 flex flex-col overflow-hidden bg-black">
@@ -259,6 +253,17 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
         roomId={placeId}
         isOpen={entryOpen}
         variant="join"
+        initialLanguage={guestLanguage}
+        joinCopy={{
+          joinConversation: copy.joinConversation,
+          enterDetails: copy.enterDetails,
+          yourName: copy.yourName,
+          namePlaceholder: copy.namePlaceholder,
+          preferredLanguage: copy.preferredLanguage,
+          enterChat: copy.enterChat,
+          back: copy.back,
+          noSignup: copy.noSignup,
+        }}
         onClose={() => {
           window.location.href = placeHref
         }}
@@ -272,15 +277,16 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
             participantCount={onlineCount}
             title={title}
             titleHref={placeHref}
-            metaLine={`Live Place Chat · ${onlineCount} online · messages last 24 hours`}
+            metaLine={metaLine}
             hideOnlineCount
             hideShare
             hideSettings
+            participantsTitle={copy.peopleInRoom}
             onOpenParticipants={() => setShowParticipantsSheet(true)}
             onRoomIdCopied={ok =>
               showNotice(
                 ok ? 'success' : 'error',
-                ok ? 'Place ID copied' : 'Copy blocked by browser',
+                ok ? copy.placeIdCopied : copy.copyBlocked,
               )
             }
           />
@@ -289,6 +295,9 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
             open={showParticipantsSheet}
             onClose={() => setShowParticipantsSheet(false)}
             participants={participants}
+            title={copy.peopleInRoom}
+            doneLabel={copy.done}
+            emptyLabel={copy.noOneHereYet}
           />
 
           <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -298,9 +307,13 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
               user={user}
               displayName={guestName}
               preferredLanguage={guestLanguage}
+              copy={copy}
               onSendError={msg => showNotice('error', msg)}
             />
-            <ParticipantsSidebar participants={participants} />
+            <ParticipantsSidebar
+              participants={participants}
+              title={copy.participants(participants.length)}
+            />
           </div>
         </>
       ) : null}

@@ -29,6 +29,8 @@ interface ChatHeaderProps {
   /** Hide Instant share/settings when irrelevant for Place. */
   hideShare?: boolean
   hideSettings?: boolean
+  /** Accessible title for the participants button (Place Chat localized). */
+  participantsTitle?: string
 }
 
 async function copyTextToClipboard(text: string): Promise<boolean> {
@@ -74,6 +76,7 @@ export default function ChatHeader({
   onRoomIdCopied,
   hideShare = false,
   hideSettings = false,
+  participantsTitle = 'People in this room',
 }: ChatHeaderProps) {
   const handleCopyRoomId = useCallback(async () => {
     const ok = await copyTextToClipboard(roomId)
@@ -159,9 +162,9 @@ export default function ChatHeader({
               size="sm"
               variant="outline"
               onClick={onOpenParticipants}
-              title="People in this room"
+              title={participantsTitle}
               className="border-white/20 px-2.5 text-white hover:bg-white/10 sm:px-3 lg:hidden"
-              aria-label="View everyone in this room"
+              aria-label={participantsTitle}
             >
               <UsersIcon className="size-4" />
             </Button>

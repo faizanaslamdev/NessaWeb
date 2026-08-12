@@ -10,6 +10,7 @@ import { motion } from 'framer-motion'
 import type { User } from 'firebase/auth'
 
 import MessageBubble from '@/components/chat/message-bubble'
+import { GetNessaPrompt } from '@/components/place/get-nessa-prompt'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { getFirebaseClient } from '@/lib/firebase'
@@ -24,7 +25,7 @@ import {
   placeChatTranslationsByUserForBubble,
   selectPlaceChatMessagesNeedingBackfill,
 } from '@/lib/place-chat/translation'
-import { appStores, placeAppDeepLink, siteConfig } from '@/lib/constants'
+import type { PlaceUiCopy } from '@/lib/place-ui-copy'
 
 type PlaceChatThreadProps = {
   placeId: string
@@ -32,6 +33,7 @@ type PlaceChatThreadProps = {
   user: User
   displayName: string
   preferredLanguage: string
+  copy: PlaceUiCopy
   onSendError: (message: string) => void
 }
 
@@ -46,6 +48,7 @@ export default function PlaceChatThread({
   user,
   displayName,
   preferredLanguage,
+  copy,
   onSendError,
 }: PlaceChatThreadProps) {
   const [messages, setMessages] = useState<PlaceChatMessage[]>([])
@@ -137,14 +140,14 @@ export default function PlaceChatThread({
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-6 sm:px-6 sm:py-6">
         {messagesLoading && messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-gray-400">Loading messages…</p>
+            <p className="text-sm text-gray-400">{copy.loadingMessages}</p>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
-              <p className="text-gray-400">No messages yet today. Say hello!</p>
+              <p className="text-gray-400">{copy.noMessagesYet}</p>
               <p className="mt-2 text-xs text-gray-500">
-                Messages disappear after 24 hours. The room stays open.
+                {copy.messagesDisappearHint}
               </p>
             </div>
           </div>
@@ -190,7 +193,7 @@ export default function PlaceChatThread({
       >
         <div className="flex items-end gap-2 sm:gap-3">
           <Textarea
-            placeholder="Type a message…"
+            placeholder={copy.typeMessage}
             value={inputValue}
             onChange={e =>
               setInputValue(e.target.value.slice(0, PLACE_CHAT_MESSAGE_TEXT_MAX))
@@ -210,32 +213,19 @@ export default function PlaceChatThread({
             type="button"
             onClick={() => void handleSendMessage()}
             disabled={!inputValue.trim()}
-            title="Send message"
-            aria-label="Send message"
+            title={copy.sendMessage}
+            aria-label={copy.sendMessage}
             className="h-9 w-9 shrink-0 bg-linear-to-r from-purple-600 to-violet-600 p-0 font-medium text-white hover:from-purple-700 hover:to-violet-700 disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:min-h-9 sm:w-auto sm:px-6"
           >
             <SendIcon className="size-[1.2rem] sm:hidden" aria-hidden />
-            <span className="hidden sm:inline">Send</span>
+            <span className="hidden sm:inline">{copy.send}</span>
           </Button>
         </div>
-        <p className="mt-2 text-center text-[11px] text-gray-500">
-          Guest chat on {siteConfig.name}.{' '}
-          <a
-            href={placeAppDeepLink(placeId)}
-            className="text-violet-300 underline-offset-2 hover:underline"
-          >
-            Open in app
-          </a>
-          {' · '}
-          <a
-            href={appStores[0]?.url ?? '/'}
-            className="text-violet-300 underline-offset-2 hover:underline"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Get the app
-          </a>
-        </p>
+        <GetNessaPrompt
+          prompt={copy.saveChatsPrompt}
+          ctaLabel={copy.getNessa}
+          className="mt-3 max-w-none"
+        />
       </motion.div>
     </motion.div>
   )
