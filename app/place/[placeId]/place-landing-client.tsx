@@ -265,9 +265,19 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
         </div>
 
         <div className="space-y-3 p-5 text-left">
-          <p className="text-xs font-medium uppercase tracking-wide text-violet-400">
-            {place.placeType}
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+            <p className="min-w-0 flex-1 text-xs font-medium uppercase tracking-wide text-violet-400 [overflow-wrap:anywhere]">
+              {place.placeType}
+            </p>
+            <a
+              href={deepLink}
+              title={`Opens this place in ${siteConfig.name} so you can recommend it.`}
+              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#2A2A2A] px-2.5 py-1.5 text-[13px] font-bold text-[#22C55E] no-underline transition-colors hover:bg-[rgba(34,197,94,0.15)] sm:px-3 sm:py-2"
+            >
+              <StarIcon className="size-4 shrink-0" />
+              Recommend
+            </a>
+          </div>
           <h1 className="text-2xl font-semibold tracking-tight text-white">
             {place.name}
           </h1>
@@ -324,16 +334,6 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
         </a>
         <p className="text-center text-xs leading-4 text-[#737373]">
           See what&apos;s happening here now · messages last 24 hours
-        </p>
-        <a
-          href={deepLink}
-          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#2A2A2A] px-3 py-3 text-[13px] font-bold text-[#22C55E] no-underline transition-colors hover:bg-[rgba(34,197,94,0.15)]"
-        >
-          <StarIcon className="size-4 shrink-0" />
-          Recommend
-        </a>
-        <p className="text-center text-xs text-[#737373]">
-          Opens this place in {siteConfig.name} so you can recommend it.
         </p>
       </div>
 
@@ -932,7 +932,10 @@ function PlaceSkeleton() {
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
         <SkeletonBone className="aspect-[16/10] w-full rounded-none" />
         <div className="space-y-3 p-5">
-          <SkeletonBone className="h-3 w-20 rounded" />
+          <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+            <SkeletonBone className="h-3 w-20 min-w-0 flex-1 rounded" />
+            <SkeletonBone className="h-8 w-[7.25rem] shrink-0 rounded-xl bg-[#2A2A2A]" />
+          </div>
           <SkeletonBone className="h-7 w-2/3 rounded-lg" />
           <SkeletonBone className="h-4 w-1/2 rounded" />
           <div className="flex flex-wrap gap-3 pt-1">
@@ -941,6 +944,11 @@ function PlaceSkeleton() {
             <SkeletonBone className="h-3 w-16 rounded" />
           </div>
         </div>
+      </div>
+
+      <div className="mt-6 w-full max-w-sm space-y-2">
+        <SkeletonBone className="h-12 w-full rounded-xl bg-[#8B5CF6]/20 sm:h-[52px]" />
+        <SkeletonBone className="mx-auto h-3 w-56 rounded" />
       </div>
 
       <div className="mt-6 w-full space-y-2.5 text-left">
@@ -963,12 +971,6 @@ function PlaceSkeleton() {
             </div>
           </div>
         ))}
-      </div>
-
-      <div className="mt-6 w-full max-w-sm space-y-2">
-        <SkeletonBone className="h-12 w-full rounded-xl bg-[#8B5CF6]/20" />
-        <SkeletonBone className="mx-auto h-3 w-48 rounded" />
-        <SkeletonBone className="h-11 w-full rounded-xl bg-[#2A2A2A]" />
       </div>
 
       <div className="mt-6 w-full space-y-4 text-left">
