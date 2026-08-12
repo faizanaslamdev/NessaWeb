@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { PlaceLandingClient } from './place-landing-client'
 import { isPublicPlaceIdValid } from '@/lib/place-landing'
 import {
+  PLACE_FALLBACK_OG_IMAGE,
   PLACE_SHARE_BRAND,
   buildGenericPlaceMetadata,
   buildPlacePageTitle,
@@ -12,6 +13,33 @@ import {
 
 type PageProps = {
   params: Promise<{ placeId: string }>
+}
+
+function placeOgImages(
+  imageUrl: string,
+  alt: string,
+  opts?: { width?: number; height?: number },
+): NonNullable<NonNullable<Metadata['openGraph']>['images']> {
+  const isFallback = imageUrl === PLACE_FALLBACK_OG_IMAGE.url
+  if (isFallback) {
+    return [
+      {
+        url: PLACE_FALLBACK_OG_IMAGE.url,
+        width: PLACE_FALLBACK_OG_IMAGE.width,
+        height: PLACE_FALLBACK_OG_IMAGE.height,
+        type: PLACE_FALLBACK_OG_IMAGE.type,
+        alt,
+      },
+    ]
+  }
+  return [
+    {
+      url: imageUrl,
+      alt,
+      ...(opts?.width ? { width: opts.width } : {}),
+      ...(opts?.height ? { height: opts.height } : {}),
+    },
+  ]
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -32,9 +60,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         url: fallback.canonical,
         siteName: PLACE_SHARE_BRAND,
         type: 'website',
-        images: [{ url: fallback.ogImage }],
+        images: placeOgImages(fallback.ogImage, PLACE_SHARE_BRAND),
       },
       twitter: {
+        // Compact card — matches small brand icon (avoids huge WA preview).
         card: 'summary',
         title: fallback.ogTitle,
         description: fallback.ogDescription,
@@ -58,10 +87,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         url: generic.canonical,
         siteName: PLACE_SHARE_BRAND,
         type: 'website',
-        images: [{ url: generic.ogImage }],
+        images: placeOgImages(generic.ogImage, PLACE_SHARE_BRAND),
       },
       twitter: {
-        card: 'summary_large_image',
+        card: 'summary',
         title: generic.ogTitle,
         description: generic.ogDescription,
         images: [generic.ogImage],
@@ -71,6 +100,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const title = buildPlacePageTitle(share.name)
   const description = buildPlaceShareDescription(share)
+  // Cover only when public HTTPS without API keys; otherwise compact brand icon.
+  const hasCover = Boolean(share.coverImageUrl)
   const ogImage = share.coverImageUrl ?? generic.ogImage
 
   return {
@@ -84,10 +115,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url: generic.canonical,
       siteName: PLACE_SHARE_BRAND,
       type: 'website',
-      images: [{ url: ogImage, alt: share.name }],
+      images: placeOgImages(ogImage, share.name),
     },
     twitter: {
-      card: 'summary_large_image',
+      // Large only for real Place photos; brand fallback stays compact.
+      card: hasCover ? 'summary_large_image' : 'summary',
       title,
       description,
       images: [ogImage],

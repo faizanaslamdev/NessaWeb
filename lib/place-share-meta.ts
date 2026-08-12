@@ -162,7 +162,7 @@ export async function getCachedPublicPlaceShareMeta(
         }
         return meta
       },
-      ['public-place-share-meta-v3', trimmed],
+      ['public-place-share-meta-v4', trimmed],
       { revalidate: METADATA_REVALIDATE_SECONDS },
     )()
   } catch {
@@ -174,8 +174,21 @@ export function placeCanonicalUrl(placeId: string): string {
   return placeShareUrl(placeId)
 }
 
+/**
+ * Compact brand mark for WhatsApp / OG fallback.
+ * Keep under 300px so WhatsApp uses a small thumbnail instead of a full-bleed
+ * square logo (logo.png is 540×540 and renders huge in chat).
+ */
 export function placeFallbackOgImageUrl(): string {
-  return `${PLACE_SITE_ORIGIN}/logo.png`
+  return `${PLACE_SITE_ORIGIN}/og-place-icon.png`
+}
+
+export const PLACE_FALLBACK_OG_IMAGE = {
+  url: placeFallbackOgImageUrl(),
+  width: 200,
+  height: 200,
+  type: 'image/png' as const,
+  alt: PLACE_SHARE_BRAND,
 }
 
 export function buildPlaceShareDescription(meta: PublicPlaceShareMeta): string {
