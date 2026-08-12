@@ -90,7 +90,7 @@ export function PlaceWifiCard({
   return (
     <section
       className={[
-        'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 text-left',
+        'w-full rounded-2xl border border-violet-400/20 bg-linear-to-br from-violet-500/15 via-white/[0.04] to-purple-600/10 px-4 py-4 text-left shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]',
         className,
       ].join(' ')}
       aria-label={`Wi-Fi network ${wifi.networkName}`}
