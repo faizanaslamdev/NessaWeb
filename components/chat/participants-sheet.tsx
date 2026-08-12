@@ -10,19 +10,9 @@ type ParticipantsSheetProps = {
   open: boolean
   onClose: () => void
   participants: ChatParticipant[]
-  title?: string
-  doneLabel?: string
-  emptyLabel?: string
 }
 
-export default function ParticipantsSheet({
-  open,
-  onClose,
-  participants,
-  title = 'People in this room',
-  doneLabel = 'Done',
-  emptyLabel = 'No one here yet.',
-}: ParticipantsSheetProps) {
+export default function ParticipantsSheet({ open, onClose, participants }: ParticipantsSheetProps) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
     queueMicrotask(() => setMounted(true))
@@ -64,7 +54,7 @@ export default function ParticipantsSheet({
             id="participants-sheet-title"
             className="min-w-0 flex-1 truncate text-base font-semibold text-white sm:text-lg"
           >
-            {title} ({participants.length})
+            People in this room ({participants.length})
           </h2>
           <Button
             type="button"
@@ -73,11 +63,11 @@ export default function ParticipantsSheet({
             className="shrink-0 border-white/20 text-white hover:bg-white/10"
             onClick={onClose}
           >
-            {doneLabel}
+            Done
           </Button>
         </div>
         {participants.length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-gray-500">{emptyLabel}</p>
+          <p className="px-4 py-8 text-center text-sm text-gray-500">No one here yet.</p>
         ) : (
           <div
             className="max-h-[min(calc(85dvh-5.25rem),calc(32rem-5.25rem))] overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:max-h-[min(calc(80dvh-5.25rem),calc(28rem-5.25rem))]"

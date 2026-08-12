@@ -112,23 +112,9 @@ function downloadSvgAsPng(
 export function PlaceCoverShareQr({
   placeId,
   placeName,
-  labels,
 }: {
   placeId: string
   placeName: string
-  labels?: {
-    sharePlace?: string
-    showQr?: string
-    scanToView?: string
-    downloadQr?: string
-    downloading?: string
-    linkCopied?: string
-    couldNotShare?: string
-    couldNotCopy?: string
-    couldNotShowQr?: string
-    couldNotDownloadQr?: string
-    qrDownloaded?: string
-  }
 }) {
   const [qrOpen, setQrOpen] = useState(false)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
@@ -152,10 +138,7 @@ export function PlaceCoverShareQr({
   const onShare = async (event: MouseEvent<HTMLButtonElement>) => {
     stopCoverClick(event)
     if (!shareUrl) {
-      showFeedback({
-        kind: 'error',
-        text: labels?.couldNotShare ?? 'Could not share this place',
-      })
+      showFeedback({ kind: 'error', text: 'Could not share this place' })
       return
     }
     const title = placeName.trim() || 'Nessa place'
@@ -177,27 +160,18 @@ export function PlaceCoverShareQr({
       const ok = await copyText(shareUrl)
       showFeedback(
         ok
-          ? { kind: 'ok', text: labels?.linkCopied ?? 'Link copied' }
-          : {
-              kind: 'error',
-              text: labels?.couldNotCopy ?? 'Could not copy link',
-            },
+          ? { kind: 'ok', text: 'Link copied' }
+          : { kind: 'error', text: 'Could not copy link' },
       )
     } catch {
-      showFeedback({
-        kind: 'error',
-        text: labels?.couldNotShare ?? 'Could not share this place',
-      })
+      showFeedback({ kind: 'error', text: 'Could not share this place' })
     }
   }
 
   const onOpenQr = (event: MouseEvent<HTMLButtonElement>) => {
     stopCoverClick(event)
     if (!shareUrl) {
-      showFeedback({
-        kind: 'error',
-        text: labels?.couldNotShowQr ?? 'Could not show QR',
-      })
+      showFeedback({ kind: 'error', text: 'Could not show QR' })
       return
     }
     setQrOpen(true)
@@ -205,32 +179,20 @@ export function PlaceCoverShareQr({
 
   const onDownloadQr = async () => {
     if (!shareUrl) {
-      showFeedback({
-        kind: 'error',
-        text: labels?.couldNotDownloadQr ?? 'Could not download QR',
-      })
+      showFeedback({ kind: 'error', text: 'Could not download QR' })
       return
     }
     const svg = exportHostRef.current?.querySelector('svg')
     if (!svg) {
-      showFeedback({
-        kind: 'error',
-        text: labels?.couldNotDownloadQr ?? 'Could not generate QR',
-      })
+      showFeedback({ kind: 'error', text: 'Could not generate QR' })
       return
     }
     setSaving(true)
     try {
       await downloadSvgAsPng(svg, placeQrFilename(placeName), EXPORT_QR_SIZE)
-      showFeedback({
-        kind: 'ok',
-        text: labels?.qrDownloaded ?? 'QR downloaded',
-      })
+      showFeedback({ kind: 'ok', text: 'QR downloaded' })
     } catch {
-      showFeedback({
-        kind: 'error',
-        text: labels?.couldNotDownloadQr ?? 'Could not download QR',
-      })
+      showFeedback({ kind: 'error', text: 'Could not download QR' })
     } finally {
       setSaving(false)
     }
@@ -240,14 +202,14 @@ export function PlaceCoverShareQr({
     <>
       <div className="pointer-events-none absolute right-3 top-3 z-10 flex items-start gap-1.5">
         <CoverIconButton
-          label={labels?.sharePlace ?? 'Share place'}
+          label="Share place"
           onClick={onShare}
           disabled={!shareUrl}
         >
           <ShareIcon className="size-4" />
         </CoverIconButton>
         <CoverIconButton
-          label={labels?.showQr ?? 'Show QR code'}
+          label="Show QR code"
           onClick={onOpenQr}
           disabled={!shareUrl}
         >
@@ -282,7 +244,7 @@ export function PlaceCoverShareQr({
             disabled={saving || !shareUrl}
             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#7C3AED] px-4 text-sm font-bold text-white transition-colors hover:bg-[#6D28D9] disabled:opacity-50"
           >
-            {saving ? labels?.downloading ?? 'Downloading…' : labels?.downloadQr ?? 'Download QR'}
+            {saving ? 'Downloading…' : 'Download QR'}
           </button>
         }
       >
@@ -301,7 +263,7 @@ export function PlaceCoverShareQr({
             )}
           </div>
           <p className="text-center text-sm font-semibold text-gray-200">
-            {labels?.scanToView ?? 'Scan to view this place on Nessa'}
+            Scan to view this place on Nessa
           </p>
           {shareUrl ? (
             <p className="max-w-full break-all text-center text-xs text-gray-500">

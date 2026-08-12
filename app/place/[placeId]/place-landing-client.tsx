@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 
 import {
+  appStores,
   placeAppDeepLink,
   siteConfig,
   siteRoutes,
@@ -24,10 +25,6 @@ import { StoryPhotoCollage } from '@/components/place/story-photo-collage'
 import { StoryMediaViewer } from '@/components/place/story-media-viewer'
 import { PlaceSheet } from '@/components/place/place-sheet'
 import { PlaceCoverShareQr } from '@/components/place/place-share-qr'
-import { GetNessaPrompt } from '@/components/place/get-nessa-prompt'
-import { useWebUiLocale } from '@/hooks/use-web-ui-locale'
-import type { PlaceUiCopy } from '@/lib/place-ui-copy'
-import { storesForPlatform } from '@/lib/store-links'
 
 type PlaceLandingClientProps = {
   placeId: string
@@ -138,8 +135,6 @@ function initialLetter(name: string): string {
 export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
   const deepLink = useMemo(() => placeAppDeepLink(placeId), [placeId])
   const placeIdValid = isPublicPlaceIdValid(placeId)
-  const { language, setLanguage, ready: localeReady, copy, languages } =
-    useWebUiLocale()
   const [state, setState] = useState<LoadState>(() =>
     placeIdValid ? { kind: 'loading' } : { kind: 'invalid' },
   )
@@ -188,84 +183,56 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
           setState({
             kind: 'error',
             title:
-              e.code === 'not-found' ? copy.placeNotFound : copy.couldNotLoadPlace,
+              e.code === 'not-found' ? 'Place not found' : 'Couldn’t load place',
             body: e.message,
           })
           return
         }
         setState({
           kind: 'error',
-          title: copy.couldNotLoadPlace,
-          body: copy.tryAgain,
+          title: 'Couldn’t load place',
+          body: 'Please try again in a moment.',
         })
       })
 
     return () => {
       cancelled = true
     }
-  }, [placeId, placeIdValid, copy.couldNotLoadPlace, copy.placeNotFound, copy.tryAgain])
-
-  if (!localeReady) {
-    return (
-      <Shell
-        copy={copy}
-        language={language}
-        languages={languages}
-        onLanguageChange={setLanguage}
-      >
-        <PlaceSkeleton loadingLabel={copy.loadingPlace} />
-      </Shell>
-    )
-  }
+  }, [placeId, placeIdValid])
 
   if (!placeIdValid || state.kind === 'invalid') {
     return (
-      <Shell
-        copy={copy}
-        language={language}
-        languages={languages}
-        onLanguageChange={setLanguage}
-      >
+      <Shell>
         <StatusBlock
-          title={copy.invalidPlaceTitle}
-          body={copy.invalidPlaceBody}
+          title="Invalid place link"
+          body="This QR or URL doesn’t point to a valid Nessa place."
         />
-        <StoreFallback className="mt-8" copy={copy} />
+        <StoreFallback className="mt-8" />
       </Shell>
     )
   }
 
   if (state.kind === 'error') {
     return (
-      <Shell
-        copy={copy}
-        language={language}
-        languages={languages}
-        onLanguageChange={setLanguage}
-      >
+      <Shell>
         <StatusBlock title={state.title} body={state.body} />
         <div className="mt-6 w-full max-w-sm space-y-3">
           <a
             href={deepLink}
             className="inline-flex w-full items-center justify-center rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-gray-200 no-underline hover:bg-white/10"
           >
-            {copy.openInNessa}
+            Open in Nessa
           </a>
         </div>
-        <StoreFallback className="mt-6" copy={copy} />
+        <StoreFallback className="mt-6" />
       </Shell>
     )
   }
 
   if (state.kind !== 'ready') {
     return (
-      <Shell
-        copy={copy}
-        language={language}
-        languages={languages}
-        onLanguageChange={setLanguage}
-      >
-        <PlaceSkeleton loadingLabel={copy.loadingPlace} />
+      <Shell>
+        <PlaceSkeleton />
       </Shell>
     )
   }
@@ -279,12 +246,7 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
   const hasCover = coverUrl.startsWith('https://') && !coverBroken
 
   return (
-    <Shell
-      copy={copy}
-      language={language}
-      languages={languages}
-      onLanguageChange={setLanguage}
-    >
+    <Shell>
       <div className="w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5">
         <div className="relative aspect-[16/10] w-full bg-[#14101f]">
           {hasCover ? (
@@ -315,19 +277,6 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
           <PlaceCoverShareQr
             placeId={place.googlePlaceId || placeId}
             placeName={place.name}
-            labels={{
-              sharePlace: copy.sharePlace,
-              showQr: copy.showQr,
-              scanToView: copy.scanToView,
-              downloadQr: copy.downloadQr,
-              downloading: copy.downloading,
-              linkCopied: copy.linkCopied,
-              couldNotShare: copy.couldNotShare,
-              couldNotCopy: copy.couldNotCopy,
-              couldNotShowQr: copy.couldNotShowQr,
-              couldNotDownloadQr: copy.couldNotDownloadQr,
-              qrDownloaded: copy.qrDownloaded,
-            }}
           />
         </div>
 
@@ -338,11 +287,11 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
             </p>
             <a
               href={deepLink}
-              title={copy.recommendTitle}
+              title={`Opens this place in ${siteConfig.name} so you can recommend it.`}
               className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#2A2A2A] px-2.5 py-1.5 text-[13px] font-bold text-[#22C55E] no-underline transition-colors hover:bg-[rgba(34,197,94,0.15)] sm:px-3 sm:py-2"
             >
               <StarIcon className="size-4 shrink-0" />
-              {copy.recommend}
+              Recommend
             </a>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight text-white">
@@ -358,14 +307,14 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
               <span className="font-semibold text-white">
                 {formatCount(place.recommenderCount)}
               </span>{' '}
-              {copy.recommendedLabel}
+              recommended
             </span>
             <span className="text-white/20">·</span>
             <span>
               <span className="font-semibold text-white">
                 {formatCount(place.storyCount)}
               </span>{' '}
-              {copy.storiesLabel}
+              stories
             </span>
             {place.visitedCount > 0 ? (
               <>
@@ -374,7 +323,7 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
                   <span className="font-semibold text-white">
                     {formatCount(place.visitedCount)}
                   </span>{' '}
-                  {copy.visitedLabel}
+                  visited
                 </span>
               </>
             ) : null}
@@ -393,19 +342,15 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
       <div className="mt-6 w-full max-w-sm space-y-3">
         <a
           href={`/chat/${encodeURIComponent(place.googlePlaceId)}?type=place&placeId=${encodeURIComponent(place.googlePlaceId)}&placeName=${encodeURIComponent(place.name)}`}
-          aria-label={copy.joinLiveChat}
+          aria-label="Join Live Chat"
           className="inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#8B5CF6] px-4 py-3.5 text-[15px] font-bold text-white no-underline transition-colors hover:bg-[#7C3AED] sm:min-h-[52px]"
         >
           <MessageCircleIcon className="size-[18px] shrink-0" />
-          {copy.joinLiveChat}
+          Join Live Chat
         </a>
         <p className="text-center text-xs leading-4 text-[#737373]">
-          {copy.liveChatHint}
+          See what&apos;s happening here now · messages last 24 hours
         </p>
-        <GetNessaPrompt
-          prompt={copy.getNessaPrompt}
-          ctaLabel={copy.getNessa}
-        />
       </div>
 
       {recommenders.length > 0 ? (
@@ -413,19 +358,14 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
           placeId={place.googlePlaceId}
           recommenders={recommenders}
           recommenderCount={place.recommenderCount}
-          copy={copy}
         />
       ) : null}
 
       {stories.length > 0 ? (
-        <StoriesSection
-          stories={stories}
-          moreCount={moreStories}
-          copy={copy}
-        />
+        <StoriesSection stories={stories} moreCount={moreStories} />
       ) : null}
 
-      <StoreFallback className="mt-8" copy={copy} />
+      <StoreFallback className="mt-8" />
     </Shell>
   )
 }
@@ -462,21 +402,17 @@ function RecommendedBySection({
   placeId,
   recommenders,
   recommenderCount,
-  copy,
 }: {
   placeId: string
   recommenders: PublicPlaceRecommender[]
   recommenderCount: number
-  copy: PlaceUiCopy
 }) {
   const [open, setOpen] = useState(false)
   const moreCount = Math.max(0, recommenderCount - recommenders.length)
 
   return (
     <section className="mt-6 w-full text-left">
-      <h2 className="mb-3 text-sm font-semibold text-white">
-        {copy.recommendedBy}
-      </h2>
+      <h2 className="mb-3 text-sm font-semibold text-white">Recommended by</h2>
       <ul className="space-y-2.5">
         {recommenders.map((person, index) => (
           <RecommenderCard
@@ -491,7 +427,7 @@ function RecommendedBySection({
           onClick={() => setOpen(true)}
           className="mt-3 text-xs font-medium text-violet-300 hover:text-violet-200"
         >
-          {copy.viewAllRecommendations(formatCount(recommenderCount))}
+          View all {formatCount(recommenderCount)} recommendations
         </button>
       ) : null}
 
@@ -501,7 +437,6 @@ function RecommendedBySection({
         placeId={placeId}
         initial={recommenders}
         totalCount={recommenderCount}
-        title={`${copy.recommendedBy} · ${formatCount(recommenderCount)}`}
       />
     </section>
   )
@@ -510,11 +445,9 @@ function RecommendedBySection({
 function StoriesSection({
   stories,
   moreCount,
-  copy,
 }: {
   stories: PublicPlaceStoryPreview[]
   moreCount: number
-  copy: PlaceUiCopy
 }) {
   const [viewer, setViewer] = useState<{
     uris: string[]
@@ -527,7 +460,7 @@ function StoriesSection({
   return (
     <section className="mt-6 w-full text-left">
       <h2 className="mb-3 text-sm font-semibold text-white">
-        {copy.storiesFromPlace}
+        Stories from this place
       </h2>
       <ul className="space-y-4">
         {stories.map(story => {
@@ -628,8 +561,7 @@ function StoriesSection({
                       onClick={() => setCommentsStory(story)}
                       className="text-xs font-medium text-violet-300 hover:text-violet-200"
                     >
-                      {copy.viewAll} {formatCount(commentCount)}{' '}
-                      {copy.comments.toLowerCase()}
+                      View all {formatCount(commentCount)} comments
                     </button>
                   ) : null}
                 </div>
@@ -640,7 +572,8 @@ function StoriesSection({
       </ul>
       {moreCount > 0 ? (
         <p className="mt-2 text-xs text-gray-500">
-          {copy.moreStories(formatCount(moreCount))}
+          +{formatCount(moreCount)} more stor{moreCount === 1 ? 'y' : 'ies'} in{' '}
+          {siteConfig.name}
         </p>
       ) : null}
 
@@ -671,14 +604,12 @@ function RecommendersSheet({
   placeId,
   initial,
   totalCount,
-  title,
 }: {
   open: boolean
   onClose: () => void
   placeId: string
   initial: PublicPlaceRecommender[]
   totalCount: number
-  title?: string
 }) {
   const [items, setItems] = useState<PublicPlaceRecommender[]>(initial)
   const [cursor, setCursor] = useState<string | undefined>()
@@ -744,7 +675,7 @@ function RecommendersSheet({
     <PlaceSheet
       open={open}
       onClose={onClose}
-      title={title ?? `Recommended by · ${formatCount(totalCount)}`}
+      title={`Recommended by · ${formatCount(totalCount)}`}
       footer={
         cursor ? (
           <button
@@ -1011,7 +942,7 @@ function SkeletonBone({ className }: { className?: string }) {
   return <div className={`nessa-skeleton ${className ?? ''}`} aria-hidden />
 }
 
-function PlaceSkeleton({ loadingLabel }: { loadingLabel?: string }) {
+function PlaceSkeleton() {
   return (
     <div className="w-full" aria-busy="true" aria-live="polite">
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
@@ -1096,59 +1027,27 @@ function PlaceSkeleton({ loadingLabel }: { loadingLabel?: string }) {
         ))}
       </div>
 
-      <p className="mt-8 text-center text-sm text-gray-500">
-        {loadingLabel ?? 'Loading place…'}
-      </p>
+      <p className="mt-8 text-center text-sm text-gray-500">Loading place…</p>
     </div>
   )
 }
 
-function Shell({
-  children,
-  copy,
-  language,
-  languages,
-  onLanguageChange,
-}: {
-  children: React.ReactNode
-  copy: PlaceUiCopy
-  language: string
-  languages: { code: string; name: string; flag: string }[]
-  onLanguageChange: (code: string) => void
-}) {
+function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col items-center bg-black px-5 py-10 text-white">
-      <div className="mb-6 flex w-full max-w-md items-center justify-between gap-3">
+      <div className="mb-6 flex w-full max-w-md items-center justify-between">
         <Link
           href="/"
-          className="shrink-0 text-sm font-semibold tracking-tight text-white no-underline"
+          className="text-sm font-semibold tracking-tight text-white no-underline"
         >
           {siteConfig.name}
         </Link>
-        <div className="flex min-w-0 items-center gap-2">
-          <label className="sr-only" htmlFor="place-ui-language">
-            {copy.language}
-          </label>
-          <select
-            id="place-ui-language"
-            value={language}
-            onChange={e => onLanguageChange(e.target.value)}
-            className="max-w-[9.5rem] truncate rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-400"
-            aria-label={copy.language}
-          >
-            {languages.map(lang => (
-              <option key={lang.code} value={lang.code}>
-                {lang.flag} {lang.name}
-              </option>
-            ))}
-          </select>
-          <Link
-            href={siteRoutes.privacyPolicy}
-            className="shrink-0 text-xs text-gray-500 no-underline hover:text-gray-300"
-          >
-            {copy.privacy}
-          </Link>
-        </div>
+        <Link
+          href={siteRoutes.privacyPolicy}
+          className="text-xs text-gray-500 no-underline hover:text-gray-300"
+        >
+          Privacy
+        </Link>
       </div>
       <div className="flex w-full max-w-md flex-col items-center">{children}</div>
     </div>
@@ -1164,19 +1063,12 @@ function StatusBlock({ title, body }: { title: string; body: string }) {
   )
 }
 
-function StoreFallback({
-  className = '',
-  copy,
-}: {
-  className?: string
-  copy: PlaceUiCopy
-}) {
-  const stores = storesForPlatform()
+function StoreFallback({ className = '' }: { className?: string }) {
   return (
     <div className={`flex w-full max-w-sm flex-col items-center gap-3 ${className}`}>
-      <p className="text-xs text-gray-500">{copy.dontHaveApp}</p>
+      <p className="text-xs text-gray-500">Don&apos;t have the app?</p>
       <div className="flex w-full flex-col gap-2 sm:flex-row">
-        {stores.map(store => (
+        {appStores.map(store => (
           <a
             key={store.name}
             href={store.url}

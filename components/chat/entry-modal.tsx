@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import QRCode from 'react-qr-code'
 import { Button } from '@/components/ui/button'
@@ -21,18 +21,6 @@ interface EntryModalProps {
   /** After create room — dismiss invite layer and stay in this room. */
   onContinue?: () => void
   onJoin?: (data: { name: string; language: string }) => void
-  /** Seed Preferred Language (Place Chat guest / browser locale). */
-  initialLanguage?: string
-  joinCopy?: {
-    joinConversation?: string
-    enterDetails?: string
-    yourName?: string
-    namePlaceholder?: string
-    preferredLanguage?: string
-    enterChat?: string
-    back?: string
-    noSignup?: string
-  }
 }
 
 export default function EntryModal({
@@ -42,23 +30,12 @@ export default function EntryModal({
   onClose,
   onContinue,
   onJoin,
-  initialLanguage,
-  joinCopy,
 }: EntryModalProps) {
   const [name, setName] = useState('')
-  const [language, setLanguage] = useState(
-    initialLanguage || DEFAULT_CHAT_LANGUAGE_CODE,
-  )
+  const [language, setLanguage] = useState(DEFAULT_CHAT_LANGUAGE_CODE)
   const [origin] = useState(() =>
     typeof window !== 'undefined' ? window.location.origin : '',
   )
-
-  useEffect(() => {
-    if (!isOpen || variant !== 'join') return
-    if (initialLanguage) {
-      setLanguage(initialLanguage)
-    }
-  }, [isOpen, initialLanguage, variant])
 
   const handleJoin = () => {
     if (name.trim()) {
@@ -197,20 +174,20 @@ export default function EntryModal({
                   ) : (
                     <>
                       <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
-                        {joinCopy?.joinConversation ?? 'Join the conversation'}
+                        Join the conversation
                       </h2>
                       <p className="text-gray-400 text-sm mb-5 sm:mb-6">
-                        {joinCopy?.enterDetails ?? 'Enter your details to get started'}
+                        Enter your details to get started
                       </p>
 
                       <div className="space-y-4">
                         <div>
                           <label className="block text-xs font-medium text-gray-300 mb-2">
-                            {joinCopy?.yourName ?? 'Your Name'}
+                            Your Name
                           </label>
                           <Input
                             type="text"
-                            placeholder={joinCopy?.namePlaceholder ?? 'Enter your name'}
+                            placeholder="Enter your name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
@@ -220,7 +197,7 @@ export default function EntryModal({
 
                         <div>
                           <label className="block text-xs font-medium text-gray-300 mb-2">
-                            {joinCopy?.preferredLanguage ?? 'Preferred Language'}
+                            Preferred Language
                           </label>
                           <select
                             value={language}
@@ -241,7 +218,7 @@ export default function EntryModal({
                             disabled={!name.trim()}
                             className="min-w-0 flex-1 bg-linear-to-r from-purple-600 to-violet-600 py-2.5 font-semibold text-white hover:from-purple-700 hover:to-violet-700 disabled:cursor-not-allowed disabled:opacity-50 md:w-full"
                           >
-                            {joinCopy?.enterChat ?? 'Enter Chat'}
+                            Enter Chat
                           </Button>
                           <Button
                             type="button"
@@ -249,13 +226,13 @@ export default function EntryModal({
                             onClick={onClose}
                             className="shrink-0 border-white/20 px-4 text-white hover:bg-white/10 md:w-full"
                           >
-                            {joinCopy?.back ?? 'Back'}
+                            Back
                           </Button>
                         </div>
                       </div>
 
                       <p className="text-xs text-gray-500 text-center mt-4">
-                        {joinCopy?.noSignup ?? 'No signup required. Just chat and go.'}
+                        No signup required. Just chat and go.
                       </p>
                     </>
                   )}
