@@ -223,9 +223,9 @@ export function placeAppDeepLink(placeId: string): string {
   return `nessachat://place/${encodeURIComponent(placeId.trim())}`
 }
 
-/** HTTPS Place share / QR URL. */
+/** HTTPS Place share / QR URL (canonical public origin). */
 export function placeShareUrl(placeId: string): string {
-  return `https://nessachat.com/place/${encodeURIComponent(placeId.trim())}`
+  return `https://www.nessachat.com/place/${encodeURIComponent(placeId.trim())}`
 }
 export const footerLinks = {
   company: [

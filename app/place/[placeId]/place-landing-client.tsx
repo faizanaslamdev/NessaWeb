@@ -23,6 +23,7 @@ import {
 import { StoryPhotoCollage } from '@/components/place/story-photo-collage'
 import { StoryMediaViewer } from '@/components/place/story-media-viewer'
 import { PlaceSheet } from '@/components/place/place-sheet'
+import { PlaceCoverShareQr } from '@/components/place/place-share-qr'
 
 type PlaceLandingClientProps = {
   placeId: string
@@ -262,6 +263,10 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
               {siteConfig.name}
             </div>
           )}
+          <PlaceCoverShareQr
+            placeId={place.googlePlaceId || placeId}
+            placeName={place.name}
+          />
         </div>
 
         <div className="space-y-3 p-5 text-left">

@@ -5,7 +5,7 @@
 
 import { unstable_cache } from 'next/cache'
 
-import { siteConfig } from '@/lib/constants'
+import { placeShareUrl, siteConfig } from '@/lib/constants'
 import { isPublicPlaceIdValid } from '@/lib/place-landing'
 
 /** Consumer brand in Place share titles (matches product copy). */
@@ -159,7 +159,7 @@ export function getCachedPublicPlaceShareMeta(
 }
 
 export function placeCanonicalUrl(placeId: string): string {
-  return `${PLACE_SITE_ORIGIN}/place/${encodeURIComponent(placeId.trim())}`
+  return placeShareUrl(placeId)
 }
 
 export function placeFallbackOgImageUrl(): string {
