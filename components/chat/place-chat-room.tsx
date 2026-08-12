@@ -15,6 +15,7 @@ import EntryModal from '@/components/chat/entry-modal'
 import ParticipantsSheet from '@/components/chat/participants-sheet'
 import ParticipantsSidebar from '@/components/chat/participants-sidebar'
 import PlaceChatThread from '@/components/chat/place-chat-thread'
+import { PlaceWifiCard } from '@/components/place/place-wifi-card'
 import { Button } from '@/components/ui/button'
 import { useInstantAuth } from '@/hooks/use-instant-auth'
 import {
@@ -37,6 +38,10 @@ import {
 import { normalizePlaceChatLanguage } from '@/lib/place-chat/translation'
 import type { PlaceChatViewerPref } from '@/lib/place-chat/viewers'
 import type { ChatParticipant } from '@/components/chat/participants-list'
+import {
+  fetchPublicPlaceLanding,
+  type PublicPlaceWifi,
+} from '@/lib/place-landing'
 
 type PlaceChatRoomProps = {
   placeId: string
@@ -98,6 +103,7 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
   const [hydratedGuest, setHydratedGuest] = useState(false)
   const [viewers, setViewers] = useState<PlaceChatViewerPref[]>([])
   const [showParticipantsSheet, setShowParticipantsSheet] = useState(false)
+  const [placeWifi, setPlaceWifi] = useState<PublicPlaceWifi | null>(null)
   const [copyNotice, setCopyNotice] = useState<null | {
     kind: 'success' | 'error'
     text: string
@@ -131,6 +137,25 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
       setHydratedGuest(true)
     })
   }, [])
+
+  // Same canonical public Place Wi-Fi as /place/{id} (no second data source).
+  useEffect(() => {
+    let cancelled = false
+    void fetchPublicPlaceLanding(placeId)
+      .then(place => {
+        if (!cancelled) {
+          setPlaceWifi(place.wifi ?? null)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPlaceWifi(null)
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [placeId])
 
   useEffect(() => {
     if (authLoading || authError || !user) return
@@ -284,6 +309,12 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
               )
             }
           />
+
+          {placeWifi ? (
+            <div className="shrink-0 border-b border-white/10 bg-black/40 px-3 py-2 sm:px-4">
+              <PlaceWifiCard wifi={placeWifi} compact />
+            </div>
+          ) : null}
 
           <ParticipantsSheet
             open={showParticipantsSheet}

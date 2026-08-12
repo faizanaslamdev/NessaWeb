@@ -56,6 +56,14 @@ export type PublicPlaceLanding = {
   visitedCount: number
   recommenders?: PublicPlaceRecommender[]
   stories?: PublicPlaceStoryPreview[]
+  /** Public Wi-Fi when configured with isPublic on the Place doc. */
+  wifi?: PublicPlaceWifi
+}
+
+export type PublicPlaceWifi = {
+  networkName: string
+  password: string
+  note?: string
 }
 
 export type PublicPlaceLandingErrorCode =

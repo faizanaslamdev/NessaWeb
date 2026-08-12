@@ -25,6 +25,7 @@ import { StoryPhotoCollage } from '@/components/place/story-photo-collage'
 import { StoryMediaViewer } from '@/components/place/story-media-viewer'
 import { PlaceSheet } from '@/components/place/place-sheet'
 import { PlaceCoverShareQr } from '@/components/place/place-share-qr'
+import { PlaceWifiCard } from '@/components/place/place-wifi-card'
 
 type PlaceLandingClientProps = {
   placeId: string
@@ -352,6 +353,12 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
           See what&apos;s happening here now · messages last 24 hours
         </p>
       </div>
+
+      {place.wifi ? (
+        <div className="mt-6 w-full max-w-sm">
+          <PlaceWifiCard wifi={place.wifi} />
+        </div>
+      ) : null}
 
       {recommenders.length > 0 ? (
         <RecommendedBySection
@@ -966,6 +973,12 @@ function PlaceSkeleton() {
         <SkeletonBone className="h-12 w-full rounded-xl bg-[#8B5CF6]/20 sm:h-[52px]" />
         <SkeletonBone className="mx-auto h-3 w-56 rounded" />
       </div>
+
+      {/*
+        Wi-Fi is omitted from the skeleton on purpose: it only renders when the
+        Place has public wifi configured. Showing a permanent Wi-Fi placeholder
+        would flash an empty card for most Places.
+      */}
 
       <div className="mt-6 w-full space-y-2.5 text-left">
         <SkeletonBone className="h-4 w-28 rounded" />
