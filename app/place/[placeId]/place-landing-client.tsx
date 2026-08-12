@@ -20,12 +20,14 @@ import {
   type PublicPlaceLanding,
   type PublicPlaceRecommender,
   type PublicPlaceStoryPreview,
+  type PublicPlaceWifi,
 } from '@/lib/place-landing'
 import { StoryPhotoCollage } from '@/components/place/story-photo-collage'
 import { StoryMediaViewer } from '@/components/place/story-media-viewer'
 import { PlaceSheet } from '@/components/place/place-sheet'
 import { PlaceCoverShareQr } from '@/components/place/place-share-qr'
 import { PlaceWifiCard } from '@/components/place/place-wifi-card'
+import { PlaceWifiManageSheet } from '@/components/place/place-wifi-manage-sheet'
 
 type PlaceLandingClientProps = {
   placeId: string
@@ -141,6 +143,7 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
   )
   const [coverViewerOpen, setCoverViewerOpen] = useState(false)
   const [coverBroken, setCoverBroken] = useState(false)
+  const [wifiManageOpen, setWifiManageOpen] = useState(false)
 
   useEffect(() => {
     if (state.kind === 'ready') {
@@ -356,9 +359,43 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
 
       {place.wifi ? (
         <div className="mt-6 w-full max-w-sm">
-          <PlaceWifiCard wifi={place.wifi} />
+          <PlaceWifiCard
+            wifi={place.wifi}
+            onEdit={() => setWifiManageOpen(true)}
+          />
         </div>
-      ) : null}
+      ) : (
+        <div className="mt-4 w-full max-w-sm text-center">
+          <button
+            type="button"
+            onClick={() => setWifiManageOpen(true)}
+            className="text-[11px] font-medium text-gray-600 underline-offset-2 hover:text-gray-400 hover:underline"
+          >
+            Add Wi-Fi
+          </button>
+        </div>
+      )}
+
+      <PlaceWifiManageSheet
+        open={wifiManageOpen}
+        placeId={place.googlePlaceId}
+        initialWifi={place.wifi ?? null}
+        onClose={() => setWifiManageOpen(false)}
+        onSaved={(wifi: PublicPlaceWifi | null) => {
+          setState(prev => {
+            if (prev.kind !== 'ready') {
+              return prev
+            }
+            const next: PublicPlaceLanding = { ...prev.place }
+            if (wifi) {
+              next.wifi = wifi
+            } else {
+              delete next.wifi
+            }
+            return { kind: 'ready', place: next }
+          })
+        }}
+      />
 
       {recommenders.length > 0 ? (
         <RecommendedBySection
@@ -976,8 +1013,9 @@ function PlaceSkeleton() {
 
       {/*
         Wi-Fi is omitted from the skeleton on purpose: it only renders when the
-        Place has public wifi configured. Showing a permanent Wi-Fi placeholder
-        would flash an empty card for most Places.
+        Place has public wifi configured (Add Wi-Fi is a tiny secondary text
+        control). Showing a permanent Wi-Fi placeholder would flash an empty
+        card for most Places.
       */}
 
       <div className="mt-6 w-full space-y-2.5 text-left">

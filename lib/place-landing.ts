@@ -66,6 +66,10 @@ export type PublicPlaceWifi = {
   note?: string
 }
 
+export const PLACE_WIFI_NETWORK_NAME_MAX = 64
+export const PLACE_WIFI_PASSWORD_MAX = 128
+export const PLACE_WIFI_NOTE_MAX = 200
+
 export type PublicPlaceLandingErrorCode =
   | 'invalid-argument'
   | 'not-found'
@@ -80,6 +84,25 @@ export class PublicPlaceLandingError extends Error {
   constructor(code: PublicPlaceLandingErrorCode, message: string) {
     super(message)
     this.name = 'PublicPlaceLandingError'
+    this.code = code
+  }
+}
+
+export type SetPlaceWifiPublicErrorCode =
+  | 'invalid-argument'
+  | 'not-found'
+  | 'permission-denied'
+  | 'resource-exhausted'
+  | 'unavailable'
+  | 'internal'
+  | 'unknown'
+
+export class SetPlaceWifiPublicError extends Error {
+  readonly code: SetPlaceWifiPublicErrorCode
+
+  constructor(code: SetPlaceWifiPublicErrorCode, message: string) {
+    super(message)
+    this.name = 'SetPlaceWifiPublicError'
     this.code = code
   }
 }
@@ -117,6 +140,46 @@ function mapCallableError(err: unknown): PublicPlaceLandingError {
   return new PublicPlaceLandingError(
     'unknown',
     'Could not load this place. Please try again.',
+  )
+}
+
+function mapSetWifiError(err: unknown): SetPlaceWifiPublicError {
+  const code = (err as { code?: string })?.code ?? ''
+  const message =
+    typeof (err as { message?: string })?.message === 'string'
+      ? (err as { message: string }).message.replace(/^[^:]+:\s*/, '')
+      : ''
+
+  if (code.includes('permission-denied')) {
+    return new SetPlaceWifiPublicError(
+      'permission-denied',
+      'Incorrect PIN.',
+    )
+  }
+  if (code.includes('invalid-argument')) {
+    return new SetPlaceWifiPublicError(
+      'invalid-argument',
+      message || 'Invalid Wi-Fi details.',
+    )
+  }
+  if (code.includes('not-found')) {
+    return new SetPlaceWifiPublicError('not-found', 'Place not found.')
+  }
+  if (code.includes('resource-exhausted')) {
+    return new SetPlaceWifiPublicError(
+      'resource-exhausted',
+      'Too many attempts. Please try again later.',
+    )
+  }
+  if (code.includes('unavailable') || code.includes('failed-precondition')) {
+    return new SetPlaceWifiPublicError(
+      'unavailable',
+      'Wi-Fi update is temporarily unavailable.',
+    )
+  }
+  return new SetPlaceWifiPublicError(
+    'internal',
+    'Could not save Wi-Fi. Please try again.',
   )
 }
 
@@ -286,5 +349,88 @@ export async function fetchPublicStoryComments(input: {
     }
   } catch (e) {
     throw mapCallableError(e)
+  }
+}
+
+/**
+ * Temporary pilot: PIN-gated Wi-Fi write (server verifies PIN; client never
+ * writes Firestore places directly).
+ * TODO(business-profiles): replace PIN with Business Profile authorization.
+ */
+export async function setPlaceWifiPublic(input: {
+  placeId: string
+  pin: string
+  networkName: string
+  password: string
+  note?: string
+  isPublic?: boolean
+}): Promise<PublicPlaceWifi | null> {
+  if (!isPublicPlaceIdValid(input.placeId)) {
+    throw new SetPlaceWifiPublicError('invalid-argument', 'Invalid place.')
+  }
+  try {
+    const callable = httpsCallable<
+      {
+        placeId: string
+        pin: string
+        networkName: string
+        password: string
+        note?: string
+        isPublic?: boolean
+      },
+      { wifi: PublicPlaceWifi | null }
+    >(getCallableFunctions(), 'setPlaceWifiPublic')
+    const result = await callable({
+      placeId: input.placeId.trim(),
+      pin: input.pin.trim(),
+      networkName: input.networkName,
+      password: input.password,
+      ...(input.note !== undefined ? { note: input.note } : {}),
+      ...(typeof input.isPublic === 'boolean'
+        ? { isPublic: input.isPublic }
+        : {}),
+    })
+    const wifi = result.data?.wifi
+    if (!wifi || typeof wifi !== 'object') {
+      return null
+    }
+    if (
+      typeof wifi.networkName !== 'string' ||
+      typeof wifi.password !== 'string'
+    ) {
+      return null
+    }
+    return {
+      networkName: wifi.networkName,
+      password: wifi.password,
+      ...(typeof wifi.note === 'string' && wifi.note.trim()
+        ? { note: wifi.note.trim() }
+        : {}),
+    }
+  } catch (e) {
+    throw mapSetWifiError(e)
+  }
+}
+
+/** Temporary pilot: verify management PIN without writing Wi-Fi. */
+export async function verifyPlaceWifiManagementPin(input: {
+  placeId: string
+  pin: string
+}): Promise<void> {
+  if (!isPublicPlaceIdValid(input.placeId)) {
+    throw new SetPlaceWifiPublicError('invalid-argument', 'Invalid place.')
+  }
+  try {
+    const callable = httpsCallable<
+      { placeId: string; pin: string; verifyOnly: true },
+      { verified?: boolean }
+    >(getCallableFunctions(), 'setPlaceWifiPublic')
+    await callable({
+      placeId: input.placeId.trim(),
+      pin: input.pin.trim(),
+      verifyOnly: true,
+    })
+  } catch (e) {
+    throw mapSetWifiError(e)
   }
 }

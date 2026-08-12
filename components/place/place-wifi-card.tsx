@@ -6,9 +6,12 @@ import type { PublicPlaceWifi } from '@/lib/place-landing'
 
 type Props = {
   wifi: PublicPlaceWifi
-  /** Compact banner for Place Chat shell. */
-  compact?: boolean
   className?: string
+  /**
+   * Subtle pilot Edit action (web Place page only).
+   * TODO(business-profiles): keep card; swap auth for this callback later.
+   */
+  onEdit?: () => void
 }
 
 async function copyText(text: string): Promise<boolean> {
@@ -39,7 +42,11 @@ async function copyText(text: string): Promise<boolean> {
 /**
  * Public Place Wi-Fi card — password hidden by default.
  */
-export function PlaceWifiCard({ wifi, compact = false, className = '' }: Props) {
+export function PlaceWifiCard({
+  wifi,
+  className = '',
+  onEdit,
+}: Props) {
   const [revealed, setRevealed] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -61,8 +68,7 @@ export function PlaceWifiCard({ wifi, compact = false, className = '' }: Props) 
   return (
     <section
       className={[
-        'w-full rounded-2xl border border-white/10 bg-white/[0.04] text-left',
-        compact ? 'px-3.5 py-3' : 'px-4 py-4',
+        'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 text-left',
         className,
       ].join(' ')}
       aria-label={`Wi-Fi network ${wifi.networkName}`}
@@ -74,6 +80,15 @@ export function PlaceWifiCard({ wifi, compact = false, className = '' }: Props) 
           <span className="ml-auto text-[11px] font-medium text-emerald-300">
             {notice}
           </span>
+        ) : onEdit ? (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="ml-auto rounded-lg px-2 py-1 text-[11px] font-medium text-gray-500 hover:bg-white/5 hover:text-gray-300"
+            aria-label="Edit Wi-Fi"
+          >
+            Edit
+          </button>
         ) : null}
       </div>
 
