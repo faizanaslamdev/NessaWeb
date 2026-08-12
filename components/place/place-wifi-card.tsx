@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { PublicPlaceWifi } from '@/lib/place-landing'
 
@@ -13,6 +13,8 @@ type Props = {
    */
   onEdit?: () => void
 }
+
+type CopyTarget = 'network' | 'password'
 
 async function copyText(text: string): Promise<boolean> {
   try {
@@ -41,6 +43,7 @@ async function copyText(text: string): Promise<boolean> {
 
 /**
  * Public Place Wi-Fi card — password hidden by default.
+ * Copy feedback stays on the Copy control so the header/Edit never reflows.
  */
 export function PlaceWifiCard({
   wifi,
@@ -48,22 +51,41 @@ export function PlaceWifiCard({
   onEdit,
 }: Props) {
   const [revealed, setRevealed] = useState(false)
-  const [notice, setNotice] = useState<string | null>(null)
+  const [copied, setCopied] = useState<CopyTarget | null>(null)
+  const copiedTimerRef = useRef<number | null>(null)
 
-  const flash = useCallback((msg: string) => {
-    setNotice(msg)
-    window.setTimeout(() => setNotice(null), 1600)
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current !== null) {
+        window.clearTimeout(copiedTimerRef.current)
+      }
+    }
+  }, [])
+
+  const flashCopied = useCallback((target: CopyTarget) => {
+    setCopied(target)
+    if (copiedTimerRef.current !== null) {
+      window.clearTimeout(copiedTimerRef.current)
+    }
+    copiedTimerRef.current = window.setTimeout(() => {
+      setCopied(null)
+      copiedTimerRef.current = null
+    }, 1400)
   }, [])
 
   const onCopyNetwork = useCallback(async () => {
     const ok = await copyText(wifi.networkName)
-    flash(ok ? 'Network name copied' : 'Could not copy')
-  }, [wifi.networkName, flash])
+    if (ok) {
+      flashCopied('network')
+    }
+  }, [wifi.networkName, flashCopied])
 
   const onCopyPassword = useCallback(async () => {
     const ok = await copyText(wifi.password)
-    flash(ok ? 'Password copied' : 'Could not copy')
-  }, [wifi.password, flash])
+    if (ok) {
+      flashCopied('password')
+    }
+  }, [wifi.password, flashCopied])
 
   return (
     <section
@@ -75,16 +97,14 @@ export function PlaceWifiCard({
     >
       <div className="mb-3 flex items-center gap-2">
         <WifiIcon className="size-4 shrink-0 text-violet-300" />
-        <h2 className="text-sm font-semibold text-white">Wi-Fi</h2>
-        {notice ? (
-          <span className="ml-auto text-[11px] font-medium text-emerald-300">
-            {notice}
-          </span>
-        ) : onEdit ? (
+        <h2 className="min-w-0 flex-1 text-sm font-semibold text-white">
+          Wi-Fi
+        </h2>
+        {onEdit ? (
           <button
             type="button"
             onClick={onEdit}
-            className="ml-auto rounded-lg px-2 py-1 text-[11px] font-medium text-gray-500 hover:bg-white/5 hover:text-gray-300"
+            className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-medium text-gray-500 hover:bg-white/5 hover:text-gray-300"
             aria-label="Edit Wi-Fi"
           >
             Edit
@@ -102,14 +122,11 @@ export function PlaceWifiCard({
               {wifi.networkName}
             </p>
           </div>
-          <button
-            type="button"
+          <CopyButton
+            copied={copied === 'network'}
             onClick={() => void onCopyNetwork()}
-            className="shrink-0 rounded-lg px-2 py-1.5 text-xs font-medium text-violet-300 hover:bg-white/5"
-            aria-label="Copy Wi-Fi network name"
-          >
-            Copy
-          </button>
+            ariaLabel="Copy Wi-Fi network name"
+          />
         </div>
 
         <div className="flex items-start gap-2">
@@ -130,21 +147,18 @@ export function PlaceWifiCard({
             <button
               type="button"
               onClick={() => setRevealed(v => !v)}
-              className="rounded-lg px-2 py-1.5 text-xs font-medium text-gray-300 hover:bg-white/5"
+              className="inline-flex min-w-[3.25rem] items-center justify-center rounded-lg px-2 py-1.5 text-xs font-medium text-gray-300 hover:bg-white/5"
               aria-label={
                 revealed ? 'Hide Wi-Fi password' : 'Show Wi-Fi password'
               }
             >
               {revealed ? 'Hide' : 'Show'}
             </button>
-            <button
-              type="button"
+            <CopyButton
+              copied={copied === 'password'}
               onClick={() => void onCopyPassword()}
-              className="rounded-lg px-2 py-1.5 text-xs font-medium text-violet-300 hover:bg-white/5"
-              aria-label="Copy Wi-Fi password"
-            >
-              Copy
-            </button>
+              ariaLabel="Copy Wi-Fi password"
+            />
           </div>
         </div>
 
@@ -153,6 +167,50 @@ export function PlaceWifiCard({
         ) : null}
       </div>
     </section>
+  )
+}
+
+function CopyButton({
+  copied,
+  onClick,
+  ariaLabel,
+}: {
+  copied: boolean
+  onClick: () => void
+  ariaLabel: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        'inline-flex min-w-[3.5rem] shrink-0 items-center justify-center rounded-lg px-2 py-1.5 text-xs font-medium hover:bg-white/5',
+        copied ? 'text-emerald-300' : 'text-violet-300',
+      ].join(' ')}
+      aria-label={copied ? 'Copied' : ariaLabel}
+    >
+      {/* Fixed slot: both labels occupy the same box so the card never reflows. */}
+      <span className="relative inline-flex h-[1.125rem] w-[3.25rem] items-center justify-center">
+        <span
+          className={[
+            'absolute inset-0 flex items-center justify-center transition-opacity duration-150',
+            copied ? 'opacity-0' : 'opacity-100',
+          ].join(' ')}
+          aria-hidden={copied}
+        >
+          Copy
+        </span>
+        <span
+          className={[
+            'absolute inset-0 flex items-center justify-center transition-opacity duration-150',
+            copied ? 'opacity-100' : 'opacity-0',
+          ].join(' ')}
+          aria-hidden={!copied}
+        >
+          Copied
+        </span>
+      </span>
+    </button>
   )
 }
 
