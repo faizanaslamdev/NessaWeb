@@ -5,6 +5,7 @@ import { isPublicPlaceIdValid } from '@/lib/place-landing'
 import {
   PLACE_SHARE_BRAND,
   buildGenericPlaceMetadata,
+  buildPlacePageTitle,
   buildPlaceShareDescription,
   getCachedPublicPlaceShareMeta,
 } from '@/lib/place-share-meta'
@@ -68,7 +69,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
   }
 
-  const title = `${share.name} | ${PLACE_SHARE_BRAND}`
+  const title = buildPlacePageTitle(share.name)
   const description = buildPlaceShareDescription(share)
   const ogImage = share.coverImageUrl ?? generic.ogImage
 

@@ -9,6 +9,7 @@ import {
   siteConfig,
   siteRoutes,
 } from '@/lib/constants'
+import { buildPlacePageTitle } from '@/lib/place-title'
 import {
   fetchPublicPlaceLanding,
   fetchPublicPlaceRecommenders,
@@ -139,6 +140,16 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
   )
   const [coverViewerOpen, setCoverViewerOpen] = useState(false)
   const [coverBroken, setCoverBroken] = useState(false)
+
+  useEffect(() => {
+    if (state.kind === 'ready') {
+      document.title = buildPlacePageTitle(state.place.name)
+      return
+    }
+    if (state.kind === 'invalid') {
+      document.title = `Invalid place | ${siteConfig.name}`
+    }
+  }, [state])
 
   useEffect(() => {
     if (!placeIdValid) {

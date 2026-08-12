@@ -7,15 +7,15 @@ import { unstable_cache } from 'next/cache'
 
 import { placeShareUrl, siteConfig } from '@/lib/constants'
 import { isPublicPlaceIdValid } from '@/lib/place-landing'
+import { PLACE_SHARE_BRAND, buildPlacePageTitle } from '@/lib/place-title'
 
-/** Consumer brand in Place share titles (matches product copy). */
-export const PLACE_SHARE_BRAND = 'Nessa'
+export { PLACE_SHARE_BRAND, buildPlacePageTitle }
 
 /** Canonical public site origin for Place QR / OG URLs. */
 export const PLACE_SITE_ORIGIN = 'https://www.nessachat.com'
 
 const METADATA_REVALIDATE_SECONDS = 600
-const METADATA_FETCH_TIMEOUT_MS = 4000
+const METADATA_FETCH_TIMEOUT_MS = 8000
 
 export type PublicPlaceShareMeta = {
   googlePlaceId: string
@@ -143,19 +143,31 @@ async function fetchPublicPlaceShareMetaUncached(
  * Cached Place share fields for generateMetadata.
  * Fail-closed: returns null on invalid id / errors / timeout.
  */
-export function getCachedPublicPlaceShareMeta(
+export async function getCachedPublicPlaceShareMeta(
   placeId: string,
 ): Promise<PublicPlaceShareMeta | null> {
   const trimmed = placeId.trim()
   if (!isPublicPlaceIdValid(trimmed)) {
-    return Promise.resolve(null)
+    return null
   }
 
-  return unstable_cache(
-    async () => fetchPublicPlaceShareMetaUncached(trimmed),
-    ['public-place-share-meta-v2', trimmed],
-    { revalidate: METADATA_REVALIDATE_SECONDS },
-  )()
+  try {
+    return await unstable_cache(
+      async () => {
+        const meta = await fetchPublicPlaceShareMetaUncached(trimmed)
+        if (!meta) {
+          // Do not cache misses — a timeout/error would pin "Place on Nessa"
+          // in the helmet for the full revalidate window.
+          throw new Error('place-share-meta-miss')
+        }
+        return meta
+      },
+      ['public-place-share-meta-v3', trimmed],
+      { revalidate: METADATA_REVALIDATE_SECONDS },
+    )()
+  } catch {
+    return null
+  }
 }
 
 export function placeCanonicalUrl(placeId: string): string {
@@ -192,7 +204,7 @@ export function buildGenericPlaceMetadata(input: {
   }
 
   return {
-    title: `Place on ${PLACE_SHARE_BRAND}`,
+    title: buildPlacePageTitle(),
     description: `See this place on ${PLACE_SHARE_BRAND} and recommend it to travelers.`,
     canonical,
     ogTitle: `Recommend this place on ${PLACE_SHARE_BRAND}`,
