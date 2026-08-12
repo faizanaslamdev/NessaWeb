@@ -265,8 +265,8 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
         </div>
 
         <div className="space-y-3 p-5 text-left">
-          <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
-            <p className="min-w-0 flex-1 text-xs font-medium uppercase tracking-wide text-violet-400 [overflow-wrap:anywhere]">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <p className="min-w-0 flex-1 self-center text-xs font-medium uppercase leading-none tracking-wide text-violet-400 [overflow-wrap:anywhere]">
               {place.placeType}
             </p>
             <a
@@ -932,8 +932,8 @@ function PlaceSkeleton() {
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
         <SkeletonBone className="aspect-[16/10] w-full rounded-none" />
         <div className="space-y-3 p-5">
-          <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
-            <SkeletonBone className="h-3 w-20 min-w-0 flex-1 rounded" />
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <SkeletonBone className="h-3 w-20 min-w-0 flex-1 self-center rounded" />
             <SkeletonBone className="h-8 w-[7.25rem] shrink-0 rounded-xl bg-[#2A2A2A]" />
           </div>
           <SkeletonBone className="h-7 w-2/3 rounded-lg" />
