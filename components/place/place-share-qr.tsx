@@ -310,7 +310,7 @@ function CoverIconButton({
       title={label}
       disabled={disabled}
       onClick={onClick}
-      className="pointer-events-auto inline-flex size-9 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white shadow-sm backdrop-blur-md transition-colors hover:bg-black/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80 active:bg-black/70 disabled:opacity-50"
+      className="pointer-events-auto inline-flex size-9 items-center justify-center rounded-full border border-white/10 bg-black/35 text-white shadow-sm backdrop-blur-sm transition-colors hover:bg-black/45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80 active:bg-black/50 disabled:opacity-50"
     >
       {children}
     </button>
