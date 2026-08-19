@@ -10,31 +10,44 @@ import { APP_CHAT_LANGUAGES, DEFAULT_CHAT_LANGUAGE_CODE } from '@/lib/chat/langu
 import { shareUrlWithoutScheme } from '@/lib/chat/format'
 import { cn } from '@/lib/utils'
 
-export type EntryModalVariant = 'join' | 'invite-host'
+export type EntryModalVariant = 'join' | 'invite-host' | 'edit-profile'
 
 interface EntryModalProps {
   roomId: string
   isOpen: boolean
   /** `invite-host`: same layout as create-room flow — QR + share; no join form (you’re already in the room). */
   variant?: EntryModalVariant
+  /** Prefill for `edit-profile` (and optional join). */
+  initialName?: string
+  initialLanguage?: string
   onClose?: () => void
   /** After create room — dismiss invite layer and stay in this room. */
   onContinue?: () => void
   onJoin?: (data: { name: string; language: string }) => void
+  /** Profile save from in-room settings (`edit-profile` only). */
+  onSave?: (data: { name: string; language: string }) => void
 }
 
-export default function EntryModal({
-  roomId,
-  isOpen,
-  variant = 'join',
+type NameLanguageFormProps = {
+  variant: 'join' | 'edit-profile'
+  initialName: string
+  initialLanguage: string
+  onClose?: () => void
+  onJoin?: (data: { name: string; language: string }) => void
+  onSave?: (data: { name: string; language: string }) => void
+}
+
+function NameLanguageForm({
+  variant,
+  initialName,
+  initialLanguage,
   onClose,
-  onContinue,
   onJoin,
-}: EntryModalProps) {
-  const [name, setName] = useState('')
-  const [language, setLanguage] = useState(DEFAULT_CHAT_LANGUAGE_CODE)
-  const [origin] = useState(() =>
-    typeof window !== 'undefined' ? window.location.origin : '',
+  onSave,
+}: NameLanguageFormProps) {
+  const [name, setName] = useState(() => initialName.trim())
+  const [language, setLanguage] = useState(
+    () => initialLanguage || DEFAULT_CHAT_LANGUAGE_CODE,
   )
 
   const handleJoin = () => {
@@ -42,6 +55,102 @@ export default function EntryModal({
       onJoin?.({ name, language })
     }
   }
+
+  const handleSave = () => {
+    if (name.trim()) {
+      onSave?.({ name, language })
+    }
+  }
+
+  const isEdit = variant === 'edit-profile'
+
+  return (
+    <>
+      <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
+        {isEdit ? 'Your profile' : 'Join the conversation'}
+      </h2>
+      <p className="text-gray-400 text-sm mb-5 sm:mb-6">
+        {isEdit
+          ? 'Update how others see you in this place chat. Your messages stay in the room.'
+          : 'Enter your details to get started'}
+      </p>
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-xs font-medium text-gray-300 mb-2">
+            Your Name
+          </label>
+          <Input
+            type="text"
+            placeholder="Enter your name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) =>
+              e.key === 'Enter' && (isEdit ? handleSave() : handleJoin())
+            }
+            variant="landing"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-300 mb-2">
+            Preferred Language
+          </label>
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all appearance-none cursor-pointer"
+          >
+            {APP_CHAT_LANGUAGES.map((lang) => (
+              <option key={lang.code} value={lang.code}>
+                {lang.flag} {lang.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mt-6 flex flex-row-reverse items-stretch gap-2 md:flex-col md:gap-3">
+          <Button
+            onClick={isEdit ? handleSave : handleJoin}
+            disabled={!name.trim()}
+            className="min-w-0 flex-1 bg-linear-to-r from-purple-600 to-violet-600 py-2.5 font-semibold text-white hover:from-purple-700 hover:to-violet-700 disabled:cursor-not-allowed disabled:opacity-50 md:w-full"
+          >
+            {isEdit ? 'Save changes' : 'Enter Chat'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            className="shrink-0 border-white/20 px-4 text-white hover:bg-white/10 md:w-full"
+          >
+            {isEdit ? 'Cancel' : 'Back'}
+          </Button>
+        </div>
+      </div>
+
+      {!isEdit ? (
+        <p className="text-xs text-gray-500 text-center mt-4">
+          No signup required. Just chat and go.
+        </p>
+      ) : null}
+    </>
+  )
+}
+
+export default function EntryModal({
+  roomId,
+  isOpen,
+  variant = 'join',
+  initialName = '',
+  initialLanguage = DEFAULT_CHAT_LANGUAGE_CODE,
+  onClose,
+  onContinue,
+  onJoin,
+  onSave,
+}: EntryModalProps) {
+  const [origin] = useState(() =>
+    typeof window !== 'undefined' ? window.location.origin : '',
+  )
 
   const roomLink = origin ? `${origin}/chat/${roomId}` : `/chat/${roomId}`
   const showLiveQr = Boolean(origin)
@@ -55,7 +164,13 @@ export default function EntryModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={variant === 'invite-host' ? onContinue ?? onClose : onClose}
+            onClick={
+              variant === 'invite-host'
+                ? onContinue ?? onClose
+                : variant === 'edit-profile'
+                  ? onClose
+                  : onClose
+            }
             className="fixed inset-0 z-100 bg-black/80 backdrop-blur-sm"
           />
 
@@ -73,7 +188,7 @@ export default function EntryModal({
                 variant === 'invite-host' ? 'max-w-2xl' : 'max-w-md',
               )}
             >
-              {/* Join: name + language only (share/QR lives in room settings). Invite-host: QR + link + room-ready CTA. */}
+              {/* Join / edit-profile: name + language. Invite-host: QR + link + room-ready CTA. */}
               <div
                 className={cn(
                   'grid flex-1 min-h-0 grid-cols-1',
@@ -171,71 +286,17 @@ export default function EntryModal({
                         No signup for guests
                       </p>
                     </>
-                  ) : (
-                    <>
-                      <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
-                        Join the conversation
-                      </h2>
-                      <p className="text-gray-400 text-sm mb-5 sm:mb-6">
-                        Enter your details to get started
-                      </p>
-
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-300 mb-2">
-                            Your Name
-                          </label>
-                          <Input
-                            type="text"
-                            placeholder="Enter your name"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
-                            variant="landing"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-medium text-gray-300 mb-2">
-                            Preferred Language
-                          </label>
-                          <select
-                            value={language}
-                            onChange={(e) => setLanguage(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all appearance-none cursor-pointer"
-                          >
-                        {APP_CHAT_LANGUAGES.map((lang) => (
-                          <option key={lang.code} value={lang.code}>
-                            {lang.flag} {lang.name}
-                          </option>
-                        ))}
-                          </select>
-                        </div>
-
-                        <div className="mt-6 flex flex-row-reverse items-stretch gap-2 md:flex-col md:gap-3">
-                          <Button
-                            onClick={handleJoin}
-                            disabled={!name.trim()}
-                            className="min-w-0 flex-1 bg-linear-to-r from-purple-600 to-violet-600 py-2.5 font-semibold text-white hover:from-purple-700 hover:to-violet-700 disabled:cursor-not-allowed disabled:opacity-50 md:w-full"
-                          >
-                            Enter Chat
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onClose}
-                            className="shrink-0 border-white/20 px-4 text-white hover:bg-white/10 md:w-full"
-                          >
-                            Back
-                          </Button>
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-gray-500 text-center mt-4">
-                        No signup required. Just chat and go.
-                      </p>
-                    </>
-                  )}
+                  ) : variant === 'edit-profile' || variant === 'join' ? (
+                    <NameLanguageForm
+                      key={`${variant}:${initialName}:${initialLanguage}`}
+                      variant={variant}
+                      initialName={initialName}
+                      initialLanguage={initialLanguage}
+                      onClose={onClose}
+                      onJoin={onJoin}
+                      onSave={onSave}
+                    />
+                  ) : null}
                 </motion.div>
               </div>
             </div>

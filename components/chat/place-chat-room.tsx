@@ -29,57 +29,19 @@ import {
   subscribePlaceChatViewers,
 } from '@/lib/place-chat/api'
 import {
-  PLACE_CHAT_GUEST_LANGUAGE_KEY,
-  PLACE_CHAT_GUEST_NAME_KEY,
   PLACE_CHAT_VIEWER_HEARTBEAT_MS,
   buildPlaceChatTitle,
 } from '@/lib/place-chat/constants'
-import { normalizePlaceChatLanguage } from '@/lib/place-chat/translation'
+import {
+  persistPlaceChatGuestProfile,
+  readStoredGuestLanguage,
+  readStoredGuestName,
+} from '@/lib/place-chat/guest-profile'
 import type { PlaceChatViewerPref } from '@/lib/place-chat/viewers'
 import type { ChatParticipant } from '@/components/chat/participants-list'
 
 type PlaceChatRoomProps = {
   placeId: string
-}
-
-function readStoredGuestName(): string {
-  if (typeof window === 'undefined') return ''
-  try {
-    return localStorage.getItem(PLACE_CHAT_GUEST_NAME_KEY)?.trim() || ''
-  } catch {
-    return ''
-  }
-}
-
-function readStoredGuestLanguage(): string {
-  if (typeof window === 'undefined') return DEFAULT_CHAT_LANGUAGE_CODE
-  try {
-    return normalizePlaceChatLanguage(
-      localStorage.getItem(PLACE_CHAT_GUEST_LANGUAGE_KEY) ||
-        DEFAULT_CHAT_LANGUAGE_CODE,
-    )
-  } catch {
-    return DEFAULT_CHAT_LANGUAGE_CODE
-  }
-}
-
-function storeGuestName(name: string) {
-  try {
-    localStorage.setItem(PLACE_CHAT_GUEST_NAME_KEY, name.trim())
-  } catch {
-    // ignore
-  }
-}
-
-function storeGuestLanguage(language: string) {
-  try {
-    localStorage.setItem(
-      PLACE_CHAT_GUEST_LANGUAGE_KEY,
-      normalizePlaceChatLanguage(language),
-    )
-  } catch {
-    // ignore
-  }
 }
 
 export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
@@ -98,6 +60,7 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
   const [hydratedGuest, setHydratedGuest] = useState(false)
   const [viewers, setViewers] = useState<PlaceChatViewerPref[]>([])
   const [showParticipantsSheet, setShowParticipantsSheet] = useState(false)
+  const [showProfileSettings, setShowProfileSettings] = useState(false)
   const [copyNotice, setCopyNotice] = useState<null | {
     kind: 'success' | 'error'
     text: string
@@ -175,10 +138,7 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
   }, [user, guestName, guestLanguage, placeId, roomReady])
 
   useEffect(() => {
-    if (!inRoom) {
-      setViewers([])
-      return
-    }
+    if (!inRoom) return
     const { firestore } = getFirebaseClient()
     return subscribePlaceChatViewers(firestore, placeId, setViewers)
   }, [inRoom, placeId])
@@ -190,28 +150,48 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
 
   const participants: ChatParticipant[] = useMemo(
     () =>
-      viewers.map(v => ({
-        id: v.uid,
-        name: v.displayName || 'Traveler',
-        avatar: (v.displayName || 'T')[0]?.toUpperCase() ?? '?',
-        isOnline: presenceByUser[v.uid]?.state === 'online',
-      })),
-    [viewers, presenceByUser],
+      inRoom
+        ? viewers.map(v => ({
+            id: v.uid,
+            name: v.displayName || 'Traveler',
+            avatar: (v.displayName || 'T')[0]?.toUpperCase() ?? '?',
+            isOnline: presenceByUser[v.uid]?.state === 'online',
+          }))
+        : [],
+    [inRoom, viewers, presenceByUser],
   )
 
   const onlineCount = participants.filter(p => p.isOnline).length
 
   const handleJoin = (data: { name: string; language: string }) => {
-    const name = data.name.trim()
-    if (!name) return
-    const language = normalizePlaceChatLanguage(
-      data.language || DEFAULT_CHAT_LANGUAGE_CODE,
-    )
-    storeGuestName(name)
-    storeGuestLanguage(language)
-    setGuestName(name)
-    setGuestLanguage(language)
+    const saved = persistPlaceChatGuestProfile(data.name, data.language)
+    if (!saved) return
+    setGuestName(saved.displayName)
+    setGuestLanguage(saved.language)
   }
+
+  const handleSaveProfile = useCallback(
+    async (data: { name: string; language: string }) => {
+      const saved = persistPlaceChatGuestProfile(data.name, data.language)
+      if (!saved || !user) return
+      setGuestName(saved.displayName)
+      setGuestLanguage(saved.language)
+      setShowProfileSettings(false)
+      try {
+        const { firestore } = getFirebaseClient()
+        await setPlaceChatViewerLanguage(firestore, {
+          placeId,
+          uid: user.uid,
+          language: saved.language,
+          displayName: saved.displayName,
+        })
+        showNotice('success', 'Profile updated')
+      } catch {
+        showNotice('error', 'Could not save profile — try again')
+      }
+    },
+    [placeId, showNotice, user],
+  )
 
   if (authError) {
     return <AuthErrorPanel authError={authError} />
@@ -259,10 +239,23 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
         roomId={placeId}
         isOpen={entryOpen}
         variant="join"
+        initialLanguage={guestLanguage}
         onClose={() => {
           window.location.href = placeHref
         }}
         onJoin={handleJoin}
+      />
+
+      <EntryModal
+        roomId={placeId}
+        isOpen={showProfileSettings}
+        variant="edit-profile"
+        initialName={guestName}
+        initialLanguage={guestLanguage}
+        onClose={() => setShowProfileSettings(false)}
+        onSave={data => {
+          void handleSaveProfile(data)
+        }}
       />
 
       {!entryOpen && user && guestName ? (
@@ -275,7 +268,10 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
             metaLine={`Live Place Chat · ${onlineCount} online · messages last 24 hours`}
             hideOnlineCount
             hideShare
-            hideSettings
+            onSettings={() => {
+              setShowParticipantsSheet(false)
+              setShowProfileSettings(true)
+            }}
             onOpenParticipants={() => setShowParticipantsSheet(true)}
             onRoomIdCopied={ok =>
               showNotice(
