@@ -28,6 +28,7 @@ import { PlaceSheet } from '@/components/place/place-sheet'
 import { PlaceCoverShareQr } from '@/components/place/place-share-qr'
 import { PlaceWifiCard } from '@/components/place/place-wifi-card'
 import { PlaceWifiManageSheet } from '@/components/place/place-wifi-manage-sheet'
+import { placePhotoUrlForWebVariant } from '@/lib/place-photo'
 
 type PlaceLandingClientProps = {
   placeId: string
@@ -246,7 +247,11 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
   const recommenders = place.recommenders ?? []
   const stories = place.stories ?? []
   const moreStories = Math.max(0, place.storyCount - stories.length)
-  const coverUrl = place.coverImageUrl?.trim() || ''
+  const rawCoverUrl = place.coverImageUrl?.trim() || ''
+  const coverUrl =
+    placePhotoUrlForWebVariant(rawCoverUrl, 'landing') ?? rawCoverUrl
+  const coverLightboxUrl =
+    placePhotoUrlForWebVariant(rawCoverUrl, 'lightbox') ?? rawCoverUrl
   const hasCover = coverUrl.startsWith('https://') && !coverBroken
 
   return (
@@ -336,9 +341,9 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
       </div>
 
       <StoryMediaViewer
-        key={coverViewerOpen ? `cover-${coverUrl}` : 'cover-closed'}
+        key={coverViewerOpen ? `cover-${coverLightboxUrl}` : 'cover-closed'}
         open={coverViewerOpen && hasCover}
-        uris={hasCover ? [coverUrl] : []}
+        uris={hasCover ? [coverLightboxUrl] : []}
         initialIndex={0}
         onClose={() => setCoverViewerOpen(false)}
       />
