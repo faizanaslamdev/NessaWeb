@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 
 import {
@@ -32,6 +32,28 @@ import { placePhotoUrlForWebVariant } from '@/lib/place-photo'
 
 type PlaceLandingClientProps = {
   placeId: string
+  /** Canonical public slug (`/places/{slug}`) when known. */
+  slug?: string | null
+  /**
+   * Server-fetched landing (SSR): rendered immediately so the HTML carries
+   * the real content for crawlers / link previews, then refreshed quietly.
+   */
+  initialPlace?: PublicPlaceLanding | null
+}
+
+const subscribeNoop = () => () => {}
+
+/**
+ * False during SSR and hydration, true afterwards. Relative times ("5m ago")
+ * depend on the clock and the server HTML may be cached, so they render only
+ * on the client to avoid hydration mismatches.
+ */
+function useHydrated(): boolean {
+  return useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false,
+  )
 }
 
 type LoadState =
@@ -136,12 +158,20 @@ function initialLetter(name: string): string {
  * Business-first Place QR landing with read-only social proof.
  * Recommend / Open try the native deep link; store fallback stays secondary.
  */
-export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
+export function PlaceLandingClient({
+  placeId,
+  slug,
+  initialPlace,
+}: PlaceLandingClientProps) {
   const deepLink = useMemo(() => placeAppDeepLink(placeId), [placeId])
   const placeIdValid = isPublicPlaceIdValid(placeId)
-  const [state, setState] = useState<LoadState>(() =>
-    placeIdValid ? { kind: 'loading' } : { kind: 'invalid' },
-  )
+  const hasInitialPlace = Boolean(placeIdValid && initialPlace)
+  const [state, setState] = useState<LoadState>(() => {
+    if (!placeIdValid) {
+      return { kind: 'invalid' }
+    }
+    return initialPlace ? { kind: 'ready', place: initialPlace } : { kind: 'loading' }
+  })
   const [coverViewerOpen, setCoverViewerOpen] = useState(false)
   const [coverBroken, setCoverBroken] = useState(false)
   const [wifiManageOpen, setWifiManageOpen] = useState(false)
@@ -162,22 +192,30 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
     }
 
     let cancelled = false
-    queueMicrotask(() => {
-      if (!cancelled) {
-        setState({ kind: 'loading' })
-      }
-    })
+    if (!hasInitialPlace) {
+      queueMicrotask(() => {
+        if (!cancelled) {
+          setState({ kind: 'loading' })
+        }
+      })
+    }
 
     fetchPublicPlaceLanding(placeId)
       .then(place => {
         if (!cancelled) {
-          setCoverBroken(false)
-          setCoverViewerOpen(false)
+          if (!hasInitialPlace) {
+            setCoverBroken(false)
+            setCoverViewerOpen(false)
+          }
           setState({ kind: 'ready', place })
         }
       })
       .catch((e: unknown) => {
         if (cancelled) {
+          return
+        }
+        if (hasInitialPlace) {
+          // Keep the server-rendered content; the refresh was best-effort.
           return
         }
         if (e instanceof PublicPlaceLandingError) {
@@ -203,7 +241,7 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
     return () => {
       cancelled = true
     }
-  }, [placeId, placeIdValid])
+  }, [placeId, placeIdValid, hasInitialPlace])
 
   if (!placeIdValid || state.kind === 'invalid') {
     return (
@@ -285,6 +323,7 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
           )}
           <PlaceCoverShareQr
             placeId={place.googlePlaceId || placeId}
+            slug={place.slug ?? slug ?? null}
             placeName={place.name}
           />
         </div>
@@ -420,7 +459,8 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
 }
 
 function RecommenderCard({ person }: { person: PublicPlaceRecommender }) {
-  const relative = formatRelativeDate(person.createdAt)
+  const hydrated = useHydrated()
+  const relative = hydrated ? formatRelativeDate(person.createdAt) : null
   const note = person.note?.trim()
 
   return (
@@ -505,6 +545,7 @@ function StoriesSection({
   const [commentsStory, setCommentsStory] = useState<PublicPlaceStoryPreview | null>(
     null,
   )
+  const hydrated = useHydrated()
 
   return (
     <section className="mt-6 w-full text-left">
@@ -515,7 +556,7 @@ function StoriesSection({
         {stories.map(story => {
           const uris = storyMediaUris(story)
           const typeLabel = formatStoryType(story.type)
-          const relative = formatRelativeDate(story.createdAt)
+          const relative = hydrated ? formatRelativeDate(story.createdAt) : null
           const comments = story.commentsPreview ?? []
           const commentCount = story.commentCount ?? 0
 
@@ -594,7 +635,7 @@ function StoriesSection({
                               </span>{' '}
                               <span className="text-gray-300">{comment.text}</span>
                             </p>
-                            {formatRelativeDate(comment.createdAt) ? (
+                            {hydrated && formatRelativeDate(comment.createdAt) ? (
                               <p className="mt-0.5 text-[10px] text-gray-500">
                                 {formatRelativeDate(comment.createdAt)}
                               </p>

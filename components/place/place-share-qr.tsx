@@ -11,8 +11,8 @@ import QRCode from 'react-qr-code'
 
 import { PlaceSheet } from '@/components/place/place-sheet'
 import { shareUrlWithoutScheme } from '@/lib/chat/format'
-import { placeShareUrl } from '@/lib/constants'
 import { isPublicPlaceIdValid } from '@/lib/place-landing'
+import { placePublicUrl } from '@/lib/place-slug'
 import {
   buildPlaceShareMessage,
   placeQrFilename,
@@ -111,9 +111,12 @@ function downloadSvgAsPng(
 
 export function PlaceCoverShareQr({
   placeId,
+  slug,
   placeName,
 }: {
   placeId: string
+  /** Canonical slug; QR + share use the clean `/places/{slug}` URL when set. */
+  slug?: string | null
   placeName: string
 }) {
   const [qrOpen, setQrOpen] = useState(false)
@@ -121,7 +124,11 @@ export function PlaceCoverShareQr({
   const [saving, setSaving] = useState(false)
   const exportHostRef = useRef<HTMLDivElement>(null)
 
-  const shareUrl = isPublicPlaceIdValid(placeId) ? placeShareUrl(placeId) : ''
+  const placeIdValid = isPublicPlaceIdValid(placeId)
+  // Clean canonical link for sharing / display.
+  const shareUrl = placeIdValid ? placePublicUrl({ placeId, slug }) : ''
+  // Same page, tagged so QR scans are attributed (stripped after counting).
+  const qrUrl = placeIdValid ? placePublicUrl({ placeId, slug }, { ref: 'qr' }) : ''
 
   const showFeedback = useCallback((next: Feedback) => {
     setFeedback(next)
@@ -252,7 +259,7 @@ export function PlaceCoverShareQr({
           <div className="rounded-2xl bg-white p-4">
             {shareUrl ? (
               <QRCode
-                value={shareUrl}
+                value={qrUrl}
                 size={200}
                 bgColor="#FFFFFF"
                 fgColor="#111111"
@@ -278,7 +285,7 @@ export function PlaceCoverShareQr({
               style={{ left: -4000 }}
             >
               <QRCode
-                value={shareUrl}
+                value={qrUrl}
                 size={EXPORT_QR_SIZE}
                 bgColor="#FFFFFF"
                 fgColor="#111111"

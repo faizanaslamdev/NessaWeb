@@ -58,6 +58,8 @@ export type PublicPlaceLanding = {
   stories?: PublicPlaceStoryPreview[]
   /** Public Wi-Fi when configured with isPublic on the Place doc. */
   wifi?: PublicPlaceWifi
+  /** Canonical public slug (`/places/{slug}`) when the Place has one. */
+  slug?: string
 }
 
 export type PublicPlaceWifi = {
@@ -433,4 +435,28 @@ export async function verifyPlaceWifiManagementPin(input: {
   } catch (e) {
     throw mapSetWifiError(e)
   }
+}
+
+/**
+ * Count one public Place page visit by source (fire-and-forget; aggregate
+ * only). Errors are swallowed by callers — tracking must never affect the page.
+ */
+export async function recordPlaceLinkVisit(input: {
+  placeId: string
+  source: string
+  qrId?: string | null
+}): Promise<void> {
+  const placeId = input.placeId.trim()
+  if (!isPublicPlaceIdValid(placeId)) {
+    return
+  }
+  const callable = httpsCallable<
+    { placeId: string; source: string; qrId?: string },
+    { ok: boolean; counted: boolean }
+  >(getCallableFunctions(), 'recordPlaceLinkVisit')
+  await callable({
+    placeId,
+    source: input.source,
+    ...(input.qrId ? { qrId: input.qrId } : {}),
+  })
 }

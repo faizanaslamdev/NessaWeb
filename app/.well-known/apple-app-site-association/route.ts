@@ -12,6 +12,11 @@ const AASA = {
     details: [
       {
         appID: '3XZN4DWVFG.com.nessachat',
+        // Canonical slug URLs (`/places/{slug}`) are intentionally NOT listed
+        // yet: app builds before slug support can't route them and would open
+        // to the home screen. Add '/places/*' once the slug-aware app release
+        // is widely installed (until then those links open the web page,
+        // whose "Open in Nessa" button deep-links into any app version).
         paths: ['/place/*'],
       },
     ],

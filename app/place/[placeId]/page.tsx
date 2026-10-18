@@ -1,50 +1,43 @@
 import type { Metadata } from 'next'
+import { permanentRedirect } from 'next/navigation'
 
 import { PlaceLandingClient } from './place-landing-client'
+import { PlaceVisitTracker } from '@/components/place/place-visit-tracker'
 import { isPublicPlaceIdValid } from '@/lib/place-landing'
+import { buildPlaceSeoMetadata, placeOgImages } from '@/lib/place-page-metadata'
 import {
-  PLACE_FALLBACK_OG_IMAGE,
   PLACE_SHARE_BRAND,
   buildGenericPlaceMetadata,
   buildPlacePageTitle,
   buildPlaceShareDescription,
+  getCachedPublicPlaceLanding,
   getCachedPublicPlaceShareMeta,
+  toSsrSafeLanding,
 } from '@/lib/place-share-meta'
+import {
+  isValidPlaceSlug,
+  placeCanonicalPath,
+  placeCanonicalUrlForSlug,
+  searchParamsToQueryString,
+} from '@/lib/place-slug'
+import { getCanonicalSlugForPlaceId } from '@/lib/place-slug-store'
 
 type PageProps = {
   params: Promise<{ placeId: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-function placeOgImages(
-  imageUrl: string,
-  alt: string,
-  opts?: { width?: number; height?: number },
-): NonNullable<NonNullable<Metadata['openGraph']>['images']> {
-  const isFallback = imageUrl === PLACE_FALLBACK_OG_IMAGE.url
-  if (isFallback) {
-    return [
-      {
-        url: PLACE_FALLBACK_OG_IMAGE.url,
-        width: PLACE_FALLBACK_OG_IMAGE.width,
-        height: PLACE_FALLBACK_OG_IMAGE.height,
-        type: PLACE_FALLBACK_OG_IMAGE.type,
-        alt,
-      },
-    ]
+function decodePlaceId(raw: string | undefined): string {
+  try {
+    return decodeURIComponent(raw || '').trim()
+  } catch {
+    return (raw || '').trim()
   }
-  return [
-    {
-      url: imageUrl,
-      alt,
-      ...(opts?.width ? { width: opts.width } : {}),
-      ...(opts?.height ? { height: opts.height } : {}),
-    },
-  ]
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { placeId: raw } = await params
-  const placeId = decodeURIComponent(raw || '').trim()
+  const placeId = decodePlaceId(raw)
   const valid = isPublicPlaceIdValid(placeId)
 
   if (!valid) {
@@ -73,6 +66,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const share = await getCachedPublicPlaceShareMeta(placeId)
+  // Nessa Places with a slug: the page permanently redirects to
+  // `/places/{slug}`; point metadata at that canonical URL too.
+  const slug = share?.slug ?? (await getCanonicalSlugForPlaceId(placeId))
+  if (share && slug) {
+    return buildPlaceSeoMetadata(share, placeCanonicalUrlForSlug(slug))
+  }
   const generic = buildGenericPlaceMetadata({ placeId, validId: true })
 
   if (!share) {
@@ -127,9 +126,38 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-export default async function PlaceLandingPage({ params }: PageProps) {
+/**
+ * Legacy Place URL: `/place/{googlePlaceId}` (every QR/link shared before
+ * slugs). Places that have a public slug permanently redirect (308) to the
+ * canonical `/places/{slug}` page, keeping the query string so tracking params
+ * survive. Places without a slug — or if the slug lookup is unavailable —
+ * render here exactly as before, so no existing link ever breaks.
+ */
+export default async function PlaceLandingPage({ params, searchParams }: PageProps) {
   const { placeId: raw } = await params
-  const placeId = decodeURIComponent(raw || '').trim()
+  const placeId = decodePlaceId(raw)
 
-  return <PlaceLandingClient placeId={placeId} />
+  const valid = isPublicPlaceIdValid(placeId)
+  const [slugFromIndex, landing] = valid
+    ? await Promise.all([
+        getCanonicalSlugForPlaceId(placeId),
+        getCachedPublicPlaceLanding(placeId),
+      ])
+    : [null, null]
+  // Either source is authoritative for the Place's current slug.
+  const slug = slugFromIndex ?? (isValidPlaceSlug(landing?.slug) ? landing?.slug : null)
+  if (slug) {
+    const query = searchParamsToQueryString(await searchParams)
+    permanentRedirect(`${placeCanonicalPath(slug)}${query}`)
+  }
+
+  return (
+    <>
+      <PlaceVisitTracker placeId={placeId} />
+      <PlaceLandingClient
+        placeId={placeId}
+        initialPlace={landing ? toSsrSafeLanding(landing) : null}
+      />
+    </>
+  )
 }
