@@ -37,6 +37,21 @@ export function placeCanonicalUrlForSlug(slug: string): string {
   return `${PLACE_PUBLIC_ORIGIN}${placeCanonicalPath(slug)}`
 }
 
+/**
+ * TEMPORARY (until the slug-aware app release is widely installed): QR codes
+ * encode the legacy `/place/{googlePlaceId}?ref=qr` URL instead of
+ * `/places/{slug}?ref=qr`.
+ *
+ * Why: the currently installed Android app claims every `/place*` path as an
+ * App Link (manifest `pathPrefix="/place"` also matches `/places/…`) but can't
+ * route slugs, so scanning a slug QR would open the app on its home screen.
+ * Every app version handles the legacy id URL, and browsers get a 308 to the
+ * canonical slug page — so the canonical URL is still `/places/{slug}`.
+ *
+ * Flip to false after the app update ships (and add '/places/*' to AASA).
+ */
+export const PLACE_QR_USE_LEGACY_ID_PATH = true
+
 /** `ref` values we print on links/QRs we control (see place-link-source.ts). */
 export type PlaceLinkRef = 'qr' | 'ig' | 'site' | 'app'
 
@@ -62,6 +77,21 @@ export function placePublicUrl(
   }
   const query = params.toString()
   return query ? `${base}?${query}` : base
+}
+
+/**
+ * URL encoded into Place QR codes (always tagged `ref=qr`). See
+ * PLACE_QR_USE_LEGACY_ID_PATH for why it may use the legacy id path.
+ */
+export function placeQrUrl(
+  place: { placeId: string; slug?: string | null },
+  options: { qrId?: string; useLegacyIdPath?: boolean } = {},
+): string {
+  const useLegacy = options.useLegacyIdPath ?? PLACE_QR_USE_LEGACY_ID_PATH
+  return placePublicUrl(
+    { placeId: place.placeId, slug: useLegacy ? null : place.slug },
+    { ref: 'qr', qrId: options.qrId },
+  )
 }
 
 /**

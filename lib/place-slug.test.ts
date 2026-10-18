@@ -2,7 +2,9 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import {
+  PLACE_QR_USE_LEGACY_ID_PATH,
   isValidPlaceSlug,
+  placeQrUrl,
   placeCanonicalUrlForSlug,
   placePublicUrl,
   searchParamsToQueryString,
@@ -43,6 +45,20 @@ describe('place slug URLs', () => {
     assert.equal(
       placePublicUrl({ placeId: 'ChIJabc123', slug: 'kitecabana-cumbuco' }, { ref: 'qr', qrId: 'table-4' }),
       'https://www.nessachat.com/places/kitecabana-cumbuco?ref=qr&qr=table-4',
+    )
+  })
+
+  it('QR URLs are always tagged ref=qr; legacy id path while the switch is on', () => {
+    const place = { placeId: 'ChIJabc123', slug: 'kitecabana-cumbuco' }
+    assert.equal(PLACE_QR_USE_LEGACY_ID_PATH, true)
+    assert.equal(placeQrUrl(place), 'https://www.nessachat.com/place/ChIJabc123?ref=qr')
+    assert.equal(
+      placeQrUrl(place, { useLegacyIdPath: false, qrId: 'table-4' }),
+      'https://www.nessachat.com/places/kitecabana-cumbuco?ref=qr&qr=table-4',
+    )
+    assert.equal(
+      placeQrUrl({ placeId: 'ChIJabc123', slug: null }, { useLegacyIdPath: false }),
+      'https://www.nessachat.com/place/ChIJabc123?ref=qr',
     )
   })
 

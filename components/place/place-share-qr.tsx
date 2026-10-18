@@ -12,7 +12,7 @@ import QRCode from 'react-qr-code'
 import { PlaceSheet } from '@/components/place/place-sheet'
 import { shareUrlWithoutScheme } from '@/lib/chat/format'
 import { isPublicPlaceIdValid } from '@/lib/place-landing'
-import { placePublicUrl } from '@/lib/place-slug'
+import { placePublicUrl, placeQrUrl } from '@/lib/place-slug'
 import {
   buildPlaceShareMessage,
   placeQrFilename,
@@ -127,8 +127,9 @@ export function PlaceCoverShareQr({
   const placeIdValid = isPublicPlaceIdValid(placeId)
   // Clean canonical link for sharing / display.
   const shareUrl = placeIdValid ? placePublicUrl({ placeId, slug }) : ''
-  // Same page, tagged so QR scans are attributed (stripped after counting).
-  const qrUrl = placeIdValid ? placePublicUrl({ placeId, slug }, { ref: 'qr' }) : ''
+  // Tagged so QR scans are attributed (stripped after counting). Temporarily
+  // the legacy id path — see PLACE_QR_USE_LEGACY_ID_PATH.
+  const qrUrl = placeIdValid ? placeQrUrl({ placeId, slug }) : ''
 
   const showFeedback = useCallback((next: Feedback) => {
     setFeedback(next)
