@@ -38,19 +38,21 @@ export function placeCanonicalUrlForSlug(slug: string): string {
 }
 
 /**
- * TEMPORARY (until the slug-aware app release is widely installed): QR codes
- * encode the legacy `/place/{googlePlaceId}?ref=qr` URL instead of
- * `/places/{slug}?ref=qr`.
+ * TEMPORARY (until the slug-aware app release is widely installed): every link
+ * we hand out — QR codes, Share, Copy Link — uses the legacy
+ * `/place/{googlePlaceId}` URL instead of `/places/{slug}`.
  *
  * Why: the currently installed Android app claims every `/place*` path as an
  * App Link (manifest `pathPrefix="/place"` also matches `/places/…`) but can't
- * route slugs, so scanning a slug QR would open the app on its home screen.
+ * route slugs, so opening a slug link would land on the app's home screen.
  * Every app version handles the legacy id URL, and browsers get a 308 to the
- * canonical slug page — so the canonical URL is still `/places/{slug}`.
+ * canonical slug page — so the canonical URL is still `/places/{slug}` (and
+ * that's what we display).
  *
  * Flip to false after the app update ships (and add '/places/*' to AASA).
+ * Keep in sync with NessaChat `PLACE_LINKS_USE_LEGACY_ID_PATH`.
  */
-export const PLACE_QR_USE_LEGACY_ID_PATH = true
+export const PLACE_LINKS_USE_LEGACY_ID_PATH = true
 
 /** `ref` values we print on links/QRs we control (see place-link-source.ts). */
 export type PlaceLinkRef = 'qr' | 'ig' | 'site' | 'app'
@@ -80,18 +82,27 @@ export function placePublicUrl(
 }
 
 /**
- * URL encoded into Place QR codes (always tagged `ref=qr`). See
- * PLACE_QR_USE_LEGACY_ID_PATH for why it may use the legacy id path.
+ * URL we hand out for a Place (Share / Copy Link / QR). See
+ * PLACE_LINKS_USE_LEGACY_ID_PATH for why it may use the legacy id path.
+ * For display, use placePublicUrl (the clean canonical URL).
  */
+export function placeOutboundUrl(
+  place: { placeId: string; slug?: string | null },
+  options: { ref?: PlaceLinkRef; qrId?: string; useLegacyIdPath?: boolean } = {},
+): string {
+  const useLegacy = options.useLegacyIdPath ?? PLACE_LINKS_USE_LEGACY_ID_PATH
+  return placePublicUrl(
+    { placeId: place.placeId, slug: useLegacy ? null : place.slug },
+    { ref: options.ref, qrId: options.qrId },
+  )
+}
+
+/** URL encoded into Place QR codes (always tagged `ref=qr`). */
 export function placeQrUrl(
   place: { placeId: string; slug?: string | null },
   options: { qrId?: string; useLegacyIdPath?: boolean } = {},
 ): string {
-  const useLegacy = options.useLegacyIdPath ?? PLACE_QR_USE_LEGACY_ID_PATH
-  return placePublicUrl(
-    { placeId: place.placeId, slug: useLegacy ? null : place.slug },
-    { ref: 'qr', qrId: options.qrId },
-  )
+  return placeOutboundUrl(place, { ...options, ref: 'qr' })
 }
 
 /**

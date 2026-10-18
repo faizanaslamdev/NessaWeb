@@ -12,7 +12,7 @@ import QRCode from 'react-qr-code'
 import { PlaceSheet } from '@/components/place/place-sheet'
 import { shareUrlWithoutScheme } from '@/lib/chat/format'
 import { isPublicPlaceIdValid } from '@/lib/place-landing'
-import { placePublicUrl, placeQrUrl } from '@/lib/place-slug'
+import { placeOutboundUrl, placePublicUrl, placeQrUrl } from '@/lib/place-slug'
 import {
   buildPlaceShareMessage,
   placeQrFilename,
@@ -125,11 +125,14 @@ export function PlaceCoverShareQr({
   const exportHostRef = useRef<HTMLDivElement>(null)
 
   const placeIdValid = isPublicPlaceIdValid(placeId)
-  // Clean canonical link for sharing / display.
-  const shareUrl = placeIdValid ? placePublicUrl({ placeId, slug }) : ''
-  // Tagged so QR scans are attributed (stripped after counting). Temporarily
-  // the legacy id path — see PLACE_QR_USE_LEGACY_ID_PATH.
+  // Share / Copy Link and QR use the outbound URL — temporarily the legacy id
+  // path so existing Android app installs open the right Place (see
+  // PLACE_LINKS_USE_LEGACY_ID_PATH); browsers get a 308 to the slug page.
+  const shareUrl = placeIdValid ? placeOutboundUrl({ placeId, slug }) : ''
+  // Tagged so QR scans are attributed (stripped after counting).
   const qrUrl = placeIdValid ? placeQrUrl({ placeId, slug }) : ''
+  // What people see: always the clean canonical URL.
+  const displayUrl = placeIdValid ? placePublicUrl({ placeId, slug }) : ''
 
   const showFeedback = useCallback((next: Feedback) => {
     setFeedback(next)
@@ -275,7 +278,7 @@ export function PlaceCoverShareQr({
           </p>
           {shareUrl ? (
             <p className="max-w-full break-all text-center text-xs text-gray-500">
-              {shareUrlWithoutScheme(shareUrl)}
+              {shareUrlWithoutScheme(displayUrl)}
             </p>
           ) : null}
           {shareUrl ? (

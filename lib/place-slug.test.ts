@@ -2,8 +2,9 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import {
-  PLACE_QR_USE_LEGACY_ID_PATH,
+  PLACE_LINKS_USE_LEGACY_ID_PATH,
   isValidPlaceSlug,
+  placeOutboundUrl,
   placeQrUrl,
   placeCanonicalUrlForSlug,
   placePublicUrl,
@@ -50,7 +51,7 @@ describe('place slug URLs', () => {
 
   it('QR URLs are always tagged ref=qr; legacy id path while the switch is on', () => {
     const place = { placeId: 'ChIJabc123', slug: 'kitecabana-cumbuco' }
-    assert.equal(PLACE_QR_USE_LEGACY_ID_PATH, true)
+    assert.equal(PLACE_LINKS_USE_LEGACY_ID_PATH, true)
     assert.equal(placeQrUrl(place), 'https://www.nessachat.com/place/ChIJabc123?ref=qr')
     assert.equal(
       placeQrUrl(place, { useLegacyIdPath: false, qrId: 'table-4' }),
@@ -60,6 +61,17 @@ describe('place slug URLs', () => {
       placeQrUrl({ placeId: 'ChIJabc123', slug: null }, { useLegacyIdPath: false }),
       'https://www.nessachat.com/place/ChIJabc123?ref=qr',
     )
+  })
+
+  it('Share / Copy Link use the legacy id path while the switch is on', () => {
+    const place = { placeId: 'ChIJabc123', slug: 'kitecabana-cumbuco' }
+    assert.equal(placeOutboundUrl(place), 'https://www.nessachat.com/place/ChIJabc123')
+    assert.equal(
+      placeOutboundUrl(place, { useLegacyIdPath: false }),
+      'https://www.nessachat.com/places/kitecabana-cumbuco',
+    )
+    // Display stays canonical regardless of the switch.
+    assert.equal(placePublicUrl(place), 'https://www.nessachat.com/places/kitecabana-cumbuco')
   })
 
   it('rebuilds query strings for redirects', () => {
