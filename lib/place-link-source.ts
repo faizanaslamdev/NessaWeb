@@ -20,9 +20,14 @@ export type PlaceLinkSource =
   | 'website'
   | 'search'
   | 'nessa_app'
+  | 'prearrival'
   | 'nessa_web'
   | 'referral'
   | 'direct'
+
+/** What is being counted (mirrors the backend). */
+export type PlaceLinkEvent = 'visit' | 'chat_join'
+export type PlaceLinkVisitorKind = 'new' | 'returning'
 
 const REF_ALIASES: Record<string, PlaceLinkSource> = {
   qr: 'qr',
@@ -35,6 +40,9 @@ const REF_ALIASES: Record<string, PlaceLinkSource> = {
   app: 'nessa_app',
   nessa: 'nessa_app',
   nessa_app: 'nessa_app',
+  pre: 'prearrival',
+  prearrival: 'prearrival',
+  booking: 'prearrival',
   google: 'search',
   seo: 'search',
   search: 'search',
@@ -131,4 +139,85 @@ export function stripPlaceTrackingParams(href: string): string | null {
   }
   const query = url.searchParams.toString()
   return `${url.pathname}${query ? `?${query}` : ''}${url.hash}`
+}
+
+/**
+ * Per-Place attribution remembered in this browser so a later Place Chat
+ * join can be credited to the source that brought the visitor (the Place
+ * page strips tracking params from the URL). Session-scoped; no identity.
+ */
+const SOURCE_KEY_PREFIX = 'nessa:place-source:'
+/** Persisted "seen this Place before" flag (new vs returning). */
+const SEEN_KEY_PREFIX = 'nessa:place-seen:'
+
+export function rememberPlaceLinkSource(
+  storage: Pick<Storage, 'setItem'> | null,
+  placeId: string,
+  source: PlaceLinkSource,
+  qrId: string | null,
+): void {
+  try {
+    storage?.setItem(`${SOURCE_KEY_PREFIX}${placeId}`, JSON.stringify({ source, qrId }))
+  } catch {
+    // storage unavailable
+  }
+}
+
+export function recallPlaceLinkSource(
+  storage: Pick<Storage, 'getItem'> | null,
+  placeId: string,
+): { source: PlaceLinkSource; qrId: string | null } | null {
+  try {
+    const raw = storage?.getItem(`${SOURCE_KEY_PREFIX}${placeId}`)
+    if (!raw) {
+      return null
+    }
+    const parsed = JSON.parse(raw) as { source?: unknown; qrId?: unknown }
+    const source = typeof parsed.source === 'string' ? parsed.source : ''
+    if (!isKnownSource(source)) {
+      return null
+    }
+    return {
+      source,
+      qrId: typeof parsed.qrId === 'string' ? sanitizeQrId(parsed.qrId) : null,
+    }
+  } catch {
+    return null
+  }
+}
+
+export const PLACE_LINK_SOURCES: readonly PlaceLinkSource[] = [
+  'qr',
+  'instagram',
+  'website',
+  'search',
+  'nessa_app',
+  'prearrival',
+  'nessa_web',
+  'referral',
+  'direct',
+]
+
+function isKnownSource(value: string): value is PlaceLinkSource {
+  return (PLACE_LINK_SOURCES as readonly string[]).includes(value)
+}
+
+/**
+ * Marks this Place as seen in persistent storage and reports whether this
+ * is the browser's first visit. Unavailable storage counts as 'new'.
+ */
+export function markPlaceSeen(
+  storage: Pick<Storage, 'getItem' | 'setItem'> | null,
+  placeId: string,
+): PlaceLinkVisitorKind {
+  try {
+    const key = `${SEEN_KEY_PREFIX}${placeId}`
+    if (storage?.getItem(key)) {
+      return 'returning'
+    }
+    storage?.setItem(key, '1')
+    return 'new'
+  } catch {
+    return 'new'
+  }
 }

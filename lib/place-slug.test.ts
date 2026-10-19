@@ -4,6 +4,8 @@ import { describe, it } from 'node:test'
 import {
   PLACE_LINKS_USE_LEGACY_ID_PATH,
   isValidPlaceSlug,
+  placeChatCanonicalPath,
+  placeChatOutboundUrl,
   placeOutboundUrl,
   placeQrUrl,
   placeCanonicalUrlForSlug,
@@ -72,6 +74,23 @@ describe('place slug URLs', () => {
     )
     // Display stays canonical regardless of the switch.
     assert.equal(placePublicUrl(place), 'https://www.nessachat.com/places/kitecabana-cumbuco')
+  })
+
+  it('builds Place Chat URLs following the same legacy-path switch', () => {
+    const place = { placeId: 'ChIJabc123', slug: 'kitecabana-cumbuco' }
+    assert.equal(placeChatCanonicalPath('kitecabana-cumbuco'), '/places/kitecabana-cumbuco/chat')
+    assert.equal(
+      placeChatOutboundUrl(place, { ref: 'qr', qrId: 'bar' }),
+      'https://www.nessachat.com/place/ChIJabc123/chat?ref=qr&qr=bar',
+    )
+    assert.equal(
+      placeChatOutboundUrl(place, { ref: 'pre', useLegacyIdPath: false }),
+      'https://www.nessachat.com/places/kitecabana-cumbuco/chat?ref=pre',
+    )
+    assert.equal(
+      placeChatOutboundUrl({ placeId: 'ChIJabc123', slug: null }, { useLegacyIdPath: false }),
+      'https://www.nessachat.com/place/ChIJabc123/chat',
+    )
   })
 
   it('rebuilds query strings for redirects', () => {

@@ -55,7 +55,7 @@ export function placeCanonicalUrlForSlug(slug: string): string {
 export const PLACE_LINKS_USE_LEGACY_ID_PATH = true
 
 /** `ref` values we print on links/QRs we control (see place-link-source.ts). */
-export type PlaceLinkRef = 'qr' | 'ig' | 'site' | 'app'
+export type PlaceLinkRef = 'qr' | 'ig' | 'site' | 'app' | 'pre'
 
 /**
  * Public URL for a Place: the clean slug URL when the Place has one,
@@ -95,6 +95,41 @@ export function placeOutboundUrl(
     { placeId: place.placeId, slug: useLegacy ? null : place.slug },
     { ref: options.ref, qrId: options.qrId },
   )
+}
+
+/** Canonical web Place Chat path (`/places/{slug}/chat`). */
+export function placeChatCanonicalPath(slug: string): string {
+  return `${placeCanonicalPath(slug)}/chat`
+}
+
+/** Legacy web Place Chat path (`/place/{googlePlaceId}/chat`), 308s to canonical. */
+export function placeChatLegacyPath(placeId: string): string {
+  return `/place/${encodeURIComponent(placeId.trim())}/chat`
+}
+
+/**
+ * Web Place Chat URL we hand out (QR / pre-arrival / business tools).
+ * Follows the same legacy-path switch as Place links so existing app
+ * installs open the Place rather than their home screen.
+ */
+export function placeChatOutboundUrl(
+  place: { placeId: string; slug?: string | null },
+  options: { ref?: PlaceLinkRef; qrId?: string; useLegacyIdPath?: boolean } = {},
+): string {
+  const useLegacy = options.useLegacyIdPath ?? PLACE_LINKS_USE_LEGACY_ID_PATH
+  const path =
+    !useLegacy && place.slug && isValidPlaceSlug(place.slug)
+      ? placeChatCanonicalPath(place.slug)
+      : placeChatLegacyPath(place.placeId)
+  const params = new URLSearchParams()
+  if (options.ref) {
+    params.set('ref', options.ref)
+  }
+  if (options.qrId) {
+    params.set('qr', options.qrId)
+  }
+  const query = params.toString()
+  return `${PLACE_PUBLIC_ORIGIN}${path}${query ? `?${query}` : ''}`
 }
 
 /** URL encoded into Place QR codes (always tagged `ref=qr`). */

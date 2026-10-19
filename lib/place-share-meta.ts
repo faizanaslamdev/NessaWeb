@@ -199,16 +199,22 @@ export async function getCachedPublicPlaceLanding(
 }
 
 /**
- * Copy of a landing that is safe to embed in server-rendered HTML: drops a
- * cover URL that carries a Google API key (the client fetches its own copy
- * after hydration, exactly as before SSR existed).
+ * Copy of a landing that is safe to embed in server-rendered HTML:
+ * - drops a cover URL that carries a Google API key;
+ * - drops public Wi-Fi (network + password) so crawlers never index or cache
+ *   passwords. The client fetches its own full copy after hydration, exactly
+ *   as before SSR existed, so visitors still see the Wi-Fi card.
  */
 export function toSsrSafeLanding(landing: PublicPlaceLanding): PublicPlaceLanding {
-  if (!landing.coverImageUrl || safeHttpsUrl(landing.coverImageUrl)) {
+  const keepCover = !landing.coverImageUrl || Boolean(safeHttpsUrl(landing.coverImageUrl))
+  if (keepCover && !landing.wifi) {
     return landing
   }
   const copy = { ...landing }
-  delete copy.coverImageUrl
+  if (!keepCover) {
+    delete copy.coverImageUrl
+  }
+  delete copy.wifi
   return copy
 }
 

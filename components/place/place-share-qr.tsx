@@ -12,7 +12,13 @@ import QRCode from 'react-qr-code'
 import { PlaceSheet } from '@/components/place/place-sheet'
 import { shareUrlWithoutScheme } from '@/lib/chat/format'
 import { isPublicPlaceIdValid } from '@/lib/place-landing'
-import { placeOutboundUrl, placePublicUrl, placeQrUrl } from '@/lib/place-slug'
+import { sanitizeQrId } from '@/lib/place-link-source'
+import {
+  placeChatOutboundUrl,
+  placeOutboundUrl,
+  placePublicUrl,
+  placeQrUrl,
+} from '@/lib/place-slug'
 import {
   buildPlaceShareMessage,
   placeQrFilename,
@@ -123,6 +129,14 @@ export function PlaceCoverShareQr({
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [saving, setSaving] = useState(false)
   const exportHostRef = useRef<HTMLDivElement>(null)
+  // Optional placement label ("reception", "bar", "room-12") so each printed
+  // QR can be told apart in the stats; becomes `&qr=<id>` in the encoded URL.
+  const [placement, setPlacement] = useState('')
+  // Which page the QR opens: the Place page or straight into Place Chat.
+  const [qrTarget, setQrTarget] = useState<'place' | 'chat'>('place')
+  // "Bar 2" → "bar-2"; anything still invalid is rejected (warning below).
+  const qrId =
+    sanitizeQrId(placement.trim().toLowerCase().replace(/[\s_]+/g, '-')) ?? undefined
 
   const placeIdValid = isPublicPlaceIdValid(placeId)
   // Share / Copy Link and QR use the outbound URL — temporarily the legacy id
@@ -130,7 +144,11 @@ export function PlaceCoverShareQr({
   // PLACE_LINKS_USE_LEGACY_ID_PATH); browsers get a 308 to the slug page.
   const shareUrl = placeIdValid ? placeOutboundUrl({ placeId, slug }) : ''
   // Tagged so QR scans are attributed (stripped after counting).
-  const qrUrl = placeIdValid ? placeQrUrl({ placeId, slug }) : ''
+  const qrUrl = !placeIdValid
+    ? ''
+    : qrTarget === 'chat'
+      ? placeChatOutboundUrl({ placeId, slug }, { ref: 'qr', qrId })
+      : placeQrUrl({ placeId, slug }, { qrId })
   // What people see: always the clean canonical URL.
   const displayUrl = placeIdValid ? placePublicUrl({ placeId, slug }) : ''
 
@@ -200,7 +218,10 @@ export function PlaceCoverShareQr({
     }
     setSaving(true)
     try {
-      await downloadSvgAsPng(svg, placeQrFilename(placeName), EXPORT_QR_SIZE)
+      const fileLabel = [qrTarget === 'chat' ? 'chat' : '', placement.trim()]
+        .filter(Boolean)
+        .join('-')
+      await downloadSvgAsPng(svg, placeQrFilename(placeName, fileLabel), EXPORT_QR_SIZE)
       showFeedback({ kind: 'ok', text: 'QR downloaded' })
     } catch {
       showFeedback({ kind: 'error', text: 'Could not download QR' })
@@ -274,13 +295,55 @@ export function PlaceCoverShareQr({
             )}
           </div>
           <p className="text-center text-sm font-semibold text-gray-200">
-            Scan to view this place on Nessa
+            {qrTarget === 'chat'
+              ? 'Scan to join the live chat on Nessa'
+              : 'Scan to view this place on Nessa'}
           </p>
           {shareUrl ? (
             <p className="max-w-full break-all text-center text-xs text-gray-500">
               {shareUrlWithoutScheme(displayUrl)}
             </p>
           ) : null}
+
+          <div className="mt-1 w-full space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-left">
+            <div className="flex gap-2" role="group" aria-label="QR opens">
+              {(['place', 'chat'] as const).map(target => (
+                <button
+                  key={target}
+                  type="button"
+                  onClick={() => setQrTarget(target)}
+                  aria-pressed={qrTarget === target}
+                  className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    qrTarget === target
+                      ? 'bg-[#7C3AED] text-white'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                  }`}
+                >
+                  {target === 'place' ? 'Place page' : 'Live chat'}
+                </button>
+              ))}
+            </div>
+            <label className="block text-xs text-gray-400">
+              Placement (optional) — e.g. reception, bar, room-12
+              <input
+                type="text"
+                value={placement}
+                onChange={event => setPlacement(event.target.value)}
+                maxLength={32}
+                placeholder="reception"
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:border-[#7C3AED] focus:outline-none"
+              />
+            </label>
+            {placement.trim() && !qrId ? (
+              <p className="text-[11px] text-amber-300">
+                Use letters, numbers and dashes only (up to 32 characters).
+              </p>
+            ) : (
+              <p className="text-[11px] text-gray-500">
+                Each placement is counted separately in the Place’s stats.
+              </p>
+            )}
+          </div>
           {shareUrl ? (
             <div
               ref={exportHostRef}

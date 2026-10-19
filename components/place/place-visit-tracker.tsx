@@ -5,6 +5,8 @@ import { useEffect } from 'react'
 import { isPublicPlaceIdValid, recordPlaceLinkVisit } from '@/lib/place-landing'
 import {
   classifyPlaceLinkSource,
+  markPlaceSeen,
+  rememberPlaceLinkSource,
   stripPlaceTrackingParams,
 } from '@/lib/place-link-source'
 
@@ -28,9 +30,11 @@ function isClientSideNavigation(): boolean {
 
 /**
  * Attributes one visit to its source (QR / Instagram / website / search /
- * Nessa app / nessachat.com / other / direct), then strips the tracking
- * params from the address bar so copied links stay clean and canonical.
- * Renders nothing; never blocks or breaks the page.
+ * Nessa app / pre-arrival / nessachat.com / other / direct) and to new vs
+ * returning (a per-browser flag, no identity), remembers the source for
+ * this tab so a later Place Chat join is credited to it, then strips the
+ * tracking params from the address bar so copied links stay clean and
+ * canonical. Renders nothing; never blocks or breaks the page.
  */
 export function PlaceVisitTracker({ placeId }: { placeId: string }) {
   useEffect(() => {
@@ -49,6 +53,16 @@ export function PlaceVisitTracker({ placeId }: { placeId: string }) {
       window.history.replaceState(null, '', stripped)
     }
 
+    let session: Storage | null = null
+    let local: Storage | null = null
+    try {
+      session = window.sessionStorage
+      local = window.localStorage
+    } catch {
+      // storage unavailable (private mode / blocked)
+    }
+    rememberPlaceLinkSource(session, placeId, source, qrId)
+
     if (navigator.webdriver) {
       return
     }
@@ -56,14 +70,15 @@ export function PlaceVisitTracker({ placeId }: { placeId: string }) {
     // referrer can differ, so the source isn't part of the key).
     const dedupeKey = `nessa:place-visit:${placeId}`
     try {
-      if (window.sessionStorage.getItem(dedupeKey)) {
+      if (session?.getItem(dedupeKey)) {
         return
       }
-      window.sessionStorage.setItem(dedupeKey, '1')
+      session?.setItem(dedupeKey, '1')
     } catch {
       // Storage unavailable (private mode) — count anyway.
     }
-    recordPlaceLinkVisit({ placeId, source, qrId }).catch(() => undefined)
+    const visitor = markPlaceSeen(local, placeId)
+    recordPlaceLinkVisit({ placeId, source, qrId, visitor }).catch(() => undefined)
   }, [placeId])
 
   return null

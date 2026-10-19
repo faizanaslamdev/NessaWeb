@@ -28,6 +28,14 @@ describe('place QR / share helpers', () => {
     )
   })
 
+  it('adds the QR placement to the filename', () => {
+    assert.equal(
+      placeQrFilename('Dunas Beach Bar', 'chat-bar 2'),
+      'nessa-dunas-beach-bar-chat-bar-2-qr.png',
+    )
+    assert.equal(placeQrFilename('Dunas Beach Bar', ''), 'nessa-dunas-beach-bar-qr.png')
+  })
+
   it('builds share text with the URL', () => {
     const url = placeShareUrl('ChIJabc')
     assert.equal(

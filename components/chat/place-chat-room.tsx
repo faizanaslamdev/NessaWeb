@@ -14,6 +14,7 @@ import ChatHeader from '@/components/chat/chat-header'
 import EntryModal from '@/components/chat/entry-modal'
 import ParticipantsSheet from '@/components/chat/participants-sheet'
 import ParticipantsSidebar from '@/components/chat/participants-sidebar'
+import { PlaceChatJoinTracker } from '@/components/chat/place-chat-join-tracker'
 import PlaceChatThread from '@/components/chat/place-chat-thread'
 import { Button } from '@/components/ui/button'
 import { useInstantAuth } from '@/hooks/use-instant-auth'
@@ -42,11 +43,16 @@ import type { ChatParticipant } from '@/components/chat/participants-list'
 
 type PlaceChatRoomProps = {
   placeId: string
+  /** Canonical slug when known (`/places/{slug}/chat`); back-links use it. */
+  slug?: string | null
+  /** Server-known Place name (slug route); query hints still work. */
+  placeName?: string | null
 }
 
-export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
+export default function PlaceChatRoom({ placeId, slug, placeName }: PlaceChatRoomProps) {
   const searchParams = useSearchParams()
   const placeNameHint =
+    placeName?.trim() ||
     searchParams.get('placeName')?.trim() ||
     searchParams.get('name')?.trim() ||
     null
@@ -71,7 +77,7 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
     setTimeout(() => setCopyNotice(null), 1800)
   }, [])
 
-  const placeHref = `/place/${encodeURIComponent(placeId)}`
+  const placeHref = slug ? `/places/${slug}` : `/place/${encodeURIComponent(placeId)}`
   const inRoom = Boolean(user && roomReady && guestName)
 
   useEffect(() => {
@@ -193,15 +199,27 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
     [placeId, showNotice, user],
   )
 
+  // Attribution + join counting (renders nothing). Placed before the early
+  // returns so tracking params are read and stripped as soon as the page opens.
+  const joinTracker = <PlaceChatJoinTracker placeId={placeId} joined={inRoom} />
+
   if (authError) {
-    return <AuthErrorPanel authError={authError} />
+    return (
+      <>
+        {joinTracker}
+        <AuthErrorPanel authError={authError} />
+      </>
+    )
   }
 
   if (authLoading || !hydratedGuest || (user && !roomReady && !roomError)) {
     return (
-      <div className="fixed inset-0 z-0 flex items-center justify-center bg-black text-gray-400">
-        Loading…
-      </div>
+      <>
+        {joinTracker}
+        <div className="fixed inset-0 z-0 flex items-center justify-center bg-black text-gray-400">
+          Loading…
+        </div>
+      </>
     )
   }
 
@@ -220,6 +238,7 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
 
   return (
     <div className="fixed inset-0 z-0 flex flex-col overflow-hidden bg-black">
+      {joinTracker}
       {copyNotice ? (
         <div className="fixed top-4 right-4 z-120 max-w-[min(calc(100vw-2rem),20rem)]">
           <div

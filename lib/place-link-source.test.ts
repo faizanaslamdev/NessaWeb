@@ -3,9 +3,22 @@ import { describe, it } from 'node:test'
 
 import {
   classifyPlaceLinkSource,
+  markPlaceSeen,
+  recallPlaceLinkSource,
+  rememberPlaceLinkSource,
   sanitizeQrId,
   stripPlaceTrackingParams,
 } from './place-link-source'
+
+function memoryStorage(): Pick<Storage, 'getItem' | 'setItem'> {
+  const map = new Map<string, string>()
+  return {
+    getItem: key => map.get(key) ?? null,
+    setItem: (key, value) => {
+      map.set(key, value)
+    },
+  }
+}
 
 function classify(query: string, referrer = '') {
   return classifyPlaceLinkSource({
@@ -20,6 +33,8 @@ describe('classifyPlaceLinkSource', () => {
     assert.deepEqual(classify('ref=ig'), { source: 'instagram', qrId: null })
     assert.deepEqual(classify('ref=site'), { source: 'website', qrId: null })
     assert.deepEqual(classify('ref=app'), { source: 'nessa_app', qrId: null })
+    assert.deepEqual(classify('ref=pre'), { source: 'prearrival', qrId: null })
+    assert.deepEqual(classify('utm_source=booking'), { source: 'prearrival', qrId: null })
     // ref beats the referrer
     assert.equal(classify('ref=qr', 'https://www.google.com/').source, 'qr')
   })
@@ -60,5 +75,32 @@ describe('stripPlaceTrackingParams', () => {
   it('returns null when there is nothing to strip', () => {
     assert.equal(stripPlaceTrackingParams('https://www.nessachat.com/places/x?keep=1'), null)
     assert.equal(stripPlaceTrackingParams('not a url'), null)
+  })
+})
+
+describe('per-place attribution memory', () => {
+  it('remembers and recalls a source + qr id', () => {
+    const storage = memoryStorage()
+    rememberPlaceLinkSource(storage, 'ChIJabc', 'qr', 'bar')
+    assert.deepEqual(recallPlaceLinkSource(storage, 'ChIJabc'), { source: 'qr', qrId: 'bar' })
+    assert.equal(recallPlaceLinkSource(storage, 'ChIJother'), null)
+  })
+
+  it('ignores corrupt or unknown stored values and missing storage', () => {
+    const storage = memoryStorage()
+    storage.setItem('nessa:place-source:ChIJabc', '{"source":"facebook"}')
+    assert.equal(recallPlaceLinkSource(storage, 'ChIJabc'), null)
+    storage.setItem('nessa:place-source:ChIJabc', 'not json')
+    assert.equal(recallPlaceLinkSource(storage, 'ChIJabc'), null)
+    assert.equal(recallPlaceLinkSource(null, 'ChIJabc'), null)
+    rememberPlaceLinkSource(null, 'ChIJabc', 'qr', null) // must not throw
+  })
+
+  it('reports new on the first visit and returning afterwards', () => {
+    const storage = memoryStorage()
+    assert.equal(markPlaceSeen(storage, 'ChIJabc'), 'new')
+    assert.equal(markPlaceSeen(storage, 'ChIJabc'), 'returning')
+    assert.equal(markPlaceSeen(storage, 'ChIJxyz'), 'new')
+    assert.equal(markPlaceSeen(null, 'ChIJabc'), 'new')
   })
 })

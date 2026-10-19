@@ -26,9 +26,11 @@ import { StoryPhotoCollage } from '@/components/place/story-photo-collage'
 import { StoryMediaViewer } from '@/components/place/story-media-viewer'
 import { PlaceSheet } from '@/components/place/place-sheet'
 import { PlaceCoverShareQr } from '@/components/place/place-share-qr'
+import { PlacePrearrivalCopy } from '@/components/place/place-prearrival-copy'
 import { PlaceWifiCard } from '@/components/place/place-wifi-card'
 import { PlaceWifiManageSheet } from '@/components/place/place-wifi-manage-sheet'
 import { placePhotoUrlForWebVariant } from '@/lib/place-photo'
+import { isValidPlaceSlug, placeChatCanonicalPath } from '@/lib/place-slug'
 
 type PlaceLandingClientProps = {
   placeId: string
@@ -291,6 +293,12 @@ export function PlaceLandingClient({
   const coverLightboxUrl =
     placePhotoUrlForWebVariant(rawCoverUrl, 'lightbox') ?? rawCoverUrl
   const hasCover = coverUrl.startsWith('https://') && !coverBroken
+  const canonicalSlug = place.slug ?? slug ?? null
+  // Clean chat URL when the Place has a slug; legacy chat route otherwise.
+  const chatHref =
+    canonicalSlug && isValidPlaceSlug(canonicalSlug)
+      ? placeChatCanonicalPath(canonicalSlug)
+      : `/place/${encodeURIComponent(place.googlePlaceId)}/chat`
 
   return (
     <Shell>
@@ -389,7 +397,7 @@ export function PlaceLandingClient({
 
       <div className="mt-6 w-full max-w-sm space-y-3">
         <a
-          href={`/chat/${encodeURIComponent(place.googlePlaceId)}?type=place&placeId=${encodeURIComponent(place.googlePlaceId)}&placeName=${encodeURIComponent(place.name)}`}
+          href={chatHref}
           aria-label="Join Live Chat"
           className="inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#8B5CF6] px-4 py-3.5 text-[15px] font-bold text-white no-underline transition-colors hover:bg-[#7C3AED] sm:min-h-[52px]"
         >
@@ -399,6 +407,13 @@ export function PlaceLandingClient({
         <p className="text-center text-xs leading-4 text-[#737373]">
           See what&apos;s happening here now · messages last 24 hours
         </p>
+        <div className="text-center">
+          <PlacePrearrivalCopy
+            placeId={place.googlePlaceId || placeId}
+            slug={canonicalSlug}
+            placeName={place.name}
+          />
+        </div>
       </div>
 
       {place.wifi ? (

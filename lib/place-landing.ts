@@ -445,18 +445,30 @@ export async function recordPlaceLinkVisit(input: {
   placeId: string
   source: string
   qrId?: string | null
+  /** 'visit' (default) or 'chat_join'. */
+  event?: 'visit' | 'chat_join'
+  /** 'new' | 'returning' — visits only. */
+  visitor?: 'new' | 'returning' | null
 }): Promise<void> {
   const placeId = input.placeId.trim()
   if (!isPublicPlaceIdValid(placeId)) {
     return
   }
   const callable = httpsCallable<
-    { placeId: string; source: string; qrId?: string },
+    {
+      placeId: string
+      source: string
+      qrId?: string
+      event?: 'visit' | 'chat_join'
+      visitor?: 'new' | 'returning'
+    },
     { ok: boolean; counted: boolean }
   >(getCallableFunctions(), 'recordPlaceLinkVisit')
   await callable({
     placeId,
     source: input.source,
     ...(input.qrId ? { qrId: input.qrId } : {}),
+    ...(input.event ? { event: input.event } : {}),
+    ...(input.visitor ? { visitor: input.visitor } : {}),
   })
 }
