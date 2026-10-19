@@ -22,6 +22,12 @@ type Props = {
   initialWifi?: PublicPlaceWifi | null
   onClose: () => void
   onSaved: (wifi: PublicPlaceWifi | null) => void
+  /**
+   * 'pin' (default): pilot PIN step first (unclaimed Places, public page).
+   * 'business': the caller is a signed-in verified member of the Place's
+   * business — no PIN; the server authorizes by membership.
+   */
+  mode?: 'pin' | 'business'
 }
 
 /**
@@ -34,9 +40,11 @@ export function PlaceWifiManageSheet({
   initialWifi,
   onClose,
   onSaved,
+  mode = 'pin',
 }: Props) {
   const isEdit = Boolean(initialWifi?.networkName && initialWifi?.password)
-  const [step, setStep] = useState<Step>('pin')
+  const initialStep: Step = mode === 'business' ? 'form' : 'pin'
+  const [step, setStep] = useState<Step>(initialStep)
   const [pin, setPin] = useState('')
   const [networkName, setNetworkName] = useState('')
   const [password, setPassword] = useState('')
@@ -51,7 +59,7 @@ export function PlaceWifiManageSheet({
     if (!open) {
       return
     }
-    setStep('pin')
+    setStep(initialStep)
     setPin('')
     setNetworkName(initialWifi?.networkName ?? '')
     setPassword(initialWifi?.password ?? '')
@@ -61,7 +69,7 @@ export function PlaceWifiManageSheet({
     setVerifyingPin(false)
     setError(null)
     setSuccess(false)
-  }, [open, initialWifi])
+  }, [open, initialWifi, initialStep])
 
   const title =
     step === 'pin'
@@ -126,7 +134,7 @@ export function PlaceWifiManageSheet({
     try {
       const wifi = await setPlaceWifiPublic({
         placeId,
-        pin: pin.trim(),
+        ...(mode === 'business' ? {} : { pin: pin.trim() }),
         networkName: nn,
         password: pw,
         note: nt,
@@ -139,9 +147,11 @@ export function PlaceWifiManageSheet({
       }, 700)
     } catch (e) {
       if (e instanceof SetPlaceWifiPublicError) {
-        if (e.code === 'permission-denied') {
+        if (e.code === 'permission-denied' && mode !== 'business') {
           setStep('pin')
-          setError('Incorrect PIN.')
+          setError(e.message.includes('verified business') ? e.message : 'Incorrect PIN.')
+        } else if (e.code === 'permission-denied') {
+          setError('You are not authorized to manage this place’s Wi-Fi.')
         } else {
           setError(e.message)
         }
@@ -157,6 +167,7 @@ export function PlaceWifiManageSheet({
     note,
     placeId,
     pin,
+    mode,
     isPublic,
     onSaved,
     onClose,

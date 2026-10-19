@@ -14,6 +14,14 @@ export type PlaceSeoInput = {
   recommenderCount?: number
   storyCount?: number
   coverImageUrl?: string
+  /** Verified business (official layer), if the Place is claimed. */
+  business?: {
+    name: string
+    website?: string
+    phone?: string
+    description?: string
+    logoUrl?: string
+  } | null
 }
 
 const DESCRIPTION_MAX = 158
@@ -79,10 +87,16 @@ export function buildPlaceSeoDescription(input: PlaceSeoInput): string {
 }
 
 /**
- * Index only Places with Nessa-native content (≥1 recommendation or story).
- * Same rule as functions/src/places/shared/placeSlug.ts → sitemap.
+ * Index Places with Nessa-native content (≥1 recommendation or story) OR a
+ * verified business. Same rule as functions/src/places/shared/placeSlug.ts
+ * → sitemap.
  */
-export function isPlaceIndexable(input: Pick<PlaceSeoInput, 'recommenderCount' | 'storyCount'>): boolean {
+export function isPlaceIndexable(
+  input: Pick<PlaceSeoInput, 'recommenderCount' | 'storyCount' | 'business'>,
+): boolean {
+  if (input.business?.name) {
+    return true
+  }
   return (input.recommenderCount ?? 0) + (input.storyCount ?? 0) > 0
 }
 
@@ -123,6 +137,12 @@ export function buildPlaceJsonLd(
   }
   if (input.coverImageUrl?.startsWith('https://')) {
     jsonLd.image = input.coverImageUrl
+  }
+  if (input.business) {
+    if (input.business.phone) jsonLd.telephone = input.business.phone
+    if (input.business.website) jsonLd.sameAs = [input.business.website]
+    if (input.business.logoUrl?.startsWith('https://')) jsonLd.logo = input.business.logoUrl
+    if (input.business.description) jsonLd.description = input.business.description
   }
   return jsonLd
 }

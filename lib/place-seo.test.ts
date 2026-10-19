@@ -70,3 +70,22 @@ describe('place SEO', () => {
     assert.equal(JSON.parse(out).name, '</script><script>alert(1)</script>')
   })
 })
+
+describe('place SEO — verified business', () => {
+  it('makes a claimed Place indexable and enriches JSON-LD', () => {
+    assert.equal(isPlaceIndexable({ recommenderCount: 0, storyCount: 0, business: { name: 'KiteCabana' } }), true)
+    assert.equal(isPlaceIndexable({ recommenderCount: 0, storyCount: 0, business: null }), false)
+    const ld = buildPlaceJsonLd(
+      {
+        name: 'KiteCabana',
+        placeType: 'Hotel',
+        city: 'Cumbuco',
+        business: { name: 'KiteCabana', website: 'https://kitecabana.com/', phone: '+55 85 9', logoUrl: 'https://cdn.x/logo.png' },
+      },
+      'https://www.nessachat.com/places/kitecabana-cumbuco',
+    )
+    assert.equal(ld.telephone, '+55 85 9')
+    assert.deepEqual(ld.sameAs, ['https://kitecabana.com/'])
+    assert.equal(ld.logo, 'https://cdn.x/logo.png')
+  })
+})

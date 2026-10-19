@@ -31,12 +31,24 @@ export type PublicPlaceShareMeta = {
   slug?: string
   recommenderCount?: number
   storyCount?: number
+  business?: {
+    name: string
+    website?: string
+    phone?: string
+    description?: string
+    logoUrl?: string
+  }
 }
 
 function callableUrl(): string | null {
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim()
   if (!projectId) {
     return null
+  }
+  // Local verification only (server env; unset in production).
+  const emulator = process.env.FIREBASE_FUNCTIONS_EMULATOR_HOST?.trim()
+  if (emulator) {
+    return `http://${emulator}/${projectId}/us-central1/getPublicPlaceLanding`
   }
   return `https://us-central1-${projectId}.cloudfunctions.net/getPublicPlaceLanding`
 }
@@ -117,6 +129,19 @@ function mapCallableResult(raw: unknown): PublicPlaceShareMeta | null {
   }
   if (typeof data.storyCount === 'number' && data.storyCount >= 0) {
     meta.storyCount = Math.floor(data.storyCount)
+  }
+  const biz = data.business as Record<string, unknown> | undefined
+  const bizName = biz ? sanitizePlainText(biz.name, 80) : undefined
+  if (biz && bizName && biz.verified === true) {
+    meta.business = {name: bizName}
+    const website = safeHttpsUrl(biz.website)
+    if (website) meta.business.website = website
+    const phone = sanitizePlainText(biz.phone, 32)
+    if (phone) meta.business.phone = phone
+    const description = sanitizePlainText(biz.description, 300)
+    if (description) meta.business.description = description
+    const logoUrl = safeHttpsUrl(biz.logoUrl)
+    if (logoUrl) meta.business.logoUrl = logoUrl
   }
   return meta
 }

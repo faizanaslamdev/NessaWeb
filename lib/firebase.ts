@@ -3,6 +3,7 @@
 import { initializeApp, getApps, type FirebaseApp } from 'firebase/app'
 import { connectAuthEmulator, getAuth, type Auth } from 'firebase/auth'
 import { connectFirestoreEmulator, getFirestore, type Firestore } from 'firebase/firestore'
+import { connectFunctionsEmulator, getFunctions } from 'firebase/functions'
 import { getDatabase, type Database } from 'firebase/database'
 
 export type FirebaseClient = {
@@ -63,6 +64,11 @@ export function getFirebaseClient(): FirebaseClient {
   if (firestoreEmulator) {
     const [host, port] = firestoreEmulator.split(':')
     connectFirestoreEmulator(firestore, host || '127.0.0.1', Number(port) || 8080)
+  }
+  const functionsEmulator = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST
+  if (functionsEmulator) {
+    const [host, port] = functionsEmulator.split(':')
+    connectFunctionsEmulator(getFunctions(app), host || '127.0.0.1', Number(port) || 5001)
   }
 
   client = {

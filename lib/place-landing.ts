@@ -60,6 +60,26 @@ export type PublicPlaceLanding = {
   wifi?: PublicPlaceWifi
   /** Canonical public slug (`/places/{slug}`) when the Place has one. */
   slug?: string
+  /** Verified business that manages this Place (official layer), if any. */
+  business?: PublicBusinessProfile
+}
+
+export type PublicBusinessProfile = {
+  businessId: string
+  verified: true
+  name: string
+  category?: string
+  description?: string
+  website?: string
+  phone?: string
+  whatsapp?: string
+  hours?: string
+  checkIn?: string
+  checkOut?: string
+  amenities?: string[]
+  languages?: string[]
+  logoUrl?: string
+  coverUrl?: string
 }
 
 export type PublicPlaceWifi = {
@@ -355,13 +375,15 @@ export async function fetchPublicStoryComments(input: {
 }
 
 /**
- * Temporary pilot: PIN-gated Wi-Fi write (server verifies PIN; client never
- * writes Firestore places directly).
- * TODO(business-profiles): replace PIN with Business Profile authorization.
+ * Wi-Fi write. The server authorizes either a signed-in verified business
+ * member (no PIN; the Firebase ID token travels with the callable) or, for an
+ * unclaimed Place, the pilot management PIN. The client never writes
+ * Firestore places directly.
  */
 export async function setPlaceWifiPublic(input: {
   placeId: string
-  pin: string
+  /** Pilot PIN — omit when calling as a signed-in business member. */
+  pin?: string
   networkName: string
   password: string
   note?: string
@@ -374,7 +396,7 @@ export async function setPlaceWifiPublic(input: {
     const callable = httpsCallable<
       {
         placeId: string
-        pin: string
+        pin?: string
         networkName: string
         password: string
         note?: string
@@ -384,7 +406,7 @@ export async function setPlaceWifiPublic(input: {
     >(getCallableFunctions(), 'setPlaceWifiPublic')
     const result = await callable({
       placeId: input.placeId.trim(),
-      pin: input.pin.trim(),
+      ...(input.pin !== undefined ? { pin: input.pin.trim() } : {}),
       networkName: input.networkName,
       password: input.password,
       ...(input.note !== undefined ? { note: input.note } : {}),

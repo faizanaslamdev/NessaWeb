@@ -1,0 +1,230 @@
+/**
+ * Business profile callables (Phase A). All authorization is server-side:
+ * callables check the caller's verified email and business membership, and
+ * admin actions check the backend allowlist. These wrappers only shape
+ * requests/responses and map errors to user-facing messages.
+ */
+
+import { httpsCallable } from 'firebase/functions'
+import { getFunctions } from 'firebase/functions'
+
+import { getFirebaseClient } from '@/lib/firebase'
+
+export type BusinessCategory =
+  | 'hostel'
+  | 'hotel'
+  | 'restaurant'
+  | 'bar'
+  | 'cafe'
+  | 'kite_school'
+  | 'tour'
+  | 'shop'
+  | 'other'
+
+export const BUSINESS_CATEGORY_LABELS: Record<BusinessCategory, string> = {
+  hostel: 'Hostel',
+  hotel: 'Hotel / Pousada',
+  restaurant: 'Restaurant',
+  bar: 'Bar / Beach bar',
+  cafe: 'Café',
+  kite_school: 'Kite / Surf school',
+  tour: 'Tours & activities',
+  shop: 'Shop',
+  other: 'Other',
+}
+
+export type BusinessProfileInput = {
+  name: string
+  category?: BusinessCategory | ''
+  description?: string
+  website?: string
+  phone?: string
+  whatsapp?: string
+  hours?: string
+  checkIn?: string
+  checkOut?: string
+  amenities?: string[]
+  languages?: string[]
+  logoUrl?: string
+  coverUrl?: string
+}
+
+export type MyBusinessPlace = {
+  placeId: string
+  name: string
+  city: string
+  country: string
+  slug: string | null
+  hasWifi: boolean
+}
+
+export type MyBusiness = {
+  businessId: string
+  role: 'owner' | 'staff'
+  profile: BusinessProfileInput & { createdAt: string | null; updatedAt: string | null }
+  places: MyBusinessPlace[]
+}
+
+export type MyClaim = {
+  claimId: string
+  placeId: string
+  businessName: string
+  status: 'pending' | 'approved' | 'rejected'
+  createdAt: string | null
+  reviewNote: string | null
+}
+
+export type AdminClaim = MyClaim & {
+  uid: string
+  email: string
+  role: 'owner' | 'manager'
+  contactPhone: string | null
+  website: string | null
+  message: string | null
+  verificationMethod: 'manual' | 'admin_assigned'
+  reviewedAt: string | null
+  businessId: string | null
+}
+
+export class BusinessActionError extends Error {
+  readonly code: string
+  constructor(code: string, message: string) {
+    super(message)
+    this.name = 'BusinessActionError'
+    this.code = code
+  }
+}
+
+function fns() {
+  const { app } = getFirebaseClient()
+  return getFunctions(app)
+}
+
+function mapError(err: unknown): BusinessActionError {
+  const e = err as { code?: string; message?: string; details?: { businessCode?: string } }
+  const code = e?.details?.businessCode ?? e?.code ?? 'unknown'
+  const serverMessage = typeof e?.message === 'string' ? e.message : ''
+  switch (code) {
+    case 'business/unauthenticated':
+    case 'functions/unauthenticated':
+      return new BusinessActionError(code, 'Please sign in to continue.')
+    case 'business/email-not-verified':
+      return new BusinessActionError(code, 'Verify your email address first.')
+    case 'business/permission-denied':
+    case 'functions/permission-denied':
+    case 'places/permission-denied':
+      return new BusinessActionError(code, serverMessage || 'You are not authorized to do that.')
+    case 'business/not-found':
+    case 'functions/not-found':
+      return new BusinessActionError(code, serverMessage || 'Not found.')
+    case 'business/already-claimed':
+    case 'business/claim-pending':
+    case 'business/invalid-argument':
+    case 'functions/invalid-argument':
+    case 'functions/already-exists':
+      return new BusinessActionError(code, serverMessage || 'Please check the form and try again.')
+    case 'business/rate-limited':
+    case 'functions/resource-exhausted':
+      return new BusinessActionError(code, serverMessage || 'Too many requests. Please try again later.')
+    default:
+      return new BusinessActionError(code, 'Something went wrong. Please try again.')
+  }
+}
+
+export async function requestPlaceClaim(input: {
+  placeId: string
+  role: 'owner' | 'manager'
+  businessName: string
+  contactPhone?: string
+  website?: string
+  message?: string
+}): Promise<{ claimId: string }> {
+  try {
+    const callable = httpsCallable<typeof input, { ok: true; claimId: string }>(fns(), 'requestPlaceClaim')
+    const res = await callable(input)
+    return { claimId: res.data.claimId }
+  } catch (e) {
+    throw mapError(e)
+  }
+}
+
+export async function getMyBusinesses(): Promise<{ businesses: MyBusiness[]; claims: MyClaim[] }> {
+  try {
+    const callable = httpsCallable<Record<string, never>, { ok: true; businesses: MyBusiness[]; claims: MyClaim[] }>(
+      fns(),
+      'getMyBusinesses',
+    )
+    const res = await callable({})
+    return { businesses: res.data.businesses ?? [], claims: res.data.claims ?? [] }
+  } catch (e) {
+    throw mapError(e)
+  }
+}
+
+export async function updateBusinessProfile(businessId: string, profile: BusinessProfileInput): Promise<void> {
+  try {
+    const callable = httpsCallable<{ businessId: string; profile: BusinessProfileInput }, { ok: true }>(
+      fns(),
+      'updateBusinessProfile',
+    )
+    await callable({ businessId, profile })
+  } catch (e) {
+    throw mapError(e)
+  }
+}
+
+export async function adminListClaims(status: 'pending' | 'approved' | 'rejected' = 'pending'): Promise<AdminClaim[]> {
+  try {
+    const callable = httpsCallable<{ action: 'listClaims'; status: string }, { ok: true; claims: AdminClaim[] }>(
+      fns(),
+      'runBusinessAdminOps',
+    )
+    const res = await callable({ action: 'listClaims', status })
+    return res.data.claims ?? []
+  } catch (e) {
+    throw mapError(e)
+  }
+}
+
+export async function adminReviewClaim(claimId: string, decision: 'approve' | 'reject', note?: string): Promise<void> {
+  try {
+    const callable = httpsCallable<{ action: 'reviewClaim'; claimId: string; decision: string; note?: string }, { ok: true }>(
+      fns(),
+      'runBusinessAdminOps',
+    )
+    await callable({ action: 'reviewClaim', claimId, decision, ...(note ? { note } : {}) })
+  } catch (e) {
+    throw mapError(e)
+  }
+}
+
+export async function adminAssignOwner(input: {
+  placeId: string
+  ownerEmail: string
+  businessName: string
+  businessId?: string
+  note?: string
+}): Promise<{ businessId: string; created: boolean; alreadyLinked: boolean }> {
+  try {
+    const callable = httpsCallable<
+      { action: 'assignOwner' } & typeof input,
+      { ok: true; result: { businessId: string; created: boolean; alreadyLinked: boolean } }
+    >(fns(), 'runBusinessAdminOps')
+    const res = await callable({ action: 'assignOwner', ...input })
+    return res.data.result
+  } catch (e) {
+    throw mapError(e)
+  }
+}
+
+/** "a, b, c" → ['a','b','c'] (trimmed, deduped). */
+export function splitList(raw: string): string[] {
+  const out: string[] = []
+  for (const part of raw.split(/[,\n]/)) {
+    const item = part.trim()
+    if (item && !out.includes(item)) {
+      out.push(item)
+    }
+  }
+  return out
+}

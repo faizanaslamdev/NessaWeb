@@ -27,6 +27,8 @@ import { StoryMediaViewer } from '@/components/place/story-media-viewer'
 import { PlaceSheet } from '@/components/place/place-sheet'
 import { PlaceCoverShareQr } from '@/components/place/place-share-qr'
 import { PlacePrearrivalCopy } from '@/components/place/place-prearrival-copy'
+import { PlaceOfficialSection, VerifiedBadge } from '@/components/place/place-official-section'
+import { accountRoutes } from '@/lib/account/constants'
 import { PlaceWifiCard } from '@/components/place/place-wifi-card'
 import { PlaceWifiManageSheet } from '@/components/place/place-wifi-manage-sheet'
 import { placePhotoUrlForWebVariant } from '@/lib/place-photo'
@@ -350,8 +352,9 @@ export function PlaceLandingClient({
               Recommend
             </a>
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white">
+          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-white">
             {place.name}
+            {place.business ? <VerifiedBadge className="translate-y-px" /> : null}
           </h1>
           {location ? <p className="text-sm text-gray-400">{location}</p> : null}
           {place.formattedAddress && place.formattedAddress !== location ? (
@@ -420,10 +423,10 @@ export function PlaceLandingClient({
         <div className="mt-6 w-full max-w-sm">
           <PlaceWifiCard
             wifi={place.wifi}
-            onEdit={() => setWifiManageOpen(true)}
+            onEdit={place.business ? undefined : () => setWifiManageOpen(true)}
           />
         </div>
-      ) : (
+      ) : place.business ? null : (
         <div className="mt-4 w-full max-w-sm text-center">
           <button
             type="button"
@@ -433,6 +436,28 @@ export function PlaceLandingClient({
             Add Wi-Fi
           </button>
         </div>
+      )}
+
+      {place.business ? (
+        <>
+          <PlaceOfficialSection business={place.business} />
+          <p className="mt-2 text-center text-[11px] text-gray-600">
+            Run this place?{' '}
+            <Link href={accountRoutes.business} className="text-gray-500 underline-offset-2 hover:text-gray-300 hover:underline">
+              Manage it in business tools
+            </Link>
+          </p>
+        </>
+      ) : (
+        <p className="mt-4 text-center text-[11px] text-gray-600">
+          Own or manage this place?{' '}
+          <Link
+            href={`${accountRoutes.claim}/${encodeURIComponent(place.googlePlaceId || placeId)}`}
+            className="text-gray-500 underline-offset-2 hover:text-gray-300 hover:underline"
+          >
+            Claim this place
+          </Link>
+        </p>
       )}
 
       <PlaceWifiManageSheet

@@ -4,8 +4,12 @@ export const accountRoutes = {
   signIn: '/account/sign-in',
   signUp: '/account/sign-up',
   reset: '/account/reset',
-  /** Protected business area (Phase A fills this in). */
+  /** Protected business area. */
   business: '/business',
+  /** Claim a Place: `${claim}/{googlePlaceId}`. */
+  claim: '/business/claim',
+  /** Nessa-admin review page (backend allowlist enforced). */
+  admin: '/admin/business',
 } as const
 
 /**
