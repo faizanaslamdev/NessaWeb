@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
       // Live chat rooms and auth handlers aren't content pages.
-      disallow: ['/chat', '/auth', '/__/'],
+      disallow: ['/chat', '/auth', '/__/', '/account', '/business'],
     },
     sitemap: `${PLACE_PUBLIC_ORIGIN}/sitemap.xml`,
     host: PLACE_PUBLIC_ORIGIN,
