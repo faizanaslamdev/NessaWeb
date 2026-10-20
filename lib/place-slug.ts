@@ -49,8 +49,10 @@ export function placeCanonicalUrlForSlug(slug: string): string {
  * canonical slug page — so the canonical URL is still `/places/{slug}` (and
  * that's what we display).
  *
- * Flip to false after the app update ships (and add '/places/*' to AASA).
- * Keep in sync with NessaChat `PLACE_LINKS_USE_LEGACY_ID_PATH`.
+ * Cutover (once the slug-aware app release is widely installed): flip this to
+ * false and deploy the web — outbound links switch to slugs and the AASA
+ * route starts listing '/places/*' automatically. Then flip the app's
+ * `PLACE_LINKS_USE_LEGACY_ID_PATH` in its next release (never before the web).
  */
 export const PLACE_LINKS_USE_LEGACY_ID_PATH = true
 
