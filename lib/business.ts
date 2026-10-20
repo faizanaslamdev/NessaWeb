@@ -56,6 +56,27 @@ export type MyBusinessPlace = {
   country: string
   slug: string | null
   hasWifi: boolean
+  /** Pinned welcome currently shown at the top of the Place Chat ('' = none). */
+  pinnedText?: string
+}
+
+export type PlaceStatsWindow = 7 | 30
+
+export type PlaceStatsSummary = {
+  days: PlaceStatsWindow
+  visits: number
+  visitors: { new: number; returning: number }
+  sources: Record<string, number>
+  qrCodes: Record<string, number>
+  chatJoins: { total: number; sources: Record<string, number> }
+  activeDays: number
+}
+
+export type BusinessPlaceStats = {
+  placeId: string
+  asOf: string
+  windows: Record<PlaceStatsWindow, PlaceStatsSummary>
+  daily: { date: string; visits: number; chatJoins: number }[]
 }
 
 export type MyBusiness = {
@@ -212,6 +233,34 @@ export async function adminAssignOwner(input: {
     >(fns(), 'runBusinessAdminOps')
     const res = await callable({ action: 'assignOwner', ...input })
     return res.data.result
+  } catch (e) {
+    throw mapError(e)
+  }
+}
+
+/** Business members pin (or clear with '') the welcome shown in the Place Chat. */
+export async function setPlaceChatPinnedInfo(placeId: string, text: string): Promise<{ text: string; cleared: boolean }> {
+  try {
+    const callable = httpsCallable<{ placeId: string; text: string }, { ok: true; text: string; cleared: boolean }>(
+      fns(),
+      'setPlaceChatPinnedInfo',
+    )
+    const res = await callable({ placeId, text })
+    return { text: res.data.text, cleared: res.data.cleared }
+  } catch (e) {
+    throw mapError(e)
+  }
+}
+
+/** Last 7 / 30 days of link activity for a Place the caller manages. */
+export async function getBusinessPlaceStats(placeId: string): Promise<BusinessPlaceStats> {
+  try {
+    const callable = httpsCallable<{ placeId: string }, { ok: true; stats: BusinessPlaceStats }>(
+      fns(),
+      'getBusinessPlaceStats',
+    )
+    const res = await callable({ placeId })
+    return res.data.stats
   } catch (e) {
     throw mapError(e)
   }

@@ -8,6 +8,7 @@ import {
   accountCardClass,
   accountFieldClass,
 } from '@/components/account/account-shell'
+import { PlaceTools } from '@/components/business/place-tools'
 import { PlaceWifiManageSheet } from '@/components/place/place-wifi-manage-sheet'
 import { accountRoutes } from '@/lib/account/constants'
 import {
@@ -20,7 +21,6 @@ import {
   type MyBusiness,
 } from '@/lib/business'
 import { siteConfig } from '@/lib/constants'
-import { placeChatCanonicalPath, placeCanonicalPath } from '@/lib/place-slug'
 
 type State =
   | { kind: 'loading' }
@@ -79,30 +79,31 @@ export function BusinessDetail({ businessId }: { businessId: string }) {
       <div className={accountCardClass}>
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Your places</p>
         <ul className="space-y-3">
-          {business.places.map(p => {
-            const pagePath = p.slug ? placeCanonicalPath(p.slug) : `/place/${encodeURIComponent(p.placeId)}`
-            const chatPath = p.slug ? placeChatCanonicalPath(p.slug) : `/place/${encodeURIComponent(p.placeId)}/chat`
-            return (
-              <li key={p.placeId} className="rounded-xl border border-white/10 bg-black/30 px-3 py-2.5">
-                <p className="text-sm font-semibold text-white">{p.name}</p>
-                {p.city ? <p className="text-xs text-gray-400">{[p.city, p.country].filter(Boolean).join(', ')}</p> : null}
-                <div className="mt-2 flex flex-wrap gap-3 text-xs">
-                  <Link href={pagePath} className="text-violet-400 hover:text-violet-300">Place page</Link>
-                  <Link href={chatPath} className="text-violet-400 hover:text-violet-300">Live chat</Link>
-                  <button
-                    type="button"
-                    onClick={() => setWifiPlaceId(p.placeId)}
-                    className="text-violet-400 hover:text-violet-300"
-                  >
-                    {p.hasWifi ? 'Edit Wi-Fi' : 'Add Wi-Fi'}
-                  </button>
-                </div>
-              </li>
-            )
-          })}
+          {business.places.map(p => (
+            <PlaceTools
+              key={p.placeId}
+              place={p}
+              onEditWifi={() => setWifiPlaceId(p.placeId)}
+              onPinnedSaved={text =>
+                setState(current =>
+                  current.kind === 'ready'
+                    ? {
+                        kind: 'ready',
+                        business: {
+                          ...current.business,
+                          places: current.business.places.map(place =>
+                            place.placeId === p.placeId ? { ...place, pinnedText: text } : place,
+                          ),
+                        },
+                      }
+                    : current,
+                )
+              }
+            />
+          ))}
         </ul>
         <p className="text-[11px] leading-4 text-gray-600">
-          QR codes and sharing links are on each place page (cover photo → share / QR).
+          Messages you send in the live chat are labelled as the business. Stats count page visits and chat joins only — no personal data.
         </p>
       </div>
 

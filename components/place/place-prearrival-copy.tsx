@@ -27,10 +27,15 @@ export function PlacePrearrivalCopy({
   placeId,
   slug,
   placeName,
+  triggerLabel = 'Pre-arrival message for guests',
+  triggerClassName = 'text-[11px] font-medium text-gray-600 underline-offset-2 hover:text-gray-400 hover:underline',
 }: {
   placeId: string
   slug?: string | null
   placeName: string
+  /** Button text / style — the business tools page shows it as a regular link. */
+  triggerLabel?: string
+  triggerClassName?: string
 }) {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
@@ -47,12 +52,8 @@ export function PlacePrearrivalCopy({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="text-[11px] font-medium text-gray-600 underline-offset-2 hover:text-gray-400 hover:underline"
-      >
-        Pre-arrival message for guests
+      <button type="button" onClick={() => setOpen(true)} className={triggerClassName}>
+        {triggerLabel}
       </button>
 
       <PlaceSheet open={open} title="Share before guests arrive" onClose={() => setOpen(false)}>

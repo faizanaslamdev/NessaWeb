@@ -28,6 +28,8 @@ interface MessageBubbleProps extends MessageBubbleTranslationProps {
   /** From join modal; drives when incoming translation is shown (1:1 language match) */
   preferredLanguage?: string
   isGroupChat?: boolean
+  /** Short label shown next to the sender's name (e.g. official business staff). */
+  senderBadge?: string
 }
 
 function LanguagesIcon({ className }: { className?: string }) {
@@ -72,12 +74,28 @@ function ChevronIcon({ up, className }: { up: boolean; className?: string }) {
   )
 }
 
+/** Violet pill for verified business / staff messages (server-set only). */
+function SenderBadge({ label }: { label: string }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full border border-violet-400/40 bg-violet-500/15 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-violet-200"
+      title="Verified business"
+    >
+      <svg viewBox="0 0 24 24" fill="none" className="size-2.5" aria-hidden>
+        <path d="m5 12 5 5L20 7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      {label}
+    </span>
+  )
+}
+
 export default function MessageBubble({
   message,
   isSent,
   senderName,
   timestamp,
   avatar,
+  senderBadge,
   translation,
   translationStatus,
   translationLanguage,
@@ -167,8 +185,16 @@ export default function MessageBubble({
         className={`flex max-w-xs flex-col sm:max-w-md ${isSent ? 'items-end' : 'items-start'}`}
       >
         {!isSent && (
-          <p className="mb-1 px-2 text-xs text-gray-400">{senderName}</p>
+          <p className="mb-1 flex flex-wrap items-center gap-1.5 px-2 text-xs text-gray-400">
+            <span>{senderName}</span>
+            {senderBadge ? <SenderBadge label={senderBadge} /> : null}
+          </p>
         )}
+        {isSent && senderBadge ? (
+          <p className="mb-1 px-2 text-xs">
+            <SenderBadge label={senderBadge} />
+          </p>
+        ) : null}
         <div
           className={`wrap-break-word rounded-2xl px-4 py-2.5 ${
             isSent
