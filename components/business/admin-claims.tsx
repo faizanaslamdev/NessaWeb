@@ -23,8 +23,8 @@ type State =
 
 /**
  * Nessa-admin review page: two forms in front of `runBusinessAdminOps`.
- * Authorization is the backend allowlist — a non-admin simply gets
- * "not authorized" from the first call and nothing else renders.
+ * Authorization is server-side (Nessa admin roles) — a non-admin simply
+ * gets "not authorized" from the first call and nothing else renders.
  */
 export function AdminClaims() {
   const [state, setState] = useState<State>({ kind: 'loading' })

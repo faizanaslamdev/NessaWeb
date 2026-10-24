@@ -8,8 +8,10 @@ export const accountRoutes = {
   business: '/business',
   /** Claim a Place: `${claim}/{googlePlaceId}`. */
   claim: '/business/claim',
-  /** Nessa-admin review page (backend allowlist enforced). */
+  /** Nessa-admin review page (admin role enforced by the backend). */
   admin: '/admin/business',
+  /** Super Admins manage the admin team (manageAdmins callable). */
+  adminTeam: '/admin/team',
 } as const
 
 /**
