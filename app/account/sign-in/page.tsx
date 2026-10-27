@@ -20,7 +20,7 @@ export default function SignInPage() {
       footer={
         <>
           New to Nessa?{' '}
-          <Link href={accountRoutes.signUp} className="text-violet-400 hover:text-violet-300">
+          <Link href={accountRoutes.signUp} className="font-medium text-n-accent-strong hover:underline">
             Create an account
           </Link>
         </>

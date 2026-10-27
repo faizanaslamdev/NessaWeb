@@ -58,7 +58,7 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-function downloadSvgAsPng(
+export function downloadSvgAsPng(
   svg: SVGSVGElement,
   filename: string,
   size: number,

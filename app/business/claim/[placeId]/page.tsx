@@ -27,7 +27,7 @@ export default async function ClaimPlacePage({ params }: PageProps) {
         {isPublicPlaceIdValid(placeId) ? (
           <ClaimForm placeId={placeId} />
         ) : (
-          <p className="text-center text-sm text-gray-400">This place link isn’t valid.</p>
+          <p className="text-center text-sm text-n-muted">This place link isn’t valid.</p>
         )}
       </AccountShell>
     </RequireAccount>

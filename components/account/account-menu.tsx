@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { useAccountAuth } from '@/hooks/use-account-auth'
-import { accountRoutes } from '@/lib/account/constants'
+import { accountRoutes, adminConsoleHref } from '@/lib/account/constants'
 import { readMyAdminRole, type AdminRole } from '@/lib/admin'
 
 function initials(name: string | null | undefined, email: string | null | undefined): string {
@@ -95,7 +95,7 @@ export function AccountMenu({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
             Your business
           </Link>
           {role ? (
-            <Link role="menuitem" href={accountRoutes.admin} className="block px-3 py-2 hover:bg-white/5" onClick={() => setOpen(false)}>
+            <Link role="menuitem" href={adminConsoleHref()} className="block px-3 py-2 hover:bg-white/5" onClick={() => setOpen(false)}>
               Admin console
             </Link>
           ) : null}

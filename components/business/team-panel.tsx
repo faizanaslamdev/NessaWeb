@@ -4,15 +4,32 @@
  * Business team: owners invite managers by email for some of their places,
  * change their places and remove them; managers see the team and can leave.
  * Everything goes through `manageBusinessTeam`, which checks the caller's
- * role on the backend — this component only renders.
+ * role on the backend (owners, managers, Nessa admins) — this only renders.
  *
  * Nessa doesn't send the invitation email yet: the owner shares the link,
  * and the invitee accepts it signed in with the invited email.
  */
 
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 
-import { accountButtonClass, accountCardClass, accountFieldClass } from '@/components/account/account-shell'
+import {
+  Avatar,
+  Badge,
+  Button,
+  CopyButton,
+  Dialog,
+  EmptyState,
+  Field,
+  LoadingBlock,
+  Notice,
+  Panel,
+  PanelHeader,
+  cx,
+  fieldClass,
+  formatDate,
+  labelClass,
+} from '@/components/dash/ui'
+import { ADMIN_HOSTNAME_PREFIX } from '@/lib/account/constants'
 import {
   BusinessActionError,
   getBusinessTeam,
@@ -23,46 +40,51 @@ import {
   type BusinessTeam,
   type TeamMember,
 } from '@/lib/business'
-
-const linkButton = 'text-[11px] text-violet-400 hover:text-violet-300 disabled:opacity-50'
-const quietButton = 'text-[11px] text-gray-400 hover:text-gray-200 disabled:opacity-50'
+import { PLACE_PUBLIC_ORIGIN } from '@/lib/place-slug'
 
 function errorText(e: unknown, fallback: string): string {
   return e instanceof BusinessActionError ? e.message : fallback
 }
 
-function inviteUrl(path: string): string {
+/** Invite links always point at the public site (never the admin host). */
+export function inviteUrl(path: string): string {
   try {
-    return new URL(path, window.location.origin).toString()
+    const origin =
+      typeof window === 'undefined' || window.location.hostname.startsWith(ADMIN_HOSTNAME_PREFIX)
+        ? PLACE_PUBLIC_ORIGIN
+        : window.location.origin
+    return new URL(path, origin).toString()
   } catch {
     return path
   }
 }
 
-async function copyText(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text)
-    return true
-  } catch {
-    return false
-  }
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
-}
-
-export function TeamPanel({ businessId, onLeft }: { businessId: string; onLeft?: () => void }) {
+export function TeamPanel({
+  businessId,
+  onLeft,
+  onLoaded,
+}: {
+  businessId: string
+  onLeft?: () => void
+  onLoaded?: (team: BusinessTeam) => void
+}) {
   const [team, setTeam] = useState<BusinessTeam | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [editing, setEditing] = useState<TeamMember | null>(null)
+  const [removing, setRemoving] = useState<TeamMember | null>(null)
+  const onLoadedRef = useRef(onLoaded)
+  useEffect(() => {
+    onLoadedRef.current = onLoaded
+  }, [onLoaded])
 
   const load = useCallback(async () => {
     try {
-      setTeam(await getBusinessTeam(businessId))
+      const t = await getBusinessTeam(businessId)
+      setTeam(t)
+      onLoadedRef.current?.(t)
       setError(null)
     } catch (e) {
       setError(errorText(e, 'Could not load the team.'))
@@ -93,91 +115,138 @@ export function TeamPanel({ businessId, onLeft }: { businessId: string; onLeft?:
 
   if (!team) {
     return (
-      <section aria-label="Team" className={accountCardClass}>
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Team</p>
-        {error ? <p className="text-xs text-red-300">{error}</p> : <p className="text-xs text-gray-500">Loading team…</p>}
-      </section>
+      <Panel aria-label="Team">
+        <PanelHeader title="Team" />
+        {error ? (
+          <div className="px-5 pb-5">
+            <Notice tone="danger">{error}</Notice>
+          </div>
+        ) : (
+          <LoadingBlock rows={3} label="Loading team…" />
+        )}
+      </Panel>
     )
   }
 
   const placeName = (id: string) => team.places.find(p => p.placeId === id)?.name ?? 'Place'
   const placesLabel = (ids: string[]) =>
     team.canManage && ids.length === team.places.length ? 'All places' : ids.map(placeName).join(', ') || 'No places'
+  const me = team.members.find(m => m.uid === team.you.uid)
 
   return (
-    <section aria-label="Team" className={accountCardClass}>
-      <div className="flex items-baseline justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Team</p>
-        {team.canManage ? null : <p className="text-[11px] text-gray-500">Only the owner manages the team.</p>}
-      </div>
-
-      <ul className="divide-y divide-white/5" aria-label="Team members">
-        {team.members.map(m => (
-          <MemberRow
-            key={m.uid}
-            member={m}
-            team={team}
-            isYou={m.uid === team.you.uid}
-            busy={busy}
-            placesLabel={placesLabel}
-            onSavePlaces={ids =>
-              run(`places:${m.uid}`, () => updateManagerPlaces(businessId, m.uid, ids), 'Places updated.')
-            }
-            onRemove={() =>
-              run(`remove:${m.uid}`, () => removeTeamMember(businessId, m.uid), m.uid === team.you.uid ? undefined : 'Manager removed.').then(
-                ok => {
-                  if (ok && m.uid === team.you.uid) onLeft?.()
-                },
-              )
-            }
-          />
-        ))}
-      </ul>
-
-      {team.canManage && team.invites.length > 0 ? (
-        <div>
-          <p className="text-[11px] font-semibold text-gray-400">Invitations</p>
-          <ul className="mt-1 divide-y divide-white/5" aria-label="Invitations">
-            {team.invites.map(i => (
-              <li key={i.inviteId} className="flex flex-wrap items-center justify-between gap-2 py-2 text-xs">
-                <span className="min-w-0">
-                  <span className="block text-gray-200">{i.email}</span>
-                  <span className={`block text-[11px] ${i.status === 'expired' ? 'text-amber-300' : 'text-gray-500'}`}>
-                    Manager · {placesLabel(i.placeIds)} ·{' '}
-                    {i.status === 'expired' ? 'expired — invite again to renew' : `expires ${formatDate(i.expiresAt)}`}
+    <div className="space-y-6">
+      <Panel aria-label="Team">
+        <PanelHeader
+          title="Team"
+          description={
+            team.canManage
+              ? 'Owners manage everything. Managers handle the places you choose.'
+              : 'Only an owner can invite or remove people.'
+          }
+          actions={
+            team.canManage ? (
+              <Button variant="primary" icon="plus" onClick={() => setInviteOpen(true)}>
+                Invite manager
+              </Button>
+            ) : null
+          }
+        />
+        {error || notice ? (
+          <div className="px-5 pb-3 max-sm:px-4">
+            {error ? <Notice tone="danger">{error}</Notice> : null}
+            {notice ? <Notice tone="ok">{notice}</Notice> : null}
+          </div>
+        ) : null}
+        <ul className="divide-y divide-n-line-soft border-t border-n-line-soft" aria-label="Team members">
+          {team.members.map(m => {
+            const isYou = m.uid === team.you.uid
+            const isManager = m.role === 'staff'
+            return (
+              <li key={m.uid} data-member={m.email ?? m.uid} className="flex flex-wrap items-center gap-3 px-5 py-3 max-sm:px-4">
+                <Avatar name={m.name || m.email || '?'} size={36} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-n-ink">
+                    {m.name || m.email || 'Team member'}
+                    {isYou ? <span className="font-normal text-n-muted"> (you)</span> : null}
+                  </span>
+                  <span className="block truncate text-[13px] text-n-muted">
+                    {isManager ? placesLabel(m.placeIds) : 'All places'}
+                    {m.name && m.email ? ` · ${m.email}` : ''}
                   </span>
                 </span>
-                <span className="flex shrink-0 gap-3">
-                  {i.status !== 'expired' ? (
-                    <button
-                      type="button"
-                      className={linkButton}
-                      onClick={() =>
-                        void copyText(inviteUrl(`/business/invite/${i.inviteId}`)).then(ok =>
-                          setNotice(ok ? `Invitation link for ${i.email} copied.` : 'Copy blocked by the browser.'),
-                        )
-                      }
-                    >
-                      Copy link
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    className={quietButton}
-                    disabled={busy !== null}
-                    onClick={() => void run(`revoke:${i.inviteId}`, () => revokeInvite(businessId, i.inviteId), 'Invitation cancelled.')}
-                  >
-                    {busy === `revoke:${i.inviteId}` ? 'Cancelling…' : 'Cancel'}
-                  </button>
-                </span>
+                <Badge tone={isManager ? 'neutral' : 'accent'}>{isManager ? 'Manager' : 'Owner'}</Badge>
+                {isManager && team.canManage ? (
+                  <span className="flex shrink-0 gap-1 max-sm:w-full max-sm:justify-end">
+                    <Button size="sm" variant="ghost" onClick={() => setEditing(m)}>
+                      Edit places
+                    </Button>
+                    <Button size="sm" variant="quiet-danger" onClick={() => setRemoving(m)}>
+                      Remove
+                    </Button>
+                  </span>
+                ) : isManager && isYou ? (
+                  <Button size="sm" variant="quiet-danger" onClick={() => setRemoving(m)}>
+                    Leave team
+                  </Button>
+                ) : null}
               </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+            )
+          })}
+        </ul>
+        {team.canManage && team.invites.length > 0 ? (
+          <div className="border-t border-n-line-soft">
+            <p className="px-5 pt-3 text-xs font-semibold tracking-[0.04em] text-n-muted uppercase max-sm:px-4">Invitations</p>
+            <ul className="divide-y divide-n-line-soft" aria-label="Invitations">
+              {team.invites.map(i => (
+                <li key={i.inviteId} className="flex flex-wrap items-center gap-3 px-5 py-3 max-sm:px-4">
+                  <span
+                    aria-hidden
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-dashed border-n-line-strong text-xs text-n-subtle"
+                  >
+                    @
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-n-ink">{i.email}</span>
+                    <span className={cx('block truncate text-[13px]', i.status === 'expired' ? 'text-n-warn' : 'text-n-muted')}>
+                      {placesLabel(i.placeIds)} ·{' '}
+                      {i.status === 'expired' ? 'expired — invite again to renew' : `expires ${formatDate(i.expiresAt)}`}
+                    </span>
+                  </span>
+                  <Badge tone={i.status === 'expired' ? 'warn' : 'neutral'}>{i.status === 'expired' ? 'Expired' : 'Invitation sent'}</Badge>
+                  <span className="flex shrink-0 gap-1 max-sm:w-full max-sm:justify-end">
+                    {i.status !== 'expired' ? (
+                      <CopyButton text={inviteUrl(`/business/invite/${i.inviteId}`)} label="Copy link" variant="ghost" />
+                    ) : null}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={busy !== null}
+                      loading={busy === `revoke:${i.inviteId}`}
+                      onClick={() => void run(`revoke:${i.inviteId}`, () => revokeInvite(businessId, i.inviteId), 'Invitation cancelled.')}
+                    >
+                      Cancel
+                    </Button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        {team.members.length === 1 && team.invites.length === 0 && team.canManage ? (
+          <EmptyState icon="users" title="Add your front desk" compact>
+            Invite a manager to pin chat messages, print QR codes and see stats for the places you choose.
+          </EmptyState>
+        ) : null}
+        <p className="rounded-b-[14px] border-t border-n-line-soft bg-n-surface-2 px-5 py-3 text-xs leading-5 text-n-muted max-sm:px-4">
+          Managers can edit details, pin chat messages, print QR codes and see stats for their places. Only owners manage the team. To
+          change an owner, contact Nessa.
+        </p>
+      </Panel>
 
       {team.canManage ? (
-        <InviteForm
+        <InviteDialog
+          open={inviteOpen}
+          onClose={() => setInviteOpen(false)}
           businessId={businessId}
           places={team.places}
           inviteDays={team.limits.inviteDays}
@@ -188,100 +257,54 @@ export function TeamPanel({ businessId, onLeft }: { businessId: string; onLeft?:
         />
       ) : null}
 
-      <p className="text-[11px] leading-4 text-gray-600">
-        Managers can edit the details, pin chat messages, print QR codes and see stats for the places you choose. Only owners manage the
-        team. To change an owner, contact Nessa.
-      </p>
-      {error ? (
-        <p role="alert" className="text-xs text-red-400">
-          {error}
-        </p>
-      ) : null}
-      {notice ? (
-        <p role="status" className="text-xs text-emerald-300">
-          {notice}
-        </p>
-      ) : null}
-    </section>
-  )
-}
-
-function MemberRow({
-  member,
-  team,
-  isYou,
-  busy,
-  placesLabel,
-  onSavePlaces,
-  onRemove,
-}: {
-  member: TeamMember
-  team: BusinessTeam
-  isYou: boolean
-  busy: string | null
-  placesLabel: (ids: string[]) => string
-  onSavePlaces: (ids: string[]) => Promise<boolean>
-  onRemove: () => void
-}) {
-  const [editing, setEditing] = useState(false)
-  const [confirming, setConfirming] = useState(false)
-  const [picked, setPicked] = useState<string[]>(member.placeIds)
-  const isManager = member.role === 'staff'
-
-  return (
-    <li className="py-2 text-xs" data-member={member.email ?? member.uid}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="min-w-0">
-          <span className="block text-gray-200">
-            {member.name || member.email || 'Team member'}
-            {isYou ? <span className="text-gray-500"> (you)</span> : null}
-          </span>
-          <span className="block text-[11px] text-gray-500">
-            {isManager ? 'Manager' : 'Owner'} · {isManager ? placesLabel(member.placeIds) : 'All places'}
-            {member.name && member.email ? ` · ${member.email}` : ''}
-          </span>
-        </span>
-        {isManager && team.canManage ? (
-          <span className="flex shrink-0 gap-3">
-            <button type="button" className={linkButton} onClick={() => setEditing(v => !v)} aria-expanded={editing}>
-              {editing ? 'Close' : 'Edit places'}
-            </button>
-            {confirming ? (
-              <button type="button" className="text-[11px] text-red-300 hover:text-red-200" disabled={busy !== null} onClick={onRemove}>
-                {busy === `remove:${member.uid}` ? 'Removing…' : 'Confirm remove'}
-              </button>
-            ) : (
-              <button type="button" className={quietButton} onClick={() => setConfirming(true)}>
-                Remove
-              </button>
-            )}
-          </span>
-        ) : isManager && isYou ? (
-          confirming ? (
-            <button type="button" className="text-[11px] text-red-300 hover:text-red-200" disabled={busy !== null} onClick={onRemove}>
-              {busy === `remove:${member.uid}` ? 'Leaving…' : 'Confirm leave'}
-            </button>
-          ) : (
-            <button type="button" className={quietButton} onClick={() => setConfirming(true)}>
-              Leave team
-            </button>
-          )
-        ) : null}
-      </div>
       {editing ? (
-        <div className="mt-2 space-y-2 rounded-lg border border-white/10 p-2">
-          <PlacePicker places={team.places} picked={picked} onChange={setPicked} name={`places-${member.uid}`} />
-          <button
-            type="button"
-            disabled={busy !== null || picked.length === 0}
-            onClick={() => void onSavePlaces(picked).then(ok => ok && setEditing(false))}
-            className={`${accountButtonClass} !w-auto !px-4 !py-1.5 text-xs`}
-          >
-            {busy === `places:${member.uid}` ? 'Saving…' : 'Save places'}
-          </button>
-        </div>
+        <EditPlacesDialog
+          member={editing}
+          places={team.places}
+          busy={busy === `places:${editing.uid}`}
+          onClose={() => setEditing(null)}
+          onSave={ids =>
+            run(`places:${editing.uid}`, () => updateManagerPlaces(businessId, editing.uid, ids), 'Places updated.').then(ok => {
+              if (ok) setEditing(null)
+            })
+          }
+        />
       ) : null}
-    </li>
+
+      <Dialog
+        open={Boolean(removing)}
+        onClose={() => setRemoving(null)}
+        title={removing && removing.uid === me?.uid ? 'Leave this team?' : `Remove ${removing?.email ?? 'this manager'}?`}
+        description={
+          removing && removing.uid === me?.uid
+            ? 'You’ll lose access to these places. An owner can invite you again.'
+            : 'They lose access right away. You can invite them again later.'
+        }
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setRemoving(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              loading={removing ? busy === `remove:${removing.uid}` : false}
+              onClick={() => {
+                if (!removing) return
+                const leaving = removing.uid === team.you.uid
+                void run(`remove:${removing.uid}`, () => removeTeamMember(businessId, removing.uid), leaving ? undefined : 'Manager removed.').then(
+                  ok => {
+                    setRemoving(null)
+                    if (ok && leaving) onLeft?.()
+                  },
+                )
+              }}
+            >
+              {removing && removing.uid === me?.uid ? 'Leave team' : 'Remove'}
+            </Button>
+          </>
+        }
+      />
+    </div>
   )
 }
 
@@ -297,33 +320,82 @@ function PlacePicker({
   name: string
 }) {
   return (
-    <fieldset className="space-y-1">
-      <legend className="text-[11px] text-gray-400">Places they can manage</legend>
-      {places.map(p => (
-        <label key={p.placeId} className="flex items-center gap-2 text-xs text-gray-200">
-          <input
-            type="checkbox"
-            name={name}
-            value={p.placeId}
-            checked={picked.includes(p.placeId)}
-            onChange={e =>
-              onChange(e.target.checked ? [...picked, p.placeId] : picked.filter(id => id !== p.placeId))
-            }
-            className="accent-violet-500"
-          />
-          {p.name}
-        </label>
-      ))}
+    <fieldset>
+      <legend className={labelClass}>Places they can manage</legend>
+      <div className="mt-1.5 space-y-1.5">
+        {places.map(p => {
+          const on = picked.includes(p.placeId)
+          return (
+            <label
+              key={p.placeId}
+              className={cx(
+                'flex min-h-11 cursor-pointer items-center gap-3 rounded-[10px] border px-3 py-2 text-sm transition-colors',
+                on ? 'border-n-accent bg-n-accent-soft text-n-ink' : 'border-n-line-strong text-n-ink-2 hover:border-n-faint',
+              )}
+            >
+              <input
+                type="checkbox"
+                name={name}
+                value={p.placeId}
+                checked={on}
+                onChange={e => onChange(e.target.checked ? [...picked, p.placeId] : picked.filter(id => id !== p.placeId))}
+                className="h-4 w-4 accent-[#5b46e5]"
+              />
+              {p.name}
+            </label>
+          )
+        })}
+      </div>
     </fieldset>
   )
 }
 
-function InviteForm({
+function EditPlacesDialog({
+  member,
+  places,
+  busy,
+  onClose,
+  onSave,
+}: {
+  member: TeamMember
+  places: { placeId: string; name: string }[]
+  busy: boolean
+  onClose: () => void
+  onSave: (ids: string[]) => void
+}) {
+  const [picked, setPicked] = useState<string[]>(member.placeIds)
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title="Edit places"
+      description={member.email ?? undefined}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="primary" loading={busy} disabled={picked.length === 0} onClick={() => onSave(picked)}>
+            Save places
+          </Button>
+        </>
+      }
+    >
+      <PlacePicker places={places} picked={picked} onChange={setPicked} name={`places-${member.uid}`} />
+    </Dialog>
+  )
+}
+
+function InviteDialog({
+  open,
+  onClose,
   businessId,
   places,
   inviteDays,
   onInvited,
 }: {
+  open: boolean
+  onClose: () => void
   businessId: string
   places: { placeId: string; name: string }[]
   inviteDays: number
@@ -335,14 +407,21 @@ function InviteForm({
   const [error, setError] = useState<string | null>(null)
   const [link, setLink] = useState<{ email: string; url: string } | null>(null)
 
+  useEffect(() => {
+    if (!open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLink(null)
+      setError(null)
+    }
+  }, [open])
+
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault()
     setBusy(true)
     setError(null)
     try {
       const res = await inviteManager(businessId, email, picked)
-      const url = inviteUrl(res.path)
-      setLink({ email: email.trim(), url })
+      setLink({ email: email.trim(), url: inviteUrl(res.path) })
       setEmail('')
       await onInvited(res.refreshed ? 'Invitation updated and renewed.' : 'Invitation created.')
     } catch (e) {
@@ -353,49 +432,56 @@ function InviteForm({
   }
 
   return (
-    <div className="space-y-2 rounded-lg border border-white/10 p-3">
-      <form onSubmit={e => void onSubmit(e)} className="space-y-2" noValidate aria-label="Invite a manager">
-        <label className="block text-left text-xs text-gray-400">
-          Invite a manager by email
-          <input
-            type="email"
-            autoComplete="off"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="front.desk@yourplace.com"
-            className={accountFieldClass}
-          />
-        </label>
-        <PlacePicker places={places} picked={picked} onChange={setPicked} name="invite-places" />
-        <button
-          type="submit"
-          disabled={busy || !email.trim() || picked.length === 0}
-          className={`${accountButtonClass} !w-auto !px-4 !py-2 text-xs`}
-        >
-          {busy ? 'Creating…' : 'Create invitation'}
-        </button>
-      </form>
-      {error ? (
-        <p role="alert" className="text-xs text-red-400">
-          {error}
-        </p>
-      ) : null}
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={link ? 'Invitation ready' : 'Invite a manager'}
+      description={
+        link
+          ? undefined
+          : 'They’ll get access to the places you pick once they accept with this email. Nessa doesn’t email the link yet — you share it.'
+      }
+    >
       {link ? (
-        <div className="space-y-1 rounded-lg bg-white/5 p-2 text-[11px] text-gray-300" data-testid="invite-link">
-          <p>
-            Send this link to <span className="text-white">{link.email}</span>. They sign in (or create an account) with that email to
-            accept. It works for {inviteDays} days.
+        <div className="space-y-3" data-testid="invite-link">
+          <p className="text-sm leading-6 text-n-ink-2">
+            Send this link to <span className="font-medium text-n-ink">{link.email}</span>. They sign in (or create an account) with
+            that email to accept. It works for {inviteDays} days.
           </p>
-          <p className="break-all font-mono text-gray-400">{link.url}</p>
-          <button
-            type="button"
-            className={linkButton}
-            onClick={() => void copyText(link.url)}
-          >
-            Copy link
-          </button>
+          <p className="rounded-[10px] bg-n-surface-2 px-3 py-2.5 font-mono text-xs break-all text-n-ink-2 ring-1 ring-n-line-soft">
+            {link.url}
+          </p>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button variant="ghost" onClick={() => setLink(null)}>
+              Invite someone else
+            </Button>
+            <CopyButton text={link.url} label="Copy link" variant="primary" size="md" />
+          </div>
         </div>
-      ) : null}
-    </div>
+      ) : (
+        <form onSubmit={e => void onSubmit(e)} className="space-y-4" noValidate aria-label="Invite a manager">
+          <Field label="Email">
+            <input
+              type="email"
+              autoComplete="off"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="front.desk@yourplace.com"
+              className={fieldClass}
+            />
+          </Field>
+          <PlacePicker places={places} picked={picked} onChange={setPicked} name="invite-places" />
+          {error ? <Notice tone="danger">{error}</Notice> : null}
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" loading={busy} disabled={!email.trim() || picked.length === 0}>
+              Create invitation
+            </Button>
+          </div>
+        </form>
+      )}
+    </Dialog>
   )
 }

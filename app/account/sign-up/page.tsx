@@ -20,7 +20,7 @@ export default function SignUpPage() {
       footer={
         <>
           Already have an account?{' '}
-          <Link href={accountRoutes.signIn} className="text-violet-400 hover:text-violet-300">
+          <Link href={accountRoutes.signIn} className="font-medium text-n-accent-strong hover:underline">
             Sign in
           </Link>
         </>
