@@ -205,6 +205,8 @@ export const navLinks = [
  */
 export const siteRoutes = {
   about: '/about',
+  /** What Nessa offers places, and how to claim yours. */
+  forBusinesses: '/for-businesses',
   /** Canonical privacy content (Play / store URL). */
   privacyPolicy: '/privacy-policy',
   /** Canonical terms content. */
@@ -230,6 +232,7 @@ export function placeShareUrl(placeId: string): string {
 export const footerLinks = {
   company: [
     { label: 'About', href: siteRoutes.about },
+    { label: 'For businesses', href: siteRoutes.forBusinesses },
     { label: 'Blog', href: '#' },
     { label: 'Careers', href: '#' },
   ],

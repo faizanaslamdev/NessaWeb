@@ -46,12 +46,25 @@ export function AdminClaims() {
     void load()
   }, [])
 
-  const review = async (claim: AdminClaim, decision: 'approve' | 'reject') => {
+  const review = async (claim: AdminClaim, decision: 'approve' | 'reject', grantRole?: 'owner' | 'staff') => {
+    if (
+      grantRole === 'owner' &&
+      claim.role === 'manager' &&
+      !window.confirm(
+        `${claim.email} asked to be a manager, not the owner. Make them the OWNER of ${claim.businessName}? Only do this if the real owner asked for it.`,
+      )
+    ) {
+      return
+    }
     const note = decision === 'reject' ? window.prompt('Reason (shown to the requester, optional):') ?? '' : ''
     setNotice(null)
     try {
-      await adminReviewClaim(claim.claimId, decision, note || undefined)
-      setNotice(`${decision === 'approve' ? 'Approved' : 'Rejected'}: ${claim.businessName}`)
+      await adminReviewClaim(claim.claimId, decision, note || undefined, grantRole)
+      setNotice(
+        decision === 'reject'
+          ? `Rejected: ${claim.businessName}`
+          : `Approved: ${claim.email} is now ${grantRole === 'owner' || (!grantRole && claim.role === 'owner') ? 'the owner' : 'a manager'} of ${claim.businessName}`,
+      )
       await load()
     } catch (e) {
       setNotice(e instanceof BusinessActionError ? e.message : 'Action failed.')
@@ -90,16 +103,32 @@ export function AdminClaims() {
               <li key={c.claimId} className="rounded-xl border border-white/10 bg-black/30 p-3 text-sm">
                 <p className="font-semibold text-white">{c.businessName}</p>
                 <p className="text-xs text-gray-400">
-                  {c.role} · {c.email}
+                  {c.role === 'owner' ? 'Owner request' : 'Manager request'} · {c.email}
                   {c.contactPhone ? ` · ${c.contactPhone}` : ''}
                 </p>
                 <p className="break-all text-[11px] text-gray-500">Place {c.placeId}</p>
                 {c.website ? <p className="break-all text-[11px] text-gray-500">{c.website}</p> : null}
                 {c.message ? <p className="mt-1 whitespace-pre-line text-xs text-gray-300">{c.message}</p> : null}
-                <div className="mt-2 flex gap-2">
-                  <button type="button" onClick={() => void review(c, 'approve')} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500">
-                    Approve
-                  </button>
+                {c.role === 'manager' && !c.placeBusinessId ? (
+                  <p className="mt-2 text-xs text-amber-300">
+                    No owner manages this place yet, so a manager can’t be added. Ask the owner to claim it and invite this person — or approve
+                    as owner only if the real owner asked for that.
+                  </p>
+                ) : null}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {c.role === 'owner' ? (
+                    <button type="button" onClick={() => void review(c, 'approve')} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500">
+                      Approve as owner
+                    </button>
+                  ) : c.placeBusinessId ? (
+                    <button type="button" onClick={() => void review(c, 'approve', 'staff')} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500">
+                      Approve as manager
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => void review(c, 'approve', 'owner')} className="rounded-lg border border-amber-400/40 px-3 py-1.5 text-xs font-semibold text-amber-200 hover:bg-amber-400/10">
+                      Approve as owner…
+                    </button>
+                  )}
                   <button type="button" onClick={() => void review(c, 'reject')} className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-gray-200 hover:bg-white/15">
                     Reject
                   </button>
