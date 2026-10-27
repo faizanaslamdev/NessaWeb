@@ -49,7 +49,7 @@ export function SignUpForm() {
 
   return (
     <form onSubmit={onSubmit} className={accountCardClass} noValidate>
-      <label className="block text-left text-xs text-gray-400">
+      <label className="block text-left text-xs text-n-muted">
         Your name
         <input
           type="text"
@@ -61,7 +61,7 @@ export function SignUpForm() {
           required
         />
       </label>
-      <label className="block text-left text-xs text-gray-400">
+      <label className="block text-left text-xs text-n-muted">
         Email
         <input
           type="email"
@@ -73,7 +73,7 @@ export function SignUpForm() {
           required
         />
       </label>
-      <label className="block text-left text-xs text-gray-400">
+      <label className="block text-left text-xs text-n-muted">
         Password
         <input
           type="password"
@@ -84,17 +84,17 @@ export function SignUpForm() {
           minLength={8}
           required
         />
-        <span className="mt-1 block text-[11px] text-gray-600">At least 8 characters.</span>
+        <span className="mt-1 block text-[11px] text-n-subtle">At least 8 characters.</span>
       </label>
       {error ? (
-        <p role="alert" className="text-sm text-red-400">
+        <p role="alert" className="text-sm text-n-danger">
           {error}
         </p>
       ) : null}
       <button type="submit" disabled={busy} className={accountButtonClass}>
         {busy ? 'Creating account…' : 'Create account'}
       </button>
-      <p className="text-center text-[11px] leading-4 text-gray-600">
+      <p className="text-center text-[11px] leading-4 text-n-subtle">
         This is the same account you use in the Nessa app. We’ll send a verification email.
       </p>
     </form>

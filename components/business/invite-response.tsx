@@ -60,14 +60,14 @@ export function InviteResponse({ inviteId }: { inviteId: string }) {
   }
 
   if (state.kind === 'loading') {
-    return <p className="text-center text-sm text-gray-400">Loading…</p>
+    return <p className="text-center text-sm text-n-muted">Loading…</p>
   }
 
   if (state.kind === 'declined') {
     return (
       <div className={`${accountCardClass} text-center`}>
-        <p className="text-sm text-gray-200">You declined this invitation.</p>
-        <Link href={accountRoutes.business} className="text-sm text-violet-400 hover:text-violet-300">
+        <p className="text-sm text-n-ink-2">You declined this invitation.</p>
+        <Link href={accountRoutes.business} className="text-sm text-n-accent-strong hover:text-n-accent">
           Go to your business area
         </Link>
       </div>
@@ -77,12 +77,12 @@ export function InviteResponse({ inviteId }: { inviteId: string }) {
   if (state.kind === 'error') {
     return (
       <div className={`${accountCardClass} text-center`}>
-        <p role="alert" className="text-sm text-gray-200">
+        <p role="alert" className="text-sm text-n-ink-2">
           {state.message}
         </p>
         {state.wrongEmail ? (
           <>
-            <p className="text-xs text-gray-500">You’re signed in as {user?.email}.</p>
+            <p className="text-xs text-n-subtle">You’re signed in as {user?.email}.</p>
             <button
               type="button"
               className={accountButtonClass}
@@ -106,19 +106,19 @@ export function InviteResponse({ inviteId }: { inviteId: string }) {
   return (
     <div className={accountCardClass}>
       <div className="space-y-1 text-center">
-        <p className="text-xs uppercase tracking-wide text-gray-500">You’re invited to manage</p>
-        <p className="text-xl font-semibold text-white">{invite.businessName}</p>
-        {invite.invitedByEmail ? <p className="text-xs text-gray-500">Invited by {invite.invitedByEmail}</p> : null}
+        <p className="text-xs uppercase tracking-wide text-n-subtle">You’re invited to manage</p>
+        <p className="text-xl font-semibold text-n-ink">{invite.businessName}</p>
+        {invite.invitedByEmail ? <p className="text-xs text-n-subtle">Invited by {invite.invitedByEmail}</p> : null}
       </div>
       <div>
-        <p className="text-xs text-gray-400">Places</p>
-        <ul className="mt-1 space-y-0.5 text-sm text-gray-200">
+        <p className="text-xs text-n-muted">Places</p>
+        <ul className="mt-1 space-y-0.5 text-sm text-n-ink-2">
           {invite.places.map(p => (
             <li key={p.placeId}>{p.name}</li>
           ))}
         </ul>
       </div>
-      <p className="text-[11px] leading-4 text-gray-500">
+      <p className="text-[11px] leading-4 text-n-subtle">
         As a manager you can edit the details, pin chat messages, print QR codes and see stats for these places. The owner can change or
         remove your access at any time.
       </p>
@@ -131,13 +131,13 @@ export function InviteResponse({ inviteId }: { inviteId: string }) {
             type="button"
             disabled={busy !== null}
             onClick={() => void respond(false)}
-            className="w-full text-center text-xs text-gray-400 hover:text-gray-200 disabled:opacity-50"
+            className="w-full text-center text-xs text-n-muted hover:text-n-ink disabled:opacity-50"
           >
             {busy === 'decline' ? 'Declining…' : 'Decline'}
           </button>
         </div>
       ) : (
-        <p className="text-center text-sm text-amber-300">
+        <p className="text-center text-sm text-n-warn">
           {invite.status === 'expired'
             ? 'This invitation has expired. Ask the owner to send a new one.'
             : invite.status === 'accepted'
@@ -146,12 +146,12 @@ export function InviteResponse({ inviteId }: { inviteId: string }) {
         </p>
       )}
       {invite.status === 'accepted' ? (
-        <Link href={accountRoutes.business} className="block text-center text-sm text-violet-400 hover:text-violet-300">
+        <Link href={accountRoutes.business} className="block text-center text-sm text-n-accent-strong hover:text-n-accent">
           Go to your business area
         </Link>
       ) : null}
       {error ? (
-        <p role="alert" className="text-center text-sm text-red-400">
+        <p role="alert" className="text-center text-sm text-n-danger">
           {error}
         </p>
       ) : null}

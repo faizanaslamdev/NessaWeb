@@ -45,18 +45,18 @@ export function ResetForm() {
   if (sent) {
     return (
       <div className={`${accountCardClass} text-center`}>
-        <p className="text-sm text-gray-200">
-          If an account exists for <span className="text-white">{email.trim()}</span>, we’ve
+        <p className="text-sm text-n-ink-2">
+          If an account exists for <span className="text-n-ink">{email.trim()}</span>, we’ve
           sent a link to reset your password.
         </p>
-        <p className="text-xs text-gray-500">Check your spam folder if it doesn’t arrive.</p>
+        <p className="text-xs text-n-subtle">Check your spam folder if it doesn’t arrive.</p>
       </div>
     )
   }
 
   return (
     <form onSubmit={onSubmit} className={accountCardClass} noValidate>
-      <label className="block text-left text-xs text-gray-400">
+      <label className="block text-left text-xs text-n-muted">
         Email
         <input
           type="email"
@@ -69,7 +69,7 @@ export function ResetForm() {
         />
       </label>
       {error ? (
-        <p role="alert" className="text-sm text-red-400">
+        <p role="alert" className="text-sm text-n-danger">
           {error}
         </p>
       ) : null}

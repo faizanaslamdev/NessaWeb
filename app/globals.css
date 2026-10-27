@@ -187,3 +187,92 @@
     opacity: 0.35;
   }
 }
+
+/* ───────────────────────── Nessa dashboards (admin + business) ─────────────────────────
+ * Light, warm-neutral theme used by /admin, /business and the account pages.
+ * Accent comes from the NessaChat logo (indigo → violet → magenta).
+ * Utilities: bg-n-canvas, text-n-ink, border-n-line, bg-n-accent …
+ */
+@theme {
+  --color-n-canvas: #f7f6f3;
+  --color-n-surface: #ffffff;
+  --color-n-surface-2: #fbfaf8;
+  --color-n-sunken: #f2f0ec;
+  --color-n-hover: #f4f2ee;
+  --color-n-line: #e7e4de;
+  --color-n-line-soft: #efece7;
+  --color-n-line-strong: #d9d5ce;
+  --color-n-ink: #1b1a17;
+  --color-n-ink-2: #3b3833;
+  --color-n-muted: #5f5b54;
+  --color-n-subtle: #6f6a62;
+  --color-n-faint: #a39e95;
+  --color-n-accent: #5b46e5;
+  --color-n-accent-strong: #4a36c9;
+  --color-n-accent-soft: #eeebfd;
+  --color-n-accent-line: #cfc8f8;
+  --color-n-ok: #0e6b5c;
+  --color-n-ok-soft: #e3f2ee;
+  --color-n-warn: #8a4a06;
+  --color-n-warn-soft: #fbf0dd;
+  --color-n-danger: #b42318;
+  --color-n-danger-soft: #fdecea;
+  --color-n-teal: #0f8c7e;
+  --shadow-n-pop: 0 1px 2px rgb(27 26 23 / 0.06), 0 8px 24px rgb(27 26 23 / 0.12);
+  --shadow-n-card: 0 1px 2px rgb(27 26 23 / 0.04);
+}
+
+.n-dash {
+  color-scheme: light;
+  font-feature-settings: 'ss01' on;
+}
+body:has(.n-dash) {
+  background: #f7f6f3;
+}
+.n-dash :focus-visible {
+  outline: 2px solid #5b46e5;
+  outline-offset: 2px;
+}
+.n-brand-gradient {
+  background-image: linear-gradient(135deg, #5846e7 0%, #9f52f7 55%, #c34ec5 100%);
+}
+.n-dash ::selection {
+  background: #ddd6fb;
+}
+@keyframes n-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes n-slide-in {
+  from { transform: translateX(-100%); }
+  to { transform: none; }
+}
+@keyframes n-backdrop {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.n-anim-fade { animation: n-fade-in 160ms ease-out both; }
+.n-anim-drawer { animation: n-slide-in 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.n-anim-backdrop { animation: n-backdrop 160ms ease-out both; }
+.n-skeleton {
+  background: linear-gradient(90deg, #f2f0ec 0%, #f8f7f4 50%, #f2f0ec 100%);
+  background-size: 200% 100%;
+  animation: n-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes n-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .n-anim-fade, .n-anim-drawer, .n-anim-backdrop, .n-skeleton { animation: none; }
+}
+.n-soft-cover {
+  background:
+    radial-gradient(120% 140% at 0% 0%, #e3defc 0%, transparent 55%),
+    radial-gradient(120% 140% at 100% 100%, #f6dcf3 0%, transparent 55%),
+    #f3f1fb;
+}
+/* Grid/flex children may shrink below their content (long URLs, selects). */
+.n-dash .grid > * {
+  min-width: 0;
+}

@@ -1,52 +1,63 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
-import { siteConfig, siteRoutes } from '@/lib/constants'
+import { siteRoutes } from '@/lib/constants'
 
-/** Shared frame for the account pages — same look as /auth/action. */
+/**
+ * Frame for the account pages (sign in, sign up, reset, claim, invite).
+ * Light dashboard theme with the NessaChat logo.
+ */
 export function AccountShell({
   title,
   subtitle,
   children,
   footer,
+  wide,
 }: {
   title: string
   subtitle?: string
   children: ReactNode
   footer?: ReactNode
+  wide?: boolean
 }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-black px-6 py-12 text-white">
-      <div className="w-full max-w-md">
-        <p className="mb-1 text-center text-xs font-medium uppercase tracking-wide text-violet-400">
-          {siteConfig.name}
-        </p>
-        <h1 className="mb-1 text-center text-2xl font-semibold tracking-tight">{title}</h1>
-        {subtitle ? (
-          <p className="mb-6 text-center text-sm text-gray-400">{subtitle}</p>
-        ) : (
-          <div className="mb-6" />
-        )}
-        {children}
-        {footer ? <div className="mt-6 text-center text-sm text-gray-400">{footer}</div> : null}
-        <p className="mt-8 text-center text-xs text-gray-600">
-          <Link href={siteRoutes.privacyPolicy} className="text-violet-400 hover:text-violet-300">
-            Privacy
-          </Link>
-          {' · '}
-          <Link href={siteRoutes.termsOfService} className="text-violet-400 hover:text-violet-300">
-            Terms
-          </Link>
-        </p>
-      </div>
+    <div className="n-dash flex min-h-dvh flex-col bg-n-canvas text-n-ink antialiased">
+      <header className="flex h-14 items-center px-4 sm:px-6">
+        <Link href="/" className="flex items-center gap-2.5 text-n-ink no-underline">
+          <Image src="/logo.png" alt="" width={28} height={28} className="h-7 w-7" priority />
+          <span className="text-[15px] font-semibold tracking-[-0.01em]">NessaChat</span>
+        </Link>
+      </header>
+      <main className="flex flex-1 flex-col items-center px-4 pt-6 pb-12 sm:pt-12">
+        <div className={`w-full ${wide ? 'max-w-xl' : 'max-w-[420px]'}`}>
+          <h1 className="text-center text-[26px] leading-8 font-semibold tracking-[-0.025em]">{title}</h1>
+          {subtitle ? (
+            <p className="mt-1.5 mb-6 text-center text-sm text-n-muted">{subtitle}</p>
+          ) : (
+            <div className="mb-6" />
+          )}
+          {children}
+          {footer ? <div className="mt-6 text-center text-sm text-n-muted">{footer}</div> : null}
+        </div>
+      </main>
+      <footer className="pb-6 text-center text-xs text-n-subtle">
+        <Link href={siteRoutes.privacyPolicy} className="text-n-subtle hover:text-n-ink">
+          Privacy
+        </Link>
+        <span aria-hidden> · </span>
+        <Link href={siteRoutes.termsOfService} className="text-n-subtle hover:text-n-ink">
+          Terms
+        </Link>
+      </footer>
     </div>
   )
 }
 
 export const accountFieldClass =
-  'mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white outline-none placeholder:text-gray-600 focus:border-violet-500'
+  'mt-1.5 block w-full rounded-[10px] border border-n-line-strong bg-n-surface px-3 py-2.5 text-[15px] text-n-ink shadow-n-card outline-none transition-colors placeholder:text-n-faint hover:border-n-faint focus:border-n-accent focus:ring-3 focus:ring-n-accent/15 disabled:bg-n-sunken sm:text-sm'
 
 export const accountButtonClass =
-  'w-full rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-violet-500 disabled:opacity-60'
+  'inline-flex h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-n-accent px-4 text-sm font-semibold text-white shadow-[0_1px_2px_rgb(74_54_201/0.35)] transition-colors hover:bg-n-accent-strong disabled:opacity-60'
 
-export const accountCardClass = 'space-y-4 rounded-2xl border border-white/10 bg-white/5 p-5'
+export const accountCardClass = 'space-y-4 rounded-[14px] border border-n-line bg-n-surface p-5 shadow-n-card sm:p-6'

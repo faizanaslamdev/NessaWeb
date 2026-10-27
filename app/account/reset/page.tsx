@@ -17,7 +17,7 @@ export default function ResetPage() {
       title="Reset your password"
       subtitle="We’ll email you a link to choose a new one."
       footer={
-        <Link href={accountRoutes.signIn} className="text-violet-400 hover:text-violet-300">
+        <Link href={accountRoutes.signIn} className="font-medium text-n-accent-strong hover:underline">
           Back to sign in
         </Link>
       }

@@ -31,7 +31,7 @@ export default async function InvitePage({ params }: PageProps) {
         {/^[A-Za-z0-9_-]{1,64}$/.test(inviteId) ? (
           <InviteResponse inviteId={inviteId} />
         ) : (
-          <p className="text-center text-sm text-gray-400">This invitation link isn’t valid.</p>
+          <p className="text-center text-sm text-n-muted">This invitation link isn’t valid.</p>
         )}
       </AccountShell>
     </RequireAccount>

@@ -49,7 +49,7 @@ export function SignInForm() {
 
   return (
     <form onSubmit={onSubmit} className={accountCardClass} noValidate>
-      <label className="block text-left text-xs text-gray-400">
+      <label className="block text-left text-xs text-n-muted">
         Email
         <input
           type="email"
@@ -61,7 +61,7 @@ export function SignInForm() {
           required
         />
       </label>
-      <label className="block text-left text-xs text-gray-400">
+      <label className="block text-left text-xs text-n-muted">
         Password
         <input
           type="password"
@@ -73,15 +73,15 @@ export function SignInForm() {
         />
       </label>
       {error ? (
-        <p role="alert" className="text-sm text-red-400">
+        <p role="alert" className="text-sm text-n-danger">
           {error}
         </p>
       ) : null}
       <button type="submit" disabled={busy} className={accountButtonClass}>
         {busy ? 'Signing in…' : 'Sign in'}
       </button>
-      <p className="text-center text-xs text-gray-500">
-        <Link href={accountRoutes.reset} className="text-violet-400 hover:text-violet-300">
+      <p className="text-center text-xs text-n-subtle">
+        <Link href={accountRoutes.reset} className="text-n-accent-strong hover:text-n-accent">
           Forgot your password?
         </Link>
       </p>

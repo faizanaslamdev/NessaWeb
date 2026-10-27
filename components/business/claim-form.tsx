@@ -69,7 +69,7 @@ export function ClaimForm({ placeId }: { placeId: string }) {
   if (placeState === 'error') {
     return (
       <div className={`${accountCardClass} text-center`}>
-        <p className="text-sm text-gray-300">We couldn’t load this place.</p>
+        <p className="text-sm text-n-ink-2">We couldn’t load this place.</p>
       </div>
     )
   }
@@ -77,10 +77,10 @@ export function ClaimForm({ placeId }: { placeId: string }) {
   if (place?.business) {
     return (
       <div className={`${accountCardClass} text-center`}>
-        <p className="text-sm text-gray-200">
-          <span className="text-white">{place.name}</span> is already managed by a verified business.
+        <p className="text-sm text-n-ink-2">
+          <span className="text-n-ink">{place.name}</span> is already managed by a verified business.
         </p>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-n-subtle">
           If that’s wrong, email support and we’ll sort it out.
         </p>
       </div>
@@ -90,9 +90,9 @@ export function ClaimForm({ placeId }: { placeId: string }) {
   if (done) {
     return (
       <div className={`${accountCardClass} text-center`}>
-        <p className="text-sm text-gray-200">Request sent. We’ll review it and email you.</p>
-        <p className="text-xs text-gray-500">Nessa verifies every claim by hand before it goes live.</p>
-        <Link href={accountRoutes.business} className="block text-sm text-violet-400 hover:text-violet-300">
+        <p className="text-sm text-n-ink-2">Request sent. We’ll review it and email you.</p>
+        <p className="text-xs text-n-subtle">Nessa verifies every claim by hand before it goes live.</p>
+        <Link href={accountRoutes.business} className="block text-sm text-n-accent-strong hover:text-n-accent">
           Back to your business
         </Link>
       </div>
@@ -101,13 +101,13 @@ export function ClaimForm({ placeId }: { placeId: string }) {
 
   return (
     <form onSubmit={onSubmit} className={accountCardClass} noValidate>
-      <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2.5">
-        <p className="text-xs text-gray-500">Place</p>
-        <p className="text-sm font-semibold text-white">{place?.name ?? 'Loading…'}</p>
-        {place?.city ? <p className="text-xs text-gray-400">{[place.city, place.country].filter(Boolean).join(', ')}</p> : null}
+      <div className="rounded-xl border border-n-line bg-n-surface-2 px-3 py-2.5">
+        <p className="text-xs text-n-subtle">Place</p>
+        <p className="text-sm font-semibold text-n-ink">{place?.name ?? 'Loading…'}</p>
+        {place?.city ? <p className="text-xs text-n-muted">{[place.city, place.country].filter(Boolean).join(', ')}</p> : null}
       </div>
       <fieldset className="text-left">
-        <legend className="text-xs text-gray-400">Your role</legend>
+        <legend className="text-xs text-n-muted">Your role</legend>
         <div className="mt-1 flex gap-2">
           {(['owner', 'manager'] as const).map(r => (
             <button
@@ -116,40 +116,40 @@ export function ClaimForm({ placeId }: { placeId: string }) {
               onClick={() => setRole(r)}
               aria-pressed={role === r}
               className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold ${
-                role === r ? 'bg-violet-600 text-white' : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                role === r ? 'bg-n-accent text-white' : 'bg-n-sunken text-n-ink-2 hover:bg-n-hover'
               }`}
             >
               {r === 'owner' ? 'Owner' : 'Manager'}
             </button>
           ))}
         </div>
-        <p className="mt-1 text-[11px] leading-4 text-gray-500">
+        <p className="mt-1 text-[11px] leading-4 text-n-subtle">
           {role === 'owner'
             ? 'You own this business. Once verified you manage the page and can invite your team.'
             : 'You run it for the owner. Nessa confirms manager access with the owner — the quickest way is for the owner to claim the place and invite you.'}
         </p>
       </fieldset>
-      <label className="block text-left text-xs text-gray-400">
+      <label className="block text-left text-xs text-n-muted">
         Business name
         <input value={businessName} onChange={e => setBusinessName(e.target.value)} className={accountFieldClass} maxLength={80} required />
       </label>
-      <label className="block text-left text-xs text-gray-400">
+      <label className="block text-left text-xs text-n-muted">
         Phone or WhatsApp (optional)
         <input value={contactPhone} onChange={e => setContactPhone(e.target.value)} className={accountFieldClass} inputMode="tel" maxLength={32} />
       </label>
-      <label className="block text-left text-xs text-gray-400">
+      <label className="block text-left text-xs text-n-muted">
         Website (optional)
         <input value={website} onChange={e => setWebsite(e.target.value)} className={accountFieldClass} inputMode="url" maxLength={300} />
       </label>
-      <label className="block text-left text-xs text-gray-400">
+      <label className="block text-left text-xs text-n-muted">
         Anything that helps us verify you (optional)
         <textarea value={message} onChange={e => setMessage(e.target.value)} className={`${accountFieldClass} min-h-20`} maxLength={500} />
       </label>
-      {error ? <p role="alert" className="text-sm text-red-400">{error}</p> : null}
+      {error ? <p role="alert" className="text-sm text-n-danger">{error}</p> : null}
       <button type="submit" disabled={busy || placeState !== 'ready'} className={accountButtonClass}>
         {busy ? 'Sending…' : 'Send claim request'}
       </button>
-      <p className="text-center text-[11px] leading-4 text-gray-600">
+      <p className="text-center text-[11px] leading-4 text-n-subtle">
         Claiming adds official details to the place. Community recommendations and stories stay as they are.
       </p>
     </form>
