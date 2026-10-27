@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { percentLabel, qrPlacementLabel, statRows, summaryTiles } from './business-stats'
+import { percentLabel, placementStatRows, qrPlacementLabel, statRows, summaryTiles } from './business-stats'
 
 describe('business stats presentation', () => {
   it('statRows sorts by count, labels known sources and computes shares', () => {
@@ -37,5 +37,20 @@ describe('business stats presentation', () => {
     assert.deepEqual(tiles.map(t => [t.label, t.value]), [['Page visits', 10], ['Chat joins', 2], ['From QR codes', 4]])
     assert.equal(tiles[0].hint, '7 new · 3 returning')
     assert.equal(tiles[2].hint, '40% of visits')
+  })
+
+  it('placementStatRows uses saved labels and adds one row for unregistered tags', () => {
+    const rows = placementStatRows(
+      { qrCodes: { 'reception-desk': 3, table_4: 1 }, qrUnlisted: 2 },
+      { 'reception-desk': 'Reception desk' },
+    )
+    assert.deepEqual(rows.map(r => [r.key, r.label, r.count]), [
+      ['reception-desk', 'Reception desk', 3],
+      ['__unlisted', 'Unregistered tags', 2],
+      ['table_4', 'Table 4', 1],
+    ])
+    assert.equal(rows[0].share, 0.5)
+    assert.deepEqual(placementStatRows({ qrCodes: {} }), [])
+    assert.deepEqual(placementStatRows({ qrCodes: {}, qrUnlisted: 0 }), [])
   })
 })

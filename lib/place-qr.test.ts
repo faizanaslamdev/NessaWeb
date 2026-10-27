@@ -6,6 +6,7 @@ import {
   buildPlaceShareMessage,
   buildPlaceShareText,
   placeQrFilename,
+  qrPlacementIdFromLabel,
   slugPlaceQrName,
 } from './place-qr'
 
@@ -46,5 +47,16 @@ describe('place QR / share helpers', () => {
       buildPlaceShareText('Dunas Beach Bar e Restaurante', url),
       `Check out Dunas Beach Bar e Restaurante on Nessa\n${url}`,
     )
+  })
+
+  it('qrPlacementIdFromLabel matches the backend rule', () => {
+    assert.equal(qrPlacementIdFromLabel('Reception desk'), 'reception-desk')
+    assert.equal(qrPlacementIdFromLabel('Room_12'), 'room-12')
+    assert.equal(qrPlacementIdFromLabel('  Bar   2 '), 'bar-2')
+    assert.equal(qrPlacementIdFromLabel('Recepção'), 'recepcao')
+    assert.equal(qrPlacementIdFromLabel('Café — Terraço!'), 'cafe-terraco')
+    assert.equal(qrPlacementIdFromLabel('!!!'), null)
+    assert.equal(qrPlacementIdFromLabel('-'), null)
+    assert.equal(qrPlacementIdFromLabel('x'.repeat(40))?.length, 32)
   })
 })

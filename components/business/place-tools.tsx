@@ -5,26 +5,28 @@
  * pre-arrival sharing, the pinned chat welcome and 7/30-day stats.
  *
  * Everything here reuses what the public Place page already has
- * (PlaceQrSheet, PlacePrearrivalCopy, Wi-Fi sheet) and two member-only
- * callables (setPlaceChatPinnedInfo, getBusinessPlaceStats). The backend
- * checks membership on every call; this component only renders.
+ * (PlaceQrSheet, PlacePrearrivalCopy, Wi-Fi sheet) plus member-only
+ * callables (setPlaceChatPinnedInfo, getBusinessPlaceStats,
+ * managePlaceQrPlacements). The backend checks access on every call; this
+ * component only renders. QR placements are only available here (and on
+ * the admin Places page), never on the public Place page.
  */
 
 import { useEffect, useState, type FormEvent } from 'react'
 import Link from 'next/link'
 
 import { accountButtonClass, accountFieldClass } from '@/components/account/account-shell'
+import { PlaceStatsPanel } from '@/components/business/place-stats-panel'
 import { PlacePrearrivalCopy } from '@/components/place/place-prearrival-copy'
+import { QrPlacementsManager } from '@/components/place/qr-placements-manager'
 import { PlaceQrSheet } from '@/components/place/place-share-qr'
 import {
   BusinessActionError,
-  getBusinessPlaceStats,
+  listQrPlacements,
   setPlaceChatPinnedInfo,
-  type BusinessPlaceStats,
   type MyBusinessPlace,
-  type PlaceStatsWindow,
+  type QrPlacement,
 } from '@/lib/business'
-import { percentLabel, qrPlacementLabel, statRows, summaryTiles } from '@/lib/business-stats'
 import { placeChatOutboundUrl, placeOutboundUrl, placePublicUrl } from '@/lib/place-slug'
 
 const PINNED_MAX = 300
@@ -55,6 +57,26 @@ export function PlaceTools({
   const [qrOpen, setQrOpen] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [placements, setPlacements] = useState<QrPlacement[] | null>(null)
+  const [placementLimit, setPlacementLimit] = useState(50)
+  const [placementsError, setPlacementsError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    listQrPlacements(place.placeId)
+      .then(res => {
+        if (cancelled) return
+        setPlacements(res.placements)
+        setPlacementLimit(res.limit)
+      })
+      .catch((e: unknown) => {
+        if (!cancelled)
+          setPlacementsError(e instanceof BusinessActionError ? e.message : 'Could not load QR placements.')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [place.placeId])
 
   // Public URLs: what we hand out (outbound, see PLACE_LINKS_USE_LEGACY_ID_PATH)
   // and the clean one people see.
@@ -111,6 +133,19 @@ export function PlaceTools({
 
       <PinnedWelcomeForm place={place} onSaved={onPinnedSaved} />
 
+      {placements ? (
+        <QrPlacementsManager
+          placeId={place.placeId}
+          placements={placements}
+          limit={placementLimit}
+          onChange={setPlacements}
+        />
+      ) : placementsError ? (
+        <p className="text-xs text-red-300">{placementsError}</p>
+      ) : (
+        <p className="text-xs text-gray-500">Loading QR placements…</p>
+      )}
+
       <PlaceStatsPanel placeId={place.placeId} />
 
       <PlaceQrSheet
@@ -119,6 +154,8 @@ export function PlaceTools({
         placeId={place.placeId}
         slug={place.slug}
         placeName={place.name}
+        placements={(placements ?? []).filter(p => p.active).map(p => ({ qrId: p.qrId, label: p.label }))}
+        placementsHint="No placements yet. Add one under QR placements to count each printed QR separately."
       />
     </li>
   )
@@ -196,121 +233,5 @@ function PinnedWelcomeForm({
       {error ? <p role="alert" className="text-xs text-red-400">{error}</p> : null}
       {saved ? <p role="status" className="text-xs text-emerald-300">{saved}</p> : null}
     </form>
-  )
-}
-
-type StatsState =
-  | { kind: 'loading' }
-  | { kind: 'ready'; stats: BusinessPlaceStats }
-  | { kind: 'error'; message: string }
-
-function PlaceStatsPanel({ placeId }: { placeId: string }) {
-  const [state, setState] = useState<StatsState>({ kind: 'loading' })
-  const [window, setWindow] = useState<PlaceStatsWindow>(7)
-
-  useEffect(() => {
-    let cancelled = false
-    getBusinessPlaceStats(placeId)
-      .then(stats => {
-        if (!cancelled) setState({ kind: 'ready', stats })
-      })
-      .catch((e: unknown) => {
-        if (!cancelled)
-          setState({
-            kind: 'error',
-            message: e instanceof BusinessActionError ? e.message : 'Could not load stats.',
-          })
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [placeId])
-
-  return (
-    <section aria-label="Place stats" className="space-y-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Last {window} days</p>
-        <div className="flex gap-1" role="group" aria-label="Stats period">
-          {([7, 30] as const).map(d => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => setWindow(d)}
-              aria-pressed={window === d}
-              className={`rounded-md px-2 py-1 text-[11px] font-semibold ${
-                window === d ? 'bg-violet-600 text-white' : 'bg-white/5 text-gray-300 hover:bg-white/10'
-              }`}
-            >
-              {d} days
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {state.kind === 'loading' ? (
-        <p className="text-xs text-gray-500">Loading stats…</p>
-      ) : state.kind === 'error' ? (
-        <p className="text-xs text-red-300">{state.message}</p>
-      ) : (
-        <StatsBody summary={state.stats.windows[window]} />
-      )}
-    </section>
-  )
-}
-
-function StatsBody({ summary }: { summary: BusinessPlaceStats['windows'][PlaceStatsWindow] }) {
-  const tiles = summaryTiles(summary)
-  const sources = statRows(summary.sources)
-  const placements = statRows(summary.qrCodes, {}).map(r => ({ ...r, label: qrPlacementLabel(r.key) }))
-  const chatSources = statRows(summary.chatJoins.sources)
-  const empty = summary.visits === 0 && summary.chatJoins.total === 0
-
-  return (
-    <div className="space-y-3">
-      <dl className="grid grid-cols-3 gap-2">
-        {tiles.map(t => (
-          <div key={t.label} className="rounded-lg bg-black/30 px-2.5 py-2">
-            <dt className="text-[10px] uppercase tracking-wide text-gray-500">{t.label}</dt>
-            <dd className="text-lg font-semibold leading-tight text-white">{t.value}</dd>
-            {t.hint ? <dd className="text-[10px] text-gray-500">{t.hint}</dd> : null}
-          </div>
-        ))}
-      </dl>
-
-      {empty ? (
-        <p className="text-[11px] text-gray-500">
-          No visits yet in this period. Scans of your QR codes and opened links will show up here.
-        </p>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Breakdown title="Visits by source" rows={sources} />
-          {placements.length > 0 ? <Breakdown title="QR placements" rows={placements} /> : null}
-          {chatSources.length > 0 ? <Breakdown title="Chat joins by source" rows={chatSources} /> : null}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function Breakdown({ title, rows }: { title: string; rows: { key: string; label: string; count: number; share: number }[] }) {
-  return (
-    <div>
-      <p className="text-[11px] font-semibold text-gray-400">{title}</p>
-      <ul className="mt-1 space-y-1">
-        {rows.map(r => (
-          <li key={r.key} className="text-xs">
-            <div className="flex items-center justify-between gap-2 text-gray-300">
-              <span className="truncate">{r.label}</span>
-              <span className="shrink-0 tabular-nums text-gray-400">
-                {r.count} · {percentLabel(r.share)}
-              </span>
-            </div>
-            <div className="mt-0.5 h-1 rounded-full bg-white/5">
-              <div className="h-1 rounded-full bg-violet-500/70" style={{ width: `${Math.max(2, Math.round(r.share * 100))}%` }} />
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
   )
 }

@@ -67,7 +67,10 @@ export type PlaceStatsSummary = {
   visits: number
   visitors: { new: number; returning: number }
   sources: Record<string, number>
+  /** Visits per registered QR placement (`qr=<id>`). */
   qrCodes: Record<string, number>
+  /** QR visits whose `qr=` tag isn't a registered placement (absent before the QR placements release). */
+  qrUnlisted?: number
   chatJoins: { total: number; sources: Record<string, number> }
   activeDays: number
 }
@@ -77,6 +80,8 @@ export type BusinessPlaceStats = {
   asOf: string
   windows: Record<PlaceStatsWindow, PlaceStatsSummary>
   daily: { date: string; visits: number; chatJoins: number }[]
+  /** `qrId` → label of every registered placement (active or retired). */
+  qrPlacementLabels?: Record<string, string>
 }
 
 export type MyBusiness = {
@@ -138,6 +143,9 @@ function mapError(err: unknown): BusinessActionError {
     case 'business/not-found':
     case 'functions/not-found':
       return new BusinessActionError(code, serverMessage || 'Not found.')
+    case 'business/already-exists':
+    case 'business/limit-reached':
+    case 'functions/failed-precondition':
     case 'business/already-claimed':
     case 'business/claim-pending':
     case 'business/invalid-argument':
@@ -252,7 +260,7 @@ export async function setPlaceChatPinnedInfo(placeId: string, text: string): Pro
   }
 }
 
-/** Last 7 / 30 days of link activity for a Place the caller manages. */
+/** Last 7 / 30 days of link activity (Nessa admins: any Place; owners / managers: their Places). */
 export async function getBusinessPlaceStats(placeId: string): Promise<BusinessPlaceStats> {
   try {
     const callable = httpsCallable<{ placeId: string }, { ok: true; stats: BusinessPlaceStats }>(
@@ -264,6 +272,69 @@ export async function getBusinessPlaceStats(placeId: string): Promise<BusinessPl
   } catch (e) {
     throw mapError(e)
   }
+}
+
+export type QrPlacement = {
+  qrId: string
+  label: string
+  active: boolean
+  createdAt: string | null
+  createdByEmail: string | null
+  createdVia: 'admin' | 'business' | 'backfill'
+  retiredAt: string | null
+}
+
+export type QrPlacementPlace = {
+  placeId: string
+  name: string
+  city: string | null
+  country: string | null
+  slug: string | null
+  businessId: string | null
+}
+
+export type QrPlacementAccess =
+  | { kind: 'admin'; role: 'admin' | 'super_admin' }
+  | { kind: 'business'; role: 'owner' | 'staff'; businessId: string }
+
+export type QrPlacementList = {
+  place: QrPlacementPlace | null
+  access: QrPlacementAccess
+  placements: QrPlacement[]
+  limit: number
+}
+
+async function callQrPlacements<T>(data: Record<string, unknown>): Promise<T> {
+  try {
+    const callable = httpsCallable<Record<string, unknown>, T>(fns(), 'managePlaceQrPlacements')
+    const res = await callable(data)
+    return res.data
+  } catch (e) {
+    throw mapError(e)
+  }
+}
+
+/**
+ * QR placements of a Place. Allowed for Nessa admins (any Place) and the
+ * Place's business owners / managers — checked by the backend.
+ */
+export async function listQrPlacements(placeId: string): Promise<QrPlacementList> {
+  return callQrPlacements<QrPlacementList>({ action: 'list', placeId })
+}
+
+export async function createQrPlacement(placeId: string, label: string): Promise<QrPlacement[]> {
+  const res = await callQrPlacements<{ placements: QrPlacement[] }>({ action: 'create', placeId, label })
+  return res.placements
+}
+
+export async function retireQrPlacement(placeId: string, qrId: string): Promise<QrPlacement[]> {
+  const res = await callQrPlacements<{ placements: QrPlacement[] }>({ action: 'retire', placeId, qrId })
+  return res.placements
+}
+
+export async function restoreQrPlacement(placeId: string, qrId: string): Promise<QrPlacement[]> {
+  const res = await callQrPlacements<{ placements: QrPlacement[] }>({ action: 'restore', placeId, qrId })
+  return res.placements
 }
 
 /** "a, b, c" → ['a','b','c'] (trimmed, deduped). */
