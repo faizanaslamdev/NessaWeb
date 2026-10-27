@@ -23,6 +23,11 @@ import {
 import { officialSenderBadge } from '@/lib/place-chat/official'
 import { PLACE_CHAT_MESSAGE_TEXT_MAX } from '@/lib/place-chat/constants'
 import {
+  PLACE_CHAT_DEFAULT_RETENTION_HOURS,
+  formatPlaceChatMessageTime,
+  placeChatRetentionHint,
+} from '@/lib/place-chat/retention'
+import {
   placeChatTranslationsByUserForBubble,
   selectPlaceChatMessagesNeedingBackfill,
 } from '@/lib/place-chat/translation'
@@ -35,11 +40,6 @@ type PlaceChatThreadProps = {
   displayName: string
   preferredLanguage: string
   onSendError: (message: string) => void
-}
-
-function formatPlaceMessageTime(ms: number): string {
-  if (!Number.isFinite(ms) || ms <= 0) return ''
-  return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
 export default function PlaceChatThread({
@@ -55,6 +55,8 @@ export default function PlaceChatThread({
   // Pinned welcome written by the Place's verified business (Phase B); live
   // so an edit shows up without reloading the room.
   const [pinnedText, setPinnedText] = useState('')
+  // Admin-managed per room (24h default); copy only — expiry is server-stamped.
+  const [retentionHours, setRetentionHours] = useState<number>(PLACE_CHAT_DEFAULT_RETENTION_HOURS)
   const [inputValue, setInputValue] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const backfillRequestedRef = useRef<Set<string>>(new Set())
@@ -83,7 +85,10 @@ export default function PlaceChatThread({
 
   useEffect(() => {
     const { firestore } = getFirebaseClient()
-    return subscribePlaceChatRoom(firestore, placeId, info => setPinnedText(info.pinnedText))
+    return subscribePlaceChatRoom(firestore, placeId, info => {
+      setPinnedText(info.pinnedText)
+      setRetentionHours(info.retentionHours)
+    })
   }, [placeId])
 
   // Late-join: backfill only missing langs for already-loaded messages.
@@ -166,10 +171,12 @@ export default function PlaceChatThread({
         ) : messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
-              <p className="text-gray-400">No messages yet today. Say hello!</p>
-              <p className="mt-2 text-xs text-gray-500">
-                Messages disappear after 24 hours. The room stays open.
+              <p className="text-gray-400">
+                {retentionHours > PLACE_CHAT_DEFAULT_RETENTION_HOURS
+                  ? 'No messages yet. Say hello!'
+                  : 'No messages yet today. Say hello!'}
               </p>
+              <p className="mt-2 text-xs text-gray-500">{placeChatRetentionHint(retentionHours)}</p>
             </div>
           </div>
         ) : (
@@ -188,7 +195,7 @@ export default function PlaceChatThread({
                 message={m.text}
                 isSent={isSent}
                 senderName={name}
-                timestamp={formatPlaceMessageTime(m.createdAtMs)}
+                timestamp={formatPlaceChatMessageTime(m.createdAtMs)}
                 avatar={av}
                 preferredLanguage={preferredLanguage}
                 viewerUserId={user.uid}

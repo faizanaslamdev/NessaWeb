@@ -32,6 +32,10 @@ import {
   isGooglePlaceId,
   isPlaceChatMessageExpired,
 } from '@/lib/place-chat/constants'
+import {
+  resolvePlaceChatRetentionHours,
+  type PlaceChatRetentionHours,
+} from '@/lib/place-chat/retention'
 import { normalizePlaceChatLanguage } from '@/lib/place-chat/translation'
 import {
   filterRecentPlaceChatViewers,
@@ -57,10 +61,12 @@ export type PlaceChatMessage = {
   businessName?: string
 }
 
-/** Room fields the web renders live (title + pinned welcome). */
+/** Room fields the web renders live (title, pinned welcome, retention). */
 export type PlaceChatRoomInfo = {
   title: string | null
   pinnedText: string
+  /** Admin-managed; 24 when unset. Drives copy only (expiry is server-stamped). */
+  retentionHours: PlaceChatRetentionHours
 }
 
 export function placeChatDocRef(db: Firestore, placeId: string) {
@@ -267,7 +273,7 @@ export function subscribePlaceChatMessages(
   )
 }
 
-/** Live room info: pinned welcome (business-managed) + title. */
+/** Live room info: pinned welcome (business-managed), title and retention. */
 export function subscribePlaceChatRoom(
   db: Firestore,
   placeId: string,
@@ -285,6 +291,7 @@ export function subscribePlaceChatRoom(
       onUpdate({
         title: typeof data?.title === 'string' && data.title.trim() ? data.title : null,
         pinnedText,
+        retentionHours: resolvePlaceChatRetentionHours(data?.messageRetentionHours),
       })
     },
     () => {

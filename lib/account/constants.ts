@@ -12,6 +12,8 @@ export const accountRoutes = {
   admin: '/admin/business',
   /** Super Admins manage the admin team (manageAdmins callable). */
   adminTeam: '/admin/team',
+  /** Admins manage Place Chat settings, e.g. retention (managePlaceChat callable). */
+  adminChats: '/admin/chats',
 } as const
 
 /**
