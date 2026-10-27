@@ -12,7 +12,6 @@ import QRCode from 'react-qr-code'
 import { PlaceSheet } from '@/components/place/place-sheet'
 import { shareUrlWithoutScheme } from '@/lib/chat/format'
 import { isPublicPlaceIdValid } from '@/lib/place-landing'
-import { sanitizeQrId } from '@/lib/place-link-source'
 import {
   placeChatOutboundUrl,
   placeChatPublicUrl,
@@ -234,10 +233,17 @@ export function PlaceCoverShareQr({
   )
 }
 
+/** A registered QR placement the sheet can tag a QR with (`qr=<id>`). */
+export type QrPlacementChoice = { qrId: string; label: string }
+
 /**
- * QR sheet for a Place: Place-page or Live-chat target, optional placement
- * label (`qr=<id>`, counted separately in the stats) and PNG download. Used
- * from the public Place page cover and from the business tools page.
+ * QR sheet for a Place: Place-page or Live-chat target and PNG download.
+ *
+ * - Public Place page (anyone): plain QR, no placement.
+ * - Business tools / admin Places page: pass `placements` (the Place's
+ *   active registered placements) to tag the QR with one (`qr=<id>`). Only
+ *   registered placements get their own row in the stats (the backend
+ *   ignores any other tag), so there is no free-text field.
  */
 export function PlaceQrSheet({
   open,
@@ -246,6 +252,8 @@ export function PlaceQrSheet({
   slug,
   placeName,
   onFeedback,
+  placements,
+  placementsHint,
 }: {
   open: boolean
   onClose: () => void
@@ -253,18 +261,20 @@ export function PlaceQrSheet({
   slug?: string | null
   placeName: string
   onFeedback?: (feedback: Feedback) => void
+  /** Registered active placements; omit for the public (plain) QR. */
+  placements?: QrPlacementChoice[]
+  /** Shown when `placements` is empty (e.g. where to add one). */
+  placementsHint?: string
 }) {
   const [saving, setSaving] = useState(false)
   const [localFeedback, setLocalFeedback] = useState<Feedback | null>(null)
   const exportHostRef = useRef<HTMLDivElement>(null)
-  // Optional placement label ("reception", "bar", "room-12") so each printed
-  // QR can be told apart in the stats; becomes `&qr=<id>` in the encoded URL.
-  const [placement, setPlacement] = useState('')
+  // Selected registered placement ('' = general QR, no placement tag).
+  const [selectedQrId, setSelectedQrId] = useState('')
   // Which page the QR opens: the Place page or straight into Place Chat.
   const [qrTarget, setQrTarget] = useState<'place' | 'chat'>('place')
-  // "Bar 2" → "bar-2"; anything still invalid is rejected (warning below).
-  const qrId =
-    sanitizeQrId(placement.trim().toLowerCase().replace(/[\s_]+/g, '-')) ?? undefined
+  const selected = placements?.find(p => p.qrId === selectedQrId) ?? null
+  const qrId = selected?.qrId
 
   const placeIdValid = isPublicPlaceIdValid(placeId)
   const shareUrl = placeIdValid ? placeOutboundUrl({ placeId, slug }) : ''
@@ -308,7 +318,7 @@ export function PlaceQrSheet({
     }
     setSaving(true)
     try {
-      const fileLabel = [qrTarget === 'chat' ? 'chat' : '', placement.trim()]
+      const fileLabel = [qrTarget === 'chat' ? 'chat' : '', selected?.label ?? '']
         .filter(Boolean)
         .join('-')
       await downloadSvgAsPng(svg, placeQrFilename(placeName, fileLabel), EXPORT_QR_SIZE)
@@ -386,26 +396,32 @@ export function PlaceQrSheet({
                 </button>
               ))}
             </div>
-            <label className="block text-xs text-gray-400">
-              Placement (optional) — e.g. reception, bar, room-12
-              <input
-                type="text"
-                value={placement}
-                onChange={event => setPlacement(event.target.value)}
-                maxLength={32}
-                placeholder="reception"
-                className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:border-[#7C3AED] focus:outline-none"
-              />
-            </label>
-            {placement.trim() && !qrId ? (
-              <p className="text-[11px] text-amber-300">
-                Use letters, numbers and dashes only (up to 32 characters).
-              </p>
-            ) : (
-              <p className="text-[11px] text-gray-500">
-                Each placement is counted separately in the Place’s stats.
-              </p>
-            )}
+            {placements ? (
+              placements.length > 0 ? (
+                <label className="block text-xs text-gray-400">
+                  Placement (optional)
+                  <select
+                    value={selected ? selected.qrId : ''}
+                    onChange={event => setSelectedQrId(event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white focus:border-[#7C3AED] focus:outline-none"
+                  >
+                    <option value="">No placement (general QR)</option>
+                    {placements.map(p => (
+                      <option key={p.qrId} value={p.qrId}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="mt-1 block text-[11px] text-gray-500">
+                    Each placement is counted separately in the Place’s stats.
+                  </span>
+                </label>
+              ) : (
+                <p className="text-[11px] text-gray-500">
+                  {placementsHint ?? 'No placements yet. Add one to count each printed QR separately.'}
+                </p>
+              )
+            ) : null}
           </div>
           {shareUrl ? (
             <div

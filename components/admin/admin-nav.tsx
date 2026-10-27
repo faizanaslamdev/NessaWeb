@@ -10,7 +10,7 @@ import { ADMIN_ROLE_LABELS, readMyAdminRole, type AdminRole } from '@/lib/admin'
 
 /**
  * Small tab row for the Nessa admin pages. Shows the caller's role, the
- * Chats tab for every admin and the Team tab for Super Admins. Display only — every action is authorized by
+ * Chats and Places tabs for every admin and the Team tab for Super Admins. Display only — every action is authorized by
  * the backend.
  */
 export function AdminNav() {
@@ -34,6 +34,7 @@ export function AdminNav() {
   const tabs = [
     { href: accountRoutes.admin, label: 'Business claims' },
     { href: accountRoutes.adminChats, label: 'Chats' },
+    { href: accountRoutes.adminPlaces, label: 'Places' },
     ...(role === 'super_admin' ? [{ href: accountRoutes.adminTeam, label: 'Team' }] : []),
   ]
 

@@ -14,6 +14,8 @@ export const accountRoutes = {
   adminTeam: '/admin/team',
   /** Admins manage Place Chat settings, e.g. retention (managePlaceChat callable). */
   adminChats: '/admin/chats',
+  /** Admins: any Place's QR placements and link stats (incl. Places without a business). */
+  adminPlaces: '/admin/places',
 } as const
 
 /**

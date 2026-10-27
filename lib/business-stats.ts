@@ -39,6 +39,26 @@ export function qrPlacementLabel(qrId: string): string {
   return words ? words[0].toUpperCase() + words.slice(1) : qrId
 }
 
+/** Key of the placement row for QR scans with an unregistered `qr=` tag. */
+export const UNLISTED_QR_ROW_KEY = '__unlisted'
+
+/**
+ * "QR placements" rows: registered placements (with their saved labels),
+ * plus one row for QR scans whose tag isn't registered. Shares are of all
+ * tagged QR visits.
+ */
+export function placementStatRows(
+  summary: Pick<PlaceStatsSummary, 'qrCodes' | 'qrUnlisted'>,
+  labels: Record<string, string> = {},
+): StatRow[] {
+  const counts: Record<string, number> = { ...summary.qrCodes }
+  if ((summary.qrUnlisted ?? 0) > 0) counts[UNLISTED_QR_ROW_KEY] = summary.qrUnlisted ?? 0
+  return statRows(counts, {}).map(r => ({
+    ...r,
+    label: r.key === UNLISTED_QR_ROW_KEY ? 'Unregistered tags' : labels[r.key] ?? qrPlacementLabel(r.key),
+  }))
+}
+
 export function percentLabel(share: number): string {
   if (!Number.isFinite(share) || share <= 0) return '0%'
   const pct = share * 100
