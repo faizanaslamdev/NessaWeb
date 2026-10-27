@@ -11,8 +11,15 @@ import QRCode from 'react-qr-code'
 
 import { PlaceSheet } from '@/components/place/place-sheet'
 import { shareUrlWithoutScheme } from '@/lib/chat/format'
-import { placeShareUrl } from '@/lib/constants'
 import { isPublicPlaceIdValid } from '@/lib/place-landing'
+import { sanitizeQrId } from '@/lib/place-link-source'
+import {
+  placeChatOutboundUrl,
+  placeChatPublicUrl,
+  placeOutboundUrl,
+  placePublicUrl,
+  placeQrUrl,
+} from '@/lib/place-slug'
 import {
   buildPlaceShareMessage,
   placeQrFilename,
@@ -111,17 +118,22 @@ function downloadSvgAsPng(
 
 export function PlaceCoverShareQr({
   placeId,
+  slug,
   placeName,
 }: {
   placeId: string
+  /** Canonical slug; QR + share use the clean `/places/{slug}` URL when set. */
+  slug?: string | null
   placeName: string
 }) {
   const [qrOpen, setQrOpen] = useState(false)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
-  const [saving, setSaving] = useState(false)
-  const exportHostRef = useRef<HTMLDivElement>(null)
 
-  const shareUrl = isPublicPlaceIdValid(placeId) ? placeShareUrl(placeId) : ''
+  const placeIdValid = isPublicPlaceIdValid(placeId)
+  // Share / Copy Link and QR use the outbound URL — temporarily the legacy id
+  // path so existing Android app installs open the right Place (see
+  // PLACE_LINKS_USE_LEGACY_ID_PATH); browsers get a 308 to the slug page.
+  const shareUrl = placeIdValid ? placeOutboundUrl({ placeId, slug }) : ''
 
   const showFeedback = useCallback((next: Feedback) => {
     setFeedback(next)
@@ -177,27 +189,6 @@ export function PlaceCoverShareQr({
     setQrOpen(true)
   }
 
-  const onDownloadQr = async () => {
-    if (!shareUrl) {
-      showFeedback({ kind: 'error', text: 'Could not download QR' })
-      return
-    }
-    const svg = exportHostRef.current?.querySelector('svg')
-    if (!svg) {
-      showFeedback({ kind: 'error', text: 'Could not generate QR' })
-      return
-    }
-    setSaving(true)
-    try {
-      await downloadSvgAsPng(svg, placeQrFilename(placeName), EXPORT_QR_SIZE)
-      showFeedback({ kind: 'ok', text: 'QR downloaded' })
-    } catch {
-      showFeedback({ kind: 'error', text: 'Could not download QR' })
-    } finally {
-      setSaving(false)
-    }
-  }
-
   return (
     <>
       <div className="pointer-events-none absolute right-3 top-3 z-10 flex items-start gap-1.5">
@@ -231,10 +222,109 @@ export function PlaceCoverShareQr({
         </div>
       ) : null}
 
-      <PlaceSheet
+      <PlaceQrSheet
         open={qrOpen}
-        title={placeName.trim() || 'Place QR'}
         onClose={() => setQrOpen(false)}
+        placeId={placeId}
+        slug={slug}
+        placeName={placeName}
+        onFeedback={showFeedback}
+      />
+    </>
+  )
+}
+
+/**
+ * QR sheet for a Place: Place-page or Live-chat target, optional placement
+ * label (`qr=<id>`, counted separately in the stats) and PNG download. Used
+ * from the public Place page cover and from the business tools page.
+ */
+export function PlaceQrSheet({
+  open,
+  onClose,
+  placeId,
+  slug,
+  placeName,
+  onFeedback,
+}: {
+  open: boolean
+  onClose: () => void
+  placeId: string
+  slug?: string | null
+  placeName: string
+  onFeedback?: (feedback: Feedback) => void
+}) {
+  const [saving, setSaving] = useState(false)
+  const [localFeedback, setLocalFeedback] = useState<Feedback | null>(null)
+  const exportHostRef = useRef<HTMLDivElement>(null)
+  // Optional placement label ("reception", "bar", "room-12") so each printed
+  // QR can be told apart in the stats; becomes `&qr=<id>` in the encoded URL.
+  const [placement, setPlacement] = useState('')
+  // Which page the QR opens: the Place page or straight into Place Chat.
+  const [qrTarget, setQrTarget] = useState<'place' | 'chat'>('place')
+  // "Bar 2" → "bar-2"; anything still invalid is rejected (warning below).
+  const qrId =
+    sanitizeQrId(placement.trim().toLowerCase().replace(/[\s_]+/g, '-')) ?? undefined
+
+  const placeIdValid = isPublicPlaceIdValid(placeId)
+  const shareUrl = placeIdValid ? placeOutboundUrl({ placeId, slug }) : ''
+  // Tagged so QR scans are attributed (stripped after counting).
+  const qrUrl = !placeIdValid
+    ? ''
+    : qrTarget === 'chat'
+      ? placeChatOutboundUrl({ placeId, slug }, { ref: 'qr', qrId })
+      : placeQrUrl({ placeId, slug }, { qrId })
+  // What people see: always the clean canonical URL of what the QR opens —
+  // the Place page, or its Place Chat (`/places/{slug}/chat`).
+  const displayUrl = !placeIdValid
+    ? ''
+    : qrTarget === 'chat'
+      ? placeChatPublicUrl({ placeId, slug })
+      : placePublicUrl({ placeId, slug })
+
+  const feedback = useCallback(
+    (next: Feedback) => {
+      if (onFeedback) {
+        onFeedback(next)
+        return
+      }
+      setLocalFeedback(next)
+      window.setTimeout(() => {
+        setLocalFeedback(current => (current === next ? null : current))
+      }, 2200)
+    },
+    [onFeedback],
+  )
+
+  const onDownloadQr = async () => {
+    if (!shareUrl) {
+      feedback({ kind: 'error', text: 'Could not download QR' })
+      return
+    }
+    const svg = exportHostRef.current?.querySelector('svg')
+    if (!svg) {
+      feedback({ kind: 'error', text: 'Could not generate QR' })
+      return
+    }
+    setSaving(true)
+    try {
+      const fileLabel = [qrTarget === 'chat' ? 'chat' : '', placement.trim()]
+        .filter(Boolean)
+        .join('-')
+      await downloadSvgAsPng(svg, placeQrFilename(placeName, fileLabel), EXPORT_QR_SIZE)
+      feedback({ kind: 'ok', text: 'QR downloaded' })
+    } catch {
+      feedback({ kind: 'error', text: 'Could not download QR' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+      <PlaceSheet
+        open={open}
+        title={placeName.trim() || 'Place QR'}
+        onClose={onClose}
         footer={
           <button
             type="button"
@@ -249,10 +339,15 @@ export function PlaceCoverShareQr({
         }
       >
         <div className="flex flex-col items-center gap-3 py-2">
+          {localFeedback ? (
+            <p role="status" className={`text-xs font-semibold ${localFeedback.kind === 'ok' ? 'text-emerald-300' : 'text-red-300'}`}>
+              {localFeedback.text}
+            </p>
+          ) : null}
           <div className="rounded-2xl bg-white p-4">
             {shareUrl ? (
               <QRCode
-                value={shareUrl}
+                value={qrUrl}
                 size={200}
                 bgColor="#FFFFFF"
                 fgColor="#111111"
@@ -263,13 +358,55 @@ export function PlaceCoverShareQr({
             )}
           </div>
           <p className="text-center text-sm font-semibold text-gray-200">
-            Scan to view this place on Nessa
+            {qrTarget === 'chat'
+              ? 'Scan to join the live chat on Nessa'
+              : 'Scan to view this place on Nessa'}
           </p>
           {shareUrl ? (
             <p className="max-w-full break-all text-center text-xs text-gray-500">
-              {shareUrlWithoutScheme(shareUrl)}
+              {shareUrlWithoutScheme(displayUrl)}
             </p>
           ) : null}
+
+          <div className="mt-1 w-full space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-left">
+            <div className="flex gap-2" role="group" aria-label="QR opens">
+              {(['place', 'chat'] as const).map(target => (
+                <button
+                  key={target}
+                  type="button"
+                  onClick={() => setQrTarget(target)}
+                  aria-pressed={qrTarget === target}
+                  className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    qrTarget === target
+                      ? 'bg-[#7C3AED] text-white'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                  }`}
+                >
+                  {target === 'place' ? 'Place page' : 'Live chat'}
+                </button>
+              ))}
+            </div>
+            <label className="block text-xs text-gray-400">
+              Placement (optional) — e.g. reception, bar, room-12
+              <input
+                type="text"
+                value={placement}
+                onChange={event => setPlacement(event.target.value)}
+                maxLength={32}
+                placeholder="reception"
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:border-[#7C3AED] focus:outline-none"
+              />
+            </label>
+            {placement.trim() && !qrId ? (
+              <p className="text-[11px] text-amber-300">
+                Use letters, numbers and dashes only (up to 32 characters).
+              </p>
+            ) : (
+              <p className="text-[11px] text-gray-500">
+                Each placement is counted separately in the Place’s stats.
+              </p>
+            )}
+          </div>
           {shareUrl ? (
             <div
               ref={exportHostRef}
@@ -278,7 +415,7 @@ export function PlaceCoverShareQr({
               style={{ left: -4000 }}
             >
               <QRCode
-                value={shareUrl}
+                value={qrUrl}
                 size={EXPORT_QR_SIZE}
                 bgColor="#FFFFFF"
                 fgColor="#111111"
@@ -288,7 +425,6 @@ export function PlaceCoverShareQr({
           ) : null}
         </div>
       </PlaceSheet>
-    </>
   )
 }
 

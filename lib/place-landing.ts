@@ -58,6 +58,30 @@ export type PublicPlaceLanding = {
   stories?: PublicPlaceStoryPreview[]
   /** Public Wi-Fi when configured with isPublic on the Place doc. */
   wifi?: PublicPlaceWifi
+  /** Canonical public slug (`/places/{slug}`) when the Place has one. */
+  slug?: string
+  /** Verified business that manages this Place (official layer), if any. */
+  business?: PublicBusinessProfile
+  /** Place Chat message retention in hours (admin-managed; 24 when unset). */
+  chatRetentionHours?: number
+}
+
+export type PublicBusinessProfile = {
+  businessId: string
+  verified: true
+  name: string
+  category?: string
+  description?: string
+  website?: string
+  phone?: string
+  whatsapp?: string
+  hours?: string
+  checkIn?: string
+  checkOut?: string
+  amenities?: string[]
+  languages?: string[]
+  logoUrl?: string
+  coverUrl?: string
 }
 
 export type PublicPlaceWifi = {
@@ -353,13 +377,15 @@ export async function fetchPublicStoryComments(input: {
 }
 
 /**
- * Temporary pilot: PIN-gated Wi-Fi write (server verifies PIN; client never
- * writes Firestore places directly).
- * TODO(business-profiles): replace PIN with Business Profile authorization.
+ * Wi-Fi write. The server authorizes either a signed-in verified business
+ * member (no PIN; the Firebase ID token travels with the callable) or, for an
+ * unclaimed Place, the pilot management PIN. The client never writes
+ * Firestore places directly.
  */
 export async function setPlaceWifiPublic(input: {
   placeId: string
-  pin: string
+  /** Pilot PIN — omit when calling as a signed-in business member. */
+  pin?: string
   networkName: string
   password: string
   note?: string
@@ -372,7 +398,7 @@ export async function setPlaceWifiPublic(input: {
     const callable = httpsCallable<
       {
         placeId: string
-        pin: string
+        pin?: string
         networkName: string
         password: string
         note?: string
@@ -382,7 +408,7 @@ export async function setPlaceWifiPublic(input: {
     >(getCallableFunctions(), 'setPlaceWifiPublic')
     const result = await callable({
       placeId: input.placeId.trim(),
-      pin: input.pin.trim(),
+      ...(input.pin !== undefined ? { pin: input.pin.trim() } : {}),
       networkName: input.networkName,
       password: input.password,
       ...(input.note !== undefined ? { note: input.note } : {}),
@@ -433,4 +459,40 @@ export async function verifyPlaceWifiManagementPin(input: {
   } catch (e) {
     throw mapSetWifiError(e)
   }
+}
+
+/**
+ * Count one public Place page visit by source (fire-and-forget; aggregate
+ * only). Errors are swallowed by callers — tracking must never affect the page.
+ */
+export async function recordPlaceLinkVisit(input: {
+  placeId: string
+  source: string
+  qrId?: string | null
+  /** 'visit' (default) or 'chat_join'. */
+  event?: 'visit' | 'chat_join'
+  /** 'new' | 'returning' — visits only. */
+  visitor?: 'new' | 'returning' | null
+}): Promise<void> {
+  const placeId = input.placeId.trim()
+  if (!isPublicPlaceIdValid(placeId)) {
+    return
+  }
+  const callable = httpsCallable<
+    {
+      placeId: string
+      source: string
+      qrId?: string
+      event?: 'visit' | 'chat_join'
+      visitor?: 'new' | 'returning'
+    },
+    { ok: boolean; counted: boolean }
+  >(getCallableFunctions(), 'recordPlaceLinkVisit')
+  await callable({
+    placeId,
+    source: input.source,
+    ...(input.qrId ? { qrId: input.qrId } : {}),
+    ...(input.event ? { event: input.event } : {}),
+    ...(input.visitor ? { visitor: input.visitor } : {}),
+  })
 }

@@ -32,6 +32,10 @@ import {
   isGooglePlaceId,
   isPlaceChatMessageExpired,
 } from '@/lib/place-chat/constants'
+import {
+  resolvePlaceChatRetentionHours,
+  type PlaceChatRetentionHours,
+} from '@/lib/place-chat/retention'
 import { normalizePlaceChatLanguage } from '@/lib/place-chat/translation'
 import {
   filterRecentPlaceChatViewers,
@@ -52,6 +56,17 @@ export type PlaceChatMessage = {
   sourceLanguage?: string
   translationsByUser?: Record<string, string>
   translationsByLanguage?: Record<string, string>
+  /** Set server-side when the sender is verified staff of the Place's business. */
+  official?: boolean
+  businessName?: string
+}
+
+/** Room fields the web renders live (title, pinned welcome, retention). */
+export type PlaceChatRoomInfo = {
+  title: string | null
+  pinnedText: string
+  /** Admin-managed; 24 when unset. Drives copy only (expiry is server-stamped). */
+  retentionHours: PlaceChatRetentionHours
 }
 
 export function placeChatDocRef(db: Firestore, placeId: string) {
@@ -205,9 +220,19 @@ export function subscribePlaceChatMessages(
           !Array.isArray(data.translationsByLanguage)
             ? (data.translationsByLanguage as Record<string, string>)
             : undefined
+        const official = data.official === true
         list.push({
           id: d.id,
           senderId,
+          ...(official
+            ? {
+                official: true,
+                businessName:
+                  typeof data.businessName === 'string' && data.businessName.trim()
+                    ? data.businessName.trim().slice(0, 80)
+                    : undefined,
+              }
+            : {}),
           displayName:
             typeof data.displayName === 'string' && data.displayName.trim()
               ? data.displayName.trim()
@@ -245,6 +270,33 @@ export function subscribePlaceChatMessages(
       onUpdate(list.reverse())
     },
     err => onError?.(err as Error),
+  )
+}
+
+/** Live room info: pinned welcome (business-managed), title and retention. */
+export function subscribePlaceChatRoom(
+  db: Firestore,
+  placeId: string,
+  onUpdate: (info: PlaceChatRoomInfo) => void,
+): Unsubscribe {
+  return onSnapshot(
+    placeChatDocRef(db, placeId),
+    snap => {
+      const data = snap.exists() ? snap.data() : null
+      const pinned = data?.pinnedInfo
+      const pinnedText =
+        pinned && typeof pinned === 'object' && typeof pinned.text === 'string'
+          ? pinned.text.trim().slice(0, 300)
+          : ''
+      onUpdate({
+        title: typeof data?.title === 'string' && data.title.trim() ? data.title : null,
+        pinnedText,
+        retentionHours: resolvePlaceChatRetentionHours(data?.messageRetentionHours),
+      })
+    },
+    () => {
+      // Non-fatal: the room still works without the pin.
+    },
   )
 }
 

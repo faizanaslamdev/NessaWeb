@@ -6,7 +6,11 @@
 import { unstable_cache } from 'next/cache'
 
 import { placeShareUrl, siteConfig } from '@/lib/constants'
-import { isPublicPlaceIdValid } from '@/lib/place-landing'
+import {
+  isPublicPlaceIdValid,
+  type PublicPlaceLanding,
+} from '@/lib/place-landing'
+import { isValidPlaceSlug } from '@/lib/place-slug'
 import { PLACE_SHARE_BRAND, buildPlacePageTitle } from '@/lib/place-title'
 
 export { PLACE_SHARE_BRAND, buildPlacePageTitle }
@@ -24,12 +28,27 @@ export type PublicPlaceShareMeta = {
   country?: string
   placeType?: string
   coverImageUrl?: string
+  slug?: string
+  recommenderCount?: number
+  storyCount?: number
+  business?: {
+    name: string
+    website?: string
+    phone?: string
+    description?: string
+    logoUrl?: string
+  }
 }
 
 function callableUrl(): string | null {
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim()
   if (!projectId) {
     return null
+  }
+  // Local verification only (server env; unset in production).
+  const emulator = process.env.FIREBASE_FUNCTIONS_EMULATOR_HOST?.trim()
+  if (emulator) {
+    return `http://${emulator}/${projectId}/us-central1/getPublicPlaceLanding`
   }
   return `https://us-central1-${projectId}.cloudfunctions.net/getPublicPlaceLanding`
 }
@@ -102,12 +121,40 @@ function mapCallableResult(raw: unknown): PublicPlaceShareMeta | null {
   if (coverImageUrl) {
     meta.coverImageUrl = coverImageUrl
   }
+  if (typeof data.slug === 'string' && isValidPlaceSlug(data.slug)) {
+    meta.slug = data.slug
+  }
+  if (typeof data.recommenderCount === 'number' && data.recommenderCount >= 0) {
+    meta.recommenderCount = Math.floor(data.recommenderCount)
+  }
+  if (typeof data.storyCount === 'number' && data.storyCount >= 0) {
+    meta.storyCount = Math.floor(data.storyCount)
+  }
+  const biz = data.business as Record<string, unknown> | undefined
+  const bizName = biz ? sanitizePlainText(biz.name, 80) : undefined
+  if (biz && bizName && biz.verified === true) {
+    meta.business = {name: bizName}
+    const website = safeHttpsUrl(biz.website)
+    if (website) meta.business.website = website
+    const phone = sanitizePlainText(biz.phone, 32)
+    if (phone) meta.business.phone = phone
+    const description = sanitizePlainText(biz.description, 300)
+    if (description) meta.business.description = description
+    const logoUrl = safeHttpsUrl(biz.logoUrl)
+    if (logoUrl) meta.business.logoUrl = logoUrl
+  }
   return meta
 }
 
-async function fetchPublicPlaceShareMetaUncached(
+/** Optional shared key so SSR fetches get their own rate-limit bucket. */
+function ssrKeyHeader(): Record<string, string> {
+  const key = process.env.NESSA_WEB_SSR_KEY?.trim()
+  return key ? { 'x-nessa-ssr-key': key } : {}
+}
+
+async function fetchPublicPlaceLandingUncached(
   placeId: string,
-): Promise<PublicPlaceShareMeta | null> {
+): Promise<PublicPlaceLanding | null> {
   const url = callableUrl()
   if (!url) {
     return null
@@ -118,7 +165,7 @@ async function fetchPublicPlaceShareMetaUncached(
   try {
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...ssrKeyHeader() },
       body: JSON.stringify({ data: { placeId } }),
       signal: controller.signal,
       // Explicitly uncached at fetch layer; unstable_cache owns TTL.
@@ -131,7 +178,12 @@ async function fetchPublicPlaceShareMetaUncached(
     if (payload.error) {
       return null
     }
-    return mapCallableResult(payload.result)
+    // Validate the minimum shape; the client renders the rest as it already
+    // does for its own callable responses.
+    if (!mapCallableResult(payload.result)) {
+      return null
+    }
+    return payload.result as PublicPlaceLanding
   } catch {
     return null
   } finally {
@@ -140,12 +192,13 @@ async function fetchPublicPlaceShareMetaUncached(
 }
 
 /**
- * Cached Place share fields for generateMetadata.
- * Fail-closed: returns null on invalid id / errors / timeout.
+ * Cached full public Place landing (one callable round trip per Place per
+ * revalidate window, shared by generateMetadata and the server-rendered page
+ * body). Fail-closed: null on invalid id / errors / timeout.
  */
-export async function getCachedPublicPlaceShareMeta(
+export async function getCachedPublicPlaceLanding(
   placeId: string,
-): Promise<PublicPlaceShareMeta | null> {
+): Promise<PublicPlaceLanding | null> {
   const trimmed = placeId.trim()
   if (!isPublicPlaceIdValid(trimmed)) {
     return null
@@ -154,20 +207,51 @@ export async function getCachedPublicPlaceShareMeta(
   try {
     return await unstable_cache(
       async () => {
-        const meta = await fetchPublicPlaceShareMetaUncached(trimmed)
-        if (!meta) {
+        const landing = await fetchPublicPlaceLandingUncached(trimmed)
+        if (!landing) {
           // Do not cache misses — a timeout/error would pin "Place on Nessa"
           // in the helmet for the full revalidate window.
-          throw new Error('place-share-meta-miss')
+          throw new Error('place-landing-miss')
         }
-        return meta
+        return landing
       },
-      ['public-place-share-meta-v4', trimmed],
+      ['public-place-landing-v1', trimmed],
       { revalidate: METADATA_REVALIDATE_SECONDS },
     )()
   } catch {
     return null
   }
+}
+
+/**
+ * Copy of a landing that is safe to embed in server-rendered HTML:
+ * - drops a cover URL that carries a Google API key;
+ * - drops public Wi-Fi (network + password) so crawlers never index or cache
+ *   passwords. The client fetches its own full copy after hydration, exactly
+ *   as before SSR existed, so visitors still see the Wi-Fi card.
+ */
+export function toSsrSafeLanding(landing: PublicPlaceLanding): PublicPlaceLanding {
+  const keepCover = !landing.coverImageUrl || Boolean(safeHttpsUrl(landing.coverImageUrl))
+  if (keepCover && !landing.wifi) {
+    return landing
+  }
+  const copy = { ...landing }
+  if (!keepCover) {
+    delete copy.coverImageUrl
+  }
+  delete copy.wifi
+  return copy
+}
+
+/**
+ * Cached Place share fields for generateMetadata (sanitized subset of the
+ * cached landing). Fail-closed: returns null on invalid id / errors / timeout.
+ */
+export async function getCachedPublicPlaceShareMeta(
+  placeId: string,
+): Promise<PublicPlaceShareMeta | null> {
+  const landing = await getCachedPublicPlaceLanding(placeId)
+  return landing ? mapCallableResult(landing) : null
 }
 
 export function placeCanonicalUrl(placeId: string): string {

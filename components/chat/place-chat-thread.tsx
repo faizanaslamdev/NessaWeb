@@ -17,9 +17,16 @@ import {
   backfillPlaceChatTranslations,
   sendPlaceChatMessage,
   subscribePlaceChatMessages,
+  subscribePlaceChatRoom,
   type PlaceChatMessage,
 } from '@/lib/place-chat/api'
+import { officialSenderBadge } from '@/lib/place-chat/official'
 import { PLACE_CHAT_MESSAGE_TEXT_MAX } from '@/lib/place-chat/constants'
+import {
+  PLACE_CHAT_DEFAULT_RETENTION_HOURS,
+  formatPlaceChatMessageTime,
+  placeChatRetentionHint,
+} from '@/lib/place-chat/retention'
 import {
   placeChatTranslationsByUserForBubble,
   selectPlaceChatMessagesNeedingBackfill,
@@ -35,11 +42,6 @@ type PlaceChatThreadProps = {
   onSendError: (message: string) => void
 }
 
-function formatPlaceMessageTime(ms: number): string {
-  if (!Number.isFinite(ms) || ms <= 0) return ''
-  return new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
-
 export default function PlaceChatThread({
   placeId,
   placeName,
@@ -50,6 +52,11 @@ export default function PlaceChatThread({
 }: PlaceChatThreadProps) {
   const [messages, setMessages] = useState<PlaceChatMessage[]>([])
   const [messagesLoading, setMessagesLoading] = useState(true)
+  // Pinned welcome written by the Place's verified business (Phase B); live
+  // so an edit shows up without reloading the room.
+  const [pinnedText, setPinnedText] = useState('')
+  // Admin-managed per room (24h default); copy only — expiry is server-stamped.
+  const [retentionHours, setRetentionHours] = useState<number>(PLACE_CHAT_DEFAULT_RETENTION_HOURS)
   const [inputValue, setInputValue] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const backfillRequestedRef = useRef<Set<string>>(new Set())
@@ -74,6 +81,14 @@ export default function PlaceChatThread({
       },
     )
     return () => unsub()
+  }, [placeId])
+
+  useEffect(() => {
+    const { firestore } = getFirebaseClient()
+    return subscribePlaceChatRoom(firestore, placeId, info => {
+      setPinnedText(info.pinnedText)
+      setRetentionHours(info.retentionHours)
+    })
   }, [placeId])
 
   // Late-join: backfill only missing langs for already-loaded messages.
@@ -134,6 +149,20 @@ export default function PlaceChatThread({
       transition={{ duration: 0.3, delay: 0.1 }}
       className="flex min-h-0 flex-1 flex-col overflow-hidden bg-linear-to-b from-black via-black to-black/80"
     >
+      {pinnedText ? (
+        <div
+          role="note"
+          aria-label="Pinned message from the business"
+          className="shrink-0 border-b border-violet-500/20 bg-violet-500/10 px-4 py-2.5 sm:px-6"
+        >
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-300">
+            Pinned
+          </p>
+          <p className="mt-0.5 whitespace-pre-wrap wrap-break-word text-sm leading-5 text-gray-100">
+            {pinnedText}
+          </p>
+        </div>
+      ) : null}
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-6 sm:px-6 sm:py-6">
         {messagesLoading && messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
@@ -142,10 +171,12 @@ export default function PlaceChatThread({
         ) : messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
-              <p className="text-gray-400">No messages yet today. Say hello!</p>
-              <p className="mt-2 text-xs text-gray-500">
-                Messages disappear after 24 hours. The room stays open.
+              <p className="text-gray-400">
+                {retentionHours > PLACE_CHAT_DEFAULT_RETENTION_HOURS
+                  ? 'No messages yet. Say hello!'
+                  : 'No messages yet today. Say hello!'}
               </p>
+              <p className="mt-2 text-xs text-gray-500">{placeChatRetentionHint(retentionHours)}</p>
             </div>
           </div>
         ) : (
@@ -164,7 +195,7 @@ export default function PlaceChatThread({
                 message={m.text}
                 isSent={isSent}
                 senderName={name}
-                timestamp={formatPlaceMessageTime(m.createdAtMs)}
+                timestamp={formatPlaceChatMessageTime(m.createdAtMs)}
                 avatar={av}
                 preferredLanguage={preferredLanguage}
                 viewerUserId={user.uid}
@@ -175,6 +206,7 @@ export default function PlaceChatThread({
                 sourceLanguage={m.sourceLanguage}
                 translationsByUser={translationsByUser}
                 translationsByLanguage={m.translationsByLanguage}
+                senderBadge={officialSenderBadge(m)}
               />
             )
           })

@@ -14,6 +14,7 @@ import ChatHeader from '@/components/chat/chat-header'
 import EntryModal from '@/components/chat/entry-modal'
 import ParticipantsSheet from '@/components/chat/participants-sheet'
 import ParticipantsSidebar from '@/components/chat/participants-sidebar'
+import { PlaceChatJoinTracker } from '@/components/chat/place-chat-join-tracker'
 import PlaceChatThread from '@/components/chat/place-chat-thread'
 import { Button } from '@/components/ui/button'
 import { useInstantAuth } from '@/hooks/use-instant-auth'
@@ -26,6 +27,7 @@ import { getFirebaseClient } from '@/lib/firebase'
 import {
   ensurePlaceChatRoom,
   setPlaceChatViewerLanguage,
+  subscribePlaceChatRoom,
   subscribePlaceChatViewers,
 } from '@/lib/place-chat/api'
 import {
@@ -37,16 +39,25 @@ import {
   readStoredGuestLanguage,
   readStoredGuestName,
 } from '@/lib/place-chat/guest-profile'
+import {
+  PLACE_CHAT_DEFAULT_RETENTION_HOURS,
+  placeChatRetentionLabel,
+} from '@/lib/place-chat/retention'
 import type { PlaceChatViewerPref } from '@/lib/place-chat/viewers'
 import type { ChatParticipant } from '@/components/chat/participants-list'
 
 type PlaceChatRoomProps = {
   placeId: string
+  /** Canonical slug when known (`/places/{slug}/chat`); back-links use it. */
+  slug?: string | null
+  /** Server-known Place name (slug route); query hints still work. */
+  placeName?: string | null
 }
 
-export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
+export default function PlaceChatRoom({ placeId, slug, placeName }: PlaceChatRoomProps) {
   const searchParams = useSearchParams()
   const placeNameHint =
+    placeName?.trim() ||
     searchParams.get('placeName')?.trim() ||
     searchParams.get('name')?.trim() ||
     null
@@ -59,6 +70,7 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
   const [guestLanguage, setGuestLanguage] = useState(DEFAULT_CHAT_LANGUAGE_CODE)
   const [hydratedGuest, setHydratedGuest] = useState(false)
   const [viewers, setViewers] = useState<PlaceChatViewerPref[]>([])
+  const [retentionHours, setRetentionHours] = useState<number>(PLACE_CHAT_DEFAULT_RETENTION_HOURS)
   const [showParticipantsSheet, setShowParticipantsSheet] = useState(false)
   const [showProfileSettings, setShowProfileSettings] = useState(false)
   const [copyNotice, setCopyNotice] = useState<null | {
@@ -71,7 +83,7 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
     setTimeout(() => setCopyNotice(null), 1800)
   }, [])
 
-  const placeHref = `/place/${encodeURIComponent(placeId)}`
+  const placeHref = slug ? `/places/${slug}` : `/place/${encodeURIComponent(placeId)}`
   const inRoom = Boolean(user && roomReady && guestName)
 
   useEffect(() => {
@@ -143,6 +155,13 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
     return subscribePlaceChatViewers(firestore, placeId, setViewers)
   }, [inRoom, placeId])
 
+  // Header copy follows the room's admin-managed retention (24h default).
+  useEffect(() => {
+    if (!roomReady) return
+    const { firestore } = getFirebaseClient()
+    return subscribePlaceChatRoom(firestore, placeId, info => setRetentionHours(info.retentionHours))
+  }, [roomReady, placeId])
+
   useInstantPresenceTracking(user?.uid, inRoom)
 
   const viewerUids = useMemo(() => viewers.map(v => v.uid), [viewers])
@@ -193,15 +212,27 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
     [placeId, showNotice, user],
   )
 
+  // Attribution + join counting (renders nothing). Placed before the early
+  // returns so tracking params are read and stripped as soon as the page opens.
+  const joinTracker = <PlaceChatJoinTracker placeId={placeId} joined={inRoom} />
+
   if (authError) {
-    return <AuthErrorPanel authError={authError} />
+    return (
+      <>
+        {joinTracker}
+        <AuthErrorPanel authError={authError} />
+      </>
+    )
   }
 
   if (authLoading || !hydratedGuest || (user && !roomReady && !roomError)) {
     return (
-      <div className="fixed inset-0 z-0 flex items-center justify-center bg-black text-gray-400">
-        Loading…
-      </div>
+      <>
+        {joinTracker}
+        <div className="fixed inset-0 z-0 flex items-center justify-center bg-black text-gray-400">
+          Loading…
+        </div>
+      </>
     )
   }
 
@@ -220,6 +251,7 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
 
   return (
     <div className="fixed inset-0 z-0 flex flex-col overflow-hidden bg-black">
+      {joinTracker}
       {copyNotice ? (
         <div className="fixed top-4 right-4 z-120 max-w-[min(calc(100vw-2rem),20rem)]">
           <div
@@ -265,7 +297,7 @@ export default function PlaceChatRoom({ placeId }: PlaceChatRoomProps) {
             participantCount={onlineCount}
             title={title}
             titleHref={placeHref}
-            metaLine={`Live Place Chat · ${onlineCount} online · messages last 24 hours`}
+            metaLine={`Live Place Chat · ${onlineCount} online · messages last ${placeChatRetentionLabel(retentionHours)}`}
             hideOnlineCount
             hideShare
             onSettings={() => {

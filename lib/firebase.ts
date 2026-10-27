@@ -1,8 +1,9 @@
 'use client'
 
 import { initializeApp, getApps, type FirebaseApp } from 'firebase/app'
-import { getAuth, type Auth } from 'firebase/auth'
-import { getFirestore, type Firestore } from 'firebase/firestore'
+import { connectAuthEmulator, getAuth, type Auth } from 'firebase/auth'
+import { connectFirestoreEmulator, getFirestore, type Firestore } from 'firebase/firestore'
+import { connectFunctionsEmulator, getFunctions } from 'firebase/functions'
 import { getDatabase, type Database } from 'firebase/database'
 
 export type FirebaseClient = {
@@ -50,10 +51,30 @@ export function getFirebaseClient(): FirebaseClient {
   const appConfig = readWebFirebaseConfig()
 
   const app = getApps().length ? getApps()[0]! : initializeApp(appConfig)
+  const auth = getAuth(app)
+  const firestore = getFirestore(app)
+
+  // Local verification only: point the browser SDK at the Firebase emulators.
+  // Both values are inlined at build time and are unset in production builds.
+  const authEmulator = process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST
+  const firestoreEmulator = process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST
+  if (authEmulator) {
+    connectAuthEmulator(auth, `http://${authEmulator}`, { disableWarnings: true })
+  }
+  if (firestoreEmulator) {
+    const [host, port] = firestoreEmulator.split(':')
+    connectFirestoreEmulator(firestore, host || '127.0.0.1', Number(port) || 8080)
+  }
+  const functionsEmulator = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST
+  if (functionsEmulator) {
+    const [host, port] = functionsEmulator.split(':')
+    connectFunctionsEmulator(getFunctions(app), host || '127.0.0.1', Number(port) || 5001)
+  }
+
   client = {
     app,
-    auth: getAuth(app),
-    firestore: getFirestore(app),
+    auth,
+    firestore,
     rtdb: getDatabase(app),
   }
   return client

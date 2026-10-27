@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 
 import {
@@ -26,12 +26,42 @@ import { StoryPhotoCollage } from '@/components/place/story-photo-collage'
 import { StoryMediaViewer } from '@/components/place/story-media-viewer'
 import { PlaceSheet } from '@/components/place/place-sheet'
 import { PlaceCoverShareQr } from '@/components/place/place-share-qr'
+import { PlacePrearrivalCopy } from '@/components/place/place-prearrival-copy'
+import { PlaceOfficialSection, VerifiedBadge } from '@/components/place/place-official-section'
+import { accountRoutes } from '@/lib/account/constants'
 import { PlaceWifiCard } from '@/components/place/place-wifi-card'
 import { PlaceWifiManageSheet } from '@/components/place/place-wifi-manage-sheet'
 import { placePhotoUrlForWebVariant } from '@/lib/place-photo'
+import { isValidPlaceSlug, placeChatCanonicalPath } from '@/lib/place-slug'
+import {
+  PLACE_CHAT_DEFAULT_RETENTION_HOURS,
+  placeChatRetentionLabel,
+} from '@/lib/place-chat/retention'
 
 type PlaceLandingClientProps = {
   placeId: string
+  /** Canonical public slug (`/places/{slug}`) when known. */
+  slug?: string | null
+  /**
+   * Server-fetched landing (SSR): rendered immediately so the HTML carries
+   * the real content for crawlers / link previews, then refreshed quietly.
+   */
+  initialPlace?: PublicPlaceLanding | null
+}
+
+const subscribeNoop = () => () => {}
+
+/**
+ * False during SSR and hydration, true afterwards. Relative times ("5m ago")
+ * depend on the clock and the server HTML may be cached, so they render only
+ * on the client to avoid hydration mismatches.
+ */
+function useHydrated(): boolean {
+  return useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false,
+  )
 }
 
 type LoadState =
@@ -136,12 +166,20 @@ function initialLetter(name: string): string {
  * Business-first Place QR landing with read-only social proof.
  * Recommend / Open try the native deep link; store fallback stays secondary.
  */
-export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
+export function PlaceLandingClient({
+  placeId,
+  slug,
+  initialPlace,
+}: PlaceLandingClientProps) {
   const deepLink = useMemo(() => placeAppDeepLink(placeId), [placeId])
   const placeIdValid = isPublicPlaceIdValid(placeId)
-  const [state, setState] = useState<LoadState>(() =>
-    placeIdValid ? { kind: 'loading' } : { kind: 'invalid' },
-  )
+  const hasInitialPlace = Boolean(placeIdValid && initialPlace)
+  const [state, setState] = useState<LoadState>(() => {
+    if (!placeIdValid) {
+      return { kind: 'invalid' }
+    }
+    return initialPlace ? { kind: 'ready', place: initialPlace } : { kind: 'loading' }
+  })
   const [coverViewerOpen, setCoverViewerOpen] = useState(false)
   const [coverBroken, setCoverBroken] = useState(false)
   const [wifiManageOpen, setWifiManageOpen] = useState(false)
@@ -162,22 +200,30 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
     }
 
     let cancelled = false
-    queueMicrotask(() => {
-      if (!cancelled) {
-        setState({ kind: 'loading' })
-      }
-    })
+    if (!hasInitialPlace) {
+      queueMicrotask(() => {
+        if (!cancelled) {
+          setState({ kind: 'loading' })
+        }
+      })
+    }
 
     fetchPublicPlaceLanding(placeId)
       .then(place => {
         if (!cancelled) {
-          setCoverBroken(false)
-          setCoverViewerOpen(false)
+          if (!hasInitialPlace) {
+            setCoverBroken(false)
+            setCoverViewerOpen(false)
+          }
           setState({ kind: 'ready', place })
         }
       })
       .catch((e: unknown) => {
         if (cancelled) {
+          return
+        }
+        if (hasInitialPlace) {
+          // Keep the server-rendered content; the refresh was best-effort.
           return
         }
         if (e instanceof PublicPlaceLandingError) {
@@ -203,7 +249,7 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
     return () => {
       cancelled = true
     }
-  }, [placeId, placeIdValid])
+  }, [placeId, placeIdValid, hasInitialPlace])
 
   if (!placeIdValid || state.kind === 'invalid') {
     return (
@@ -253,6 +299,12 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
   const coverLightboxUrl =
     placePhotoUrlForWebVariant(rawCoverUrl, 'lightbox') ?? rawCoverUrl
   const hasCover = coverUrl.startsWith('https://') && !coverBroken
+  const canonicalSlug = place.slug ?? slug ?? null
+  // Clean chat URL when the Place has a slug; legacy chat route otherwise.
+  const chatHref =
+    canonicalSlug && isValidPlaceSlug(canonicalSlug)
+      ? placeChatCanonicalPath(canonicalSlug)
+      : `/place/${encodeURIComponent(place.googlePlaceId)}/chat`
 
   return (
     <Shell>
@@ -285,6 +337,7 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
           )}
           <PlaceCoverShareQr
             placeId={place.googlePlaceId || placeId}
+            slug={place.slug ?? slug ?? null}
             placeName={place.name}
           />
         </div>
@@ -303,8 +356,9 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
               Recommend
             </a>
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white">
+          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-white">
             {place.name}
+            {place.business ? <VerifiedBadge className="translate-y-px" /> : null}
           </h1>
           {location ? <p className="text-sm text-gray-400">{location}</p> : null}
           {place.formattedAddress && place.formattedAddress !== location ? (
@@ -350,7 +404,7 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
 
       <div className="mt-6 w-full max-w-sm space-y-3">
         <a
-          href={`/chat/${encodeURIComponent(place.googlePlaceId)}?type=place&placeId=${encodeURIComponent(place.googlePlaceId)}&placeName=${encodeURIComponent(place.name)}`}
+          href={chatHref}
           aria-label="Join Live Chat"
           className="inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#8B5CF6] px-4 py-3.5 text-[15px] font-bold text-white no-underline transition-colors hover:bg-[#7C3AED] sm:min-h-[52px]"
         >
@@ -358,18 +412,26 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
           Join Live Chat
         </a>
         <p className="text-center text-xs leading-4 text-[#737373]">
-          See what&apos;s happening here now · messages last 24 hours
+          See what&apos;s happening here now · messages last{' '}
+          {placeChatRetentionLabel(place.chatRetentionHours ?? PLACE_CHAT_DEFAULT_RETENTION_HOURS)}
         </p>
+        <div className="text-center">
+          <PlacePrearrivalCopy
+            placeId={place.googlePlaceId || placeId}
+            slug={canonicalSlug}
+            placeName={place.name}
+          />
+        </div>
       </div>
 
       {place.wifi ? (
         <div className="mt-6 w-full max-w-sm">
           <PlaceWifiCard
             wifi={place.wifi}
-            onEdit={() => setWifiManageOpen(true)}
+            onEdit={place.business ? undefined : () => setWifiManageOpen(true)}
           />
         </div>
-      ) : (
+      ) : place.business ? null : (
         <div className="mt-4 w-full max-w-sm text-center">
           <button
             type="button"
@@ -379,6 +441,28 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
             Add Wi-Fi
           </button>
         </div>
+      )}
+
+      {place.business ? (
+        <>
+          <PlaceOfficialSection business={place.business} />
+          <p className="mt-2 text-center text-[11px] text-gray-600">
+            Run this place?{' '}
+            <Link href={accountRoutes.business} className="text-gray-500 underline-offset-2 hover:text-gray-300 hover:underline">
+              Manage it in business tools
+            </Link>
+          </p>
+        </>
+      ) : (
+        <p className="mt-4 text-center text-[11px] text-gray-600">
+          Own or manage this place?{' '}
+          <Link
+            href={`${accountRoutes.claim}/${encodeURIComponent(place.googlePlaceId || placeId)}`}
+            className="text-gray-500 underline-offset-2 hover:text-gray-300 hover:underline"
+          >
+            Claim this place
+          </Link>
+        </p>
       )}
 
       <PlaceWifiManageSheet
@@ -420,7 +504,8 @@ export function PlaceLandingClient({ placeId }: PlaceLandingClientProps) {
 }
 
 function RecommenderCard({ person }: { person: PublicPlaceRecommender }) {
-  const relative = formatRelativeDate(person.createdAt)
+  const hydrated = useHydrated()
+  const relative = hydrated ? formatRelativeDate(person.createdAt) : null
   const note = person.note?.trim()
 
   return (
@@ -505,6 +590,7 @@ function StoriesSection({
   const [commentsStory, setCommentsStory] = useState<PublicPlaceStoryPreview | null>(
     null,
   )
+  const hydrated = useHydrated()
 
   return (
     <section className="mt-6 w-full text-left">
@@ -515,7 +601,7 @@ function StoriesSection({
         {stories.map(story => {
           const uris = storyMediaUris(story)
           const typeLabel = formatStoryType(story.type)
-          const relative = formatRelativeDate(story.createdAt)
+          const relative = hydrated ? formatRelativeDate(story.createdAt) : null
           const comments = story.commentsPreview ?? []
           const commentCount = story.commentCount ?? 0
 
@@ -594,7 +680,7 @@ function StoriesSection({
                               </span>{' '}
                               <span className="text-gray-300">{comment.text}</span>
                             </p>
-                            {formatRelativeDate(comment.createdAt) ? (
+                            {hydrated && formatRelativeDate(comment.createdAt) ? (
                               <p className="mt-0.5 text-[10px] text-gray-500">
                                 {formatRelativeDate(comment.createdAt)}
                               </p>

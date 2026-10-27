@@ -12,8 +12,9 @@ export function slugPlaceQrName(placeName: string): string {
   return slug || 'place'
 }
 
-export function placeQrFilename(placeName: string): string {
-  return `nessa-${slugPlaceQrName(placeName)}-qr.png`
+export function placeQrFilename(placeName: string, placement?: string | null): string {
+  const suffix = placement ? `-${slugPlaceQrName(placement)}` : ''
+  return `nessa-${slugPlaceQrName(placeName)}${suffix}-qr.png`
 }
 
 export function buildPlaceShareMessage(placeName: string): string {
