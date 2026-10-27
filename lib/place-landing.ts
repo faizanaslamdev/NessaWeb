@@ -62,6 +62,8 @@ export type PublicPlaceLanding = {
   slug?: string
   /** Verified business that manages this Place (official layer), if any. */
   business?: PublicBusinessProfile
+  /** Place Chat message retention in hours (admin-managed; 24 when unset). */
+  chatRetentionHours?: number
 }
 
 export type PublicBusinessProfile = {

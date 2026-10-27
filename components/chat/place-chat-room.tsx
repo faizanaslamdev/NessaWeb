@@ -27,6 +27,7 @@ import { getFirebaseClient } from '@/lib/firebase'
 import {
   ensurePlaceChatRoom,
   setPlaceChatViewerLanguage,
+  subscribePlaceChatRoom,
   subscribePlaceChatViewers,
 } from '@/lib/place-chat/api'
 import {
@@ -38,6 +39,10 @@ import {
   readStoredGuestLanguage,
   readStoredGuestName,
 } from '@/lib/place-chat/guest-profile'
+import {
+  PLACE_CHAT_DEFAULT_RETENTION_HOURS,
+  placeChatRetentionLabel,
+} from '@/lib/place-chat/retention'
 import type { PlaceChatViewerPref } from '@/lib/place-chat/viewers'
 import type { ChatParticipant } from '@/components/chat/participants-list'
 
@@ -65,6 +70,7 @@ export default function PlaceChatRoom({ placeId, slug, placeName }: PlaceChatRoo
   const [guestLanguage, setGuestLanguage] = useState(DEFAULT_CHAT_LANGUAGE_CODE)
   const [hydratedGuest, setHydratedGuest] = useState(false)
   const [viewers, setViewers] = useState<PlaceChatViewerPref[]>([])
+  const [retentionHours, setRetentionHours] = useState<number>(PLACE_CHAT_DEFAULT_RETENTION_HOURS)
   const [showParticipantsSheet, setShowParticipantsSheet] = useState(false)
   const [showProfileSettings, setShowProfileSettings] = useState(false)
   const [copyNotice, setCopyNotice] = useState<null | {
@@ -148,6 +154,13 @@ export default function PlaceChatRoom({ placeId, slug, placeName }: PlaceChatRoo
     const { firestore } = getFirebaseClient()
     return subscribePlaceChatViewers(firestore, placeId, setViewers)
   }, [inRoom, placeId])
+
+  // Header copy follows the room's admin-managed retention (24h default).
+  useEffect(() => {
+    if (!roomReady) return
+    const { firestore } = getFirebaseClient()
+    return subscribePlaceChatRoom(firestore, placeId, info => setRetentionHours(info.retentionHours))
+  }, [roomReady, placeId])
 
   useInstantPresenceTracking(user?.uid, inRoom)
 
@@ -284,7 +297,7 @@ export default function PlaceChatRoom({ placeId, slug, placeName }: PlaceChatRoo
             participantCount={onlineCount}
             title={title}
             titleHref={placeHref}
-            metaLine={`Live Place Chat · ${onlineCount} online · messages last 24 hours`}
+            metaLine={`Live Place Chat · ${onlineCount} online · messages last ${placeChatRetentionLabel(retentionHours)}`}
             hideOnlineCount
             hideShare
             onSettings={() => {

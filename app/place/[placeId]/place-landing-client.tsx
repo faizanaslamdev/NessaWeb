@@ -33,6 +33,10 @@ import { PlaceWifiCard } from '@/components/place/place-wifi-card'
 import { PlaceWifiManageSheet } from '@/components/place/place-wifi-manage-sheet'
 import { placePhotoUrlForWebVariant } from '@/lib/place-photo'
 import { isValidPlaceSlug, placeChatCanonicalPath } from '@/lib/place-slug'
+import {
+  PLACE_CHAT_DEFAULT_RETENTION_HOURS,
+  placeChatRetentionLabel,
+} from '@/lib/place-chat/retention'
 
 type PlaceLandingClientProps = {
   placeId: string
@@ -408,7 +412,8 @@ export function PlaceLandingClient({
           Join Live Chat
         </a>
         <p className="text-center text-xs leading-4 text-[#737373]">
-          See what&apos;s happening here now · messages last 24 hours
+          See what&apos;s happening here now · messages last{' '}
+          {placeChatRetentionLabel(place.chatRetentionHours ?? PLACE_CHAT_DEFAULT_RETENTION_HOURS)}
         </p>
         <div className="text-center">
           <PlacePrearrivalCopy
