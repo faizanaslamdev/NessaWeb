@@ -6,6 +6,7 @@ import {
   isValidPlaceSlug,
   placeChatCanonicalPath,
   placeChatOutboundUrl,
+  placeChatPublicUrl,
   placeOutboundUrl,
   placeQrUrl,
   placeCanonicalUrlForSlug,
@@ -99,6 +100,26 @@ describe('place slug URLs', () => {
     assert.equal(
       searchParamsToQueryString({ ref: 'qr', tag: ['a', 'b'], empty: undefined }),
       '?ref=qr&tag=a&tag=b',
+    )
+  })
+})
+
+describe('placeChatPublicUrl (text shown under a Live chat QR)', () => {
+  it('is the clean /places/{slug}/chat URL when the Place has a slug', () => {
+    assert.equal(
+      placeChatPublicUrl({ placeId: 'ChIJv75cmffLwAcRoCN_2XtSDlg', slug: 'cumbuco' }),
+      'https://www.nessachat.com/places/cumbuco/chat',
+    )
+  })
+
+  it('falls back to the legacy chat path without a valid slug, and never carries tracking params', () => {
+    assert.equal(
+      placeChatPublicUrl({ placeId: 'ChIJabc123', slug: null }),
+      'https://www.nessachat.com/place/ChIJabc123/chat',
+    )
+    assert.equal(
+      placeChatPublicUrl({ placeId: 'ChIJabc123', slug: 'Not Valid' }),
+      'https://www.nessachat.com/place/ChIJabc123/chat',
     )
   })
 })

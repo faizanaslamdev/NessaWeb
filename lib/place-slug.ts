@@ -110,6 +110,20 @@ export function placeChatLegacyPath(placeId: string): string {
 }
 
 /**
+ * Clean, readable Place Chat URL for display (e.g. under a "Live chat" QR):
+ * `https://www.nessachat.com/places/{slug}/chat`, or the legacy
+ * `/place/{googlePlaceId}/chat` until the Place has a slug. Never carries
+ * tracking params; what the QR actually encodes is placeChatOutboundUrl.
+ */
+export function placeChatPublicUrl(place: { placeId: string; slug?: string | null }): string {
+  const path =
+    place.slug && isValidPlaceSlug(place.slug)
+      ? placeChatCanonicalPath(place.slug)
+      : placeChatLegacyPath(place.placeId)
+  return `${PLACE_PUBLIC_ORIGIN}${path}`
+}
+
+/**
  * Web Place Chat URL we hand out (QR / pre-arrival / business tools).
  * Follows the same legacy-path switch as Place links so existing app
  * installs open the Place rather than their home screen.

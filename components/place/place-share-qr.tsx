@@ -15,6 +15,7 @@ import { isPublicPlaceIdValid } from '@/lib/place-landing'
 import { sanitizeQrId } from '@/lib/place-link-source'
 import {
   placeChatOutboundUrl,
+  placeChatPublicUrl,
   placeOutboundUrl,
   placePublicUrl,
   placeQrUrl,
@@ -273,8 +274,13 @@ export function PlaceQrSheet({
     : qrTarget === 'chat'
       ? placeChatOutboundUrl({ placeId, slug }, { ref: 'qr', qrId })
       : placeQrUrl({ placeId, slug }, { qrId })
-  // What people see: always the clean canonical URL.
-  const displayUrl = placeIdValid ? placePublicUrl({ placeId, slug }) : ''
+  // What people see: always the clean canonical URL of what the QR opens —
+  // the Place page, or its Place Chat (`/places/{slug}/chat`).
+  const displayUrl = !placeIdValid
+    ? ''
+    : qrTarget === 'chat'
+      ? placeChatPublicUrl({ placeId, slug })
+      : placePublicUrl({ placeId, slug })
 
   const feedback = useCallback(
     (next: Feedback) => {
