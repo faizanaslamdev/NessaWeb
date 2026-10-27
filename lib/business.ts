@@ -98,12 +98,29 @@ export type MyClaim = {
   status: 'pending' | 'approved' | 'rejected'
   createdAt: string | null
   reviewNote: string | null
+  /** What the person asked for. */
+  role?: 'owner' | 'manager'
+  /** What an approval granted ('staff' = manager). */
+  grantedRole?: 'owner' | 'staff' | null
+}
+
+/** An open manager invitation addressed to the signed-in user. */
+export type MyInvite = {
+  inviteId: string
+  businessId: string
+  businessName: string
+  placeCount: number
+  invitedByEmail: string | null
+  expiresAt: string | null
 }
 
 export type AdminClaim = MyClaim & {
   uid: string
   email: string
   role: 'owner' | 'manager'
+  grantedRole: 'owner' | 'staff' | null
+  /** Business already managing the claimed Place (a manager claim joins it). */
+  placeBusinessId: string | null
   contactPhone: string | null
   website: string | null
   message: string | null
@@ -145,6 +162,7 @@ function mapError(err: unknown): BusinessActionError {
       return new BusinessActionError(code, serverMessage || 'Not found.')
     case 'business/already-exists':
     case 'business/limit-reached':
+    case 'business/needs-owner':
     case 'functions/failed-precondition':
     case 'business/already-claimed':
     case 'business/claim-pending':
@@ -177,14 +195,14 @@ export async function requestPlaceClaim(input: {
   }
 }
 
-export async function getMyBusinesses(): Promise<{ businesses: MyBusiness[]; claims: MyClaim[] }> {
+export async function getMyBusinesses(): Promise<{ businesses: MyBusiness[]; claims: MyClaim[]; invites: MyInvite[] }> {
   try {
-    const callable = httpsCallable<Record<string, never>, { ok: true; businesses: MyBusiness[]; claims: MyClaim[] }>(
-      fns(),
-      'getMyBusinesses',
-    )
+    const callable = httpsCallable<
+      Record<string, never>,
+      { ok: true; businesses: MyBusiness[]; claims: MyClaim[]; invites?: MyInvite[] }
+    >(fns(), 'getMyBusinesses')
     const res = await callable({})
-    return { businesses: res.data.businesses ?? [], claims: res.data.claims ?? [] }
+    return { businesses: res.data.businesses ?? [], claims: res.data.claims ?? [], invites: res.data.invites ?? [] }
   } catch (e) {
     throw mapError(e)
   }
@@ -215,13 +233,20 @@ export async function adminListClaims(status: 'pending' | 'approved' | 'rejected
   }
 }
 
-export async function adminReviewClaim(claimId: string, decision: 'approve' | 'reject', note?: string): Promise<void> {
+/**
+ * Approve or reject a claim. `grantRole` overrides what an approval grants:
+ * by default an owner claim makes an owner and a manager claim makes a
+ * manager of the business that already runs the Place (never an owner).
+ */
+export async function adminReviewClaim(
+  claimId: string,
+  decision: 'approve' | 'reject',
+  note?: string,
+  grantRole?: 'owner' | 'staff',
+): Promise<void> {
   try {
-    const callable = httpsCallable<{ action: 'reviewClaim'; claimId: string; decision: string; note?: string }, { ok: true }>(
-      fns(),
-      'runBusinessAdminOps',
-    )
-    await callable({ action: 'reviewClaim', claimId, decision, ...(note ? { note } : {}) })
+    const callable = httpsCallable<Record<string, unknown>, { ok: true }>(fns(), 'runBusinessAdminOps')
+    await callable({ action: 'reviewClaim', claimId, decision, ...(note ? { note } : {}), ...(grantRole ? { grantRole } : {}) })
   } catch (e) {
     throw mapError(e)
   }
@@ -335,6 +360,88 @@ export async function retireQrPlacement(placeId: string, qrId: string): Promise<
 export async function restoreQrPlacement(placeId: string, qrId: string): Promise<QrPlacement[]> {
   const res = await callQrPlacements<{ placements: QrPlacement[] }>({ action: 'restore', placeId, qrId })
   return res.placements
+}
+
+export type TeamMember = {
+  uid: string
+  email: string | null
+  name: string | null
+  role: 'owner' | 'staff'
+  placeIds: string[]
+  addedAt: string | null
+}
+
+export type TeamInvite = {
+  inviteId: string
+  email: string
+  placeIds: string[]
+  status: 'pending' | 'accepted' | 'declined' | 'revoked' | 'expired'
+  createdAt: string | null
+  expiresAt: string | null
+  invitedByEmail: string | null
+}
+
+export type BusinessTeam = {
+  canManage: boolean
+  you: { uid: string; kind: 'owner' | 'staff' | 'admin' }
+  places: { placeId: string; name: string }[]
+  members: TeamMember[]
+  invites: TeamInvite[]
+  limits: { pendingInvites: number; inviteDays: number }
+}
+
+export type InviteDetails = {
+  inviteId: string
+  businessId: string
+  businessName: string
+  places: { placeId: string; name: string }[]
+  invitedByEmail: string | null
+  status: TeamInvite['status']
+  expiresAt: string | null
+}
+
+async function callTeam<T>(data: Record<string, unknown>): Promise<T> {
+  try {
+    const callable = httpsCallable<Record<string, unknown>, T>(fns(), 'manageBusinessTeam')
+    return (await callable(data)).data
+  } catch (e) {
+    throw mapError(e)
+  }
+}
+
+/** Team of a business (owners / managers / Nessa admins). Invites are only returned to owners and admins. */
+export function getBusinessTeam(businessId: string): Promise<BusinessTeam> {
+  return callTeam<BusinessTeam>({ action: 'list', businessId })
+}
+
+/** Owner invites a manager for some of the business's places; returns the link to share. */
+export async function inviteManager(
+  businessId: string,
+  email: string,
+  placeIds: string[],
+): Promise<{ inviteId: string; path: string; refreshed: boolean }> {
+  return callTeam({ action: 'invite', businessId, email, placeIds })
+}
+
+export async function revokeInvite(businessId: string, inviteId: string): Promise<void> {
+  await callTeam({ action: 'revokeInvite', businessId, inviteId })
+}
+
+export async function updateManagerPlaces(businessId: string, uid: string, placeIds: string[]): Promise<void> {
+  await callTeam({ action: 'updateMember', businessId, uid, placeIds })
+}
+
+/** Owner removes a manager, or a manager leaves (uid = their own). */
+export async function removeTeamMember(businessId: string, uid: string): Promise<void> {
+  await callTeam({ action: 'removeMember', businessId, uid })
+}
+
+export async function getInvite(inviteId: string): Promise<InviteDetails> {
+  return (await callTeam<{ invite: InviteDetails }>({ action: 'getInvite', inviteId })).invite
+}
+
+export async function respondToInvite(inviteId: string, accept: boolean): Promise<{ businessId: string }> {
+  return callTeam<{ businessId: string }>({ action: accept ? 'acceptInvite' : 'declineInvite', inviteId })
 }
 
 /** "a, b, c" → ['a','b','c'] (trimmed, deduped). */

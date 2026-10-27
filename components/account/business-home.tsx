@@ -7,12 +7,12 @@ import { useRouter } from 'next/navigation'
 import { accountCardClass } from '@/components/account/account-shell'
 import { useAccountAuth } from '@/hooks/use-account-auth'
 import { accountRoutes } from '@/lib/account/constants'
-import { BusinessActionError, getMyBusinesses, type MyBusiness, type MyClaim } from '@/lib/business'
+import { BusinessActionError, getMyBusinesses, type MyBusiness, type MyClaim, type MyInvite } from '@/lib/business'
 import { siteConfig } from '@/lib/constants'
 
 type State =
   | { kind: 'loading' }
-  | { kind: 'ready'; businesses: MyBusiness[]; claims: MyClaim[] }
+  | { kind: 'ready'; businesses: MyBusiness[]; claims: MyClaim[]; invites: MyInvite[] }
   | { kind: 'error'; message: string }
 
 export function BusinessHome() {
@@ -57,7 +57,32 @@ export function BusinessHome() {
           </div>
         ) : (
           <>
-            {state.businesses.length === 0 ? (
+            {state.invites.length ? (
+              <div className={accountCardClass} aria-label="Invitations">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Invitations</p>
+                <ul className="space-y-2">
+                  {state.invites.map(i => (
+                    <li key={i.inviteId} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="min-w-0">
+                        <span className="block text-white">{i.businessName}</span>
+                        <span className="block text-xs text-gray-500">
+                          Manager · {i.placeCount} {i.placeCount === 1 ? 'place' : 'places'}
+                          {i.invitedByEmail ? ` · from ${i.invitedByEmail}` : ''}
+                        </span>
+                      </span>
+                      <Link
+                        href={`${accountRoutes.business}/invite/${i.inviteId}`}
+                        className="shrink-0 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-500"
+                      >
+                        Review
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {state.businesses.length === 0 && state.invites.length > 0 ? null : state.businesses.length === 0 ? (
               <div className={`${accountCardClass} text-center`}>
                 <p className="text-sm text-gray-200">No places yet.</p>
                 <p className="text-xs leading-5 text-gray-500">
@@ -75,7 +100,7 @@ export function BusinessHome() {
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-semibold text-white">{b.profile.name}</p>
                     <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] text-gray-300">
-                      {b.role === 'owner' ? 'Owner' : 'Staff'}
+                      {b.role === 'owner' ? 'Owner' : 'Manager'}
                     </span>
                   </div>
                   <ul className="mt-1 space-y-0.5 text-xs text-gray-400">

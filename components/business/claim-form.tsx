@@ -123,6 +123,11 @@ export function ClaimForm({ placeId }: { placeId: string }) {
             </button>
           ))}
         </div>
+        <p className="mt-1 text-[11px] leading-4 text-gray-500">
+          {role === 'owner'
+            ? 'You own this business. Once verified you manage the page and can invite your team.'
+            : 'You run it for the owner. Nessa confirms manager access with the owner — the quickest way is for the owner to claim the place and invite you.'}
+        </p>
       </fieldset>
       <label className="block text-left text-xs text-gray-400">
         Business name

@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 
+import { AccountMenu } from '@/components/account/account-menu'
 import { Button } from '@/components/ui/button'
 import { siteConfig } from '@/lib/constants'
 
@@ -51,6 +52,8 @@ export function MarketingPageShell({ title, children }: MarketingPageShellProps)
               Back to home
             </Link>
           </Button>
+          <div className="flex items-center gap-4">
+          <AccountMenu />
           <Link href="/" className="flex items-center gap-2">
             <Image
               src="/logo.png"
@@ -61,6 +64,7 @@ export function MarketingPageShell({ title, children }: MarketingPageShellProps)
             />
             <span className="font-bold text-white">{siteConfig.name}</span>
           </Link>
+          </div>
         </div>
       </header>
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 import {
   accountButtonClass,
@@ -9,6 +10,7 @@ import {
   accountFieldClass,
 } from '@/components/account/account-shell'
 import { PlaceTools } from '@/components/business/place-tools'
+import { TeamPanel } from '@/components/business/team-panel'
 import { PlaceWifiManageSheet } from '@/components/place/place-wifi-manage-sheet'
 import { accountRoutes } from '@/lib/account/constants'
 import {
@@ -31,6 +33,7 @@ type State =
 export function BusinessDetail({ businessId }: { businessId: string }) {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [wifiPlaceId, setWifiPlaceId] = useState<string | null>(null)
+  const router = useRouter()
 
   const load = () =>
     getMyBusinesses()
@@ -106,6 +109,8 @@ export function BusinessDetail({ businessId }: { businessId: string }) {
           Messages you send in the live chat are labelled as the business. Stats count page visits and chat joins only — no personal data.
         </p>
       </div>
+
+      <TeamPanel businessId={business.businessId} onLeft={() => router.replace(accountRoutes.business)} />
 
       <ProfileForm business={business} onSaved={() => void load()} />
 

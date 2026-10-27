@@ -9,6 +9,7 @@ export const revalidate = 3600
 const STATIC_PATHS = [
   '/',
   '/about',
+  '/for-businesses',
   '/privacy-policy',
   '/terms-of-service',
   '/cookie-policy',
