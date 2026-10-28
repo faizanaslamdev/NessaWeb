@@ -29,6 +29,7 @@ import {
   type BusinessTeam,
   type QrPlacement,
 } from '@/lib/business'
+import { nessaCoverUrl } from '@/lib/place-photo'
 import { fetchPublicPlaceLanding, type PublicPlaceLanding } from '@/lib/place-landing'
 import { placeOutboundUrl, placePublicUrl } from '@/lib/place-slug'
 
@@ -69,6 +70,7 @@ export function BusinessHomeDashboard() {
 
   const p = business.profile
   const activePlacements = (placements ?? []).filter(x => x.active)
+  const hasOwnCover = Boolean(nessaCoverUrl(landing))
   const steps: Step[] = [
     {
       key: 'details',
@@ -85,6 +87,14 @@ export function BusinessHomeDashboard() {
       href: href('chat'),
       done: Boolean(place.pinnedText),
       icon: 'chat',
+    },
+    {
+      key: 'photo',
+      title: 'Add your cover photo',
+      hint: 'Your own photo, on your page and in listings',
+      href: href('photos'),
+      done: hasOwnCover,
+      icon: 'image',
     },
     {
       key: 'wifi',
@@ -121,6 +131,9 @@ export function BusinessHomeDashboard() {
   const shareUrl = placeOutboundUrl({ placeId: place.placeId, slug: place.slug })
   const category = p.category ? BUSINESS_CATEGORY_LABELS[p.category as BusinessCategory] : null
   const scans30 = stats.kind === 'ready' ? stats.stats.windows[30].qrCodes : {}
+  // NessaChat cover only (dashboards never load Google photos).
+  const cover = nessaCoverUrl(landing)
+  const coverSmall = nessaCoverUrl(landing, true)
 
   return (
     <>
@@ -128,10 +141,10 @@ export function BusinessHomeDashboard() {
 
       {/* Place header */}
       <Panel className="overflow-hidden">
-        <div className={cx('relative bg-n-sunken', landing?.coverImageUrl ? 'h-28 sm:h-40' : 'h-20 sm:h-24')}>
-          {landing?.coverImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- remote Places photo
-            <img src={landing.coverImageUrl} alt="" className="h-full w-full object-cover" />
+        <div className={cx('relative bg-n-sunken', cover ? 'h-28 sm:h-40' : 'h-20 sm:h-24')}>
+          {cover ? (
+            // eslint-disable-next-line @next/next/no-img-element -- NessaChat cover (Firebase Storage)
+            <img src={cover} alt="" className="h-full w-full object-cover" />
           ) : (
             <div aria-hidden className="n-soft-cover h-full w-full" />
           )}
@@ -344,9 +357,9 @@ export function BusinessHomeDashboard() {
                 className="block overflow-hidden rounded-xl border border-n-line text-n-ink no-underline transition-colors hover:border-n-line-strong"
               >
                 <div className="h-20 bg-n-sunken">
-                  {landing?.coverImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- remote Places photo
-                    <img src={landing.coverImageUrl} alt="" className="h-full w-full object-cover" />
+                  {coverSmall ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- NessaChat cover (Firebase Storage)
+                    <img src={coverSmall} alt="" className="h-full w-full object-cover" />
                   ) : (
                     <div aria-hidden className="n-brand-gradient h-full w-full opacity-80" />
                   )}

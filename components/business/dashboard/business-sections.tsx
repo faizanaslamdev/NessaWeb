@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useState, type FormEvent } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { ExternalLink, useBusiness } from '@/components/business/dashboard/business-shell'
@@ -28,6 +29,7 @@ import {
   fieldClass,
 } from '@/components/dash/ui'
 import { QrStudio } from '@/components/manage/qr-studio'
+import { PlacePhotosManager } from '@/components/manage/photos-panel'
 import { PlaceWifiPanel } from '@/components/manage/wifi-panel'
 import { accountRoutes } from '@/lib/account/constants'
 import {
@@ -289,6 +291,28 @@ export function BusinessGuestsSection() {
   )
 }
 
+/* ───────────── Photos ───────────── */
+
+export function BusinessPhotosSection() {
+  const { place } = useBusiness()
+  return (
+    <>
+      <ShellTitle crumbs={[{ label: 'Photos' }]} />
+      <PageHeader
+        title="Photos"
+        description="Your cover, logo and gallery on NessaChat. Your own photos always come before Google’s."
+        actions={<ExternalLink href={placeOutboundUrl({ placeId: place.placeId, slug: place.slug })}>See your public page</ExternalLink>}
+      />
+      <PlacePhotosManager
+        key={place.placeId}
+        placeId={place.placeId}
+        placeName={place.name}
+        actor="business"
+      />
+    </>
+  )
+}
+
 function PrearrivalPanel() {
   const { place } = useBusiness()
   const placeUrl = placeOutboundUrl({ placeId: place.placeId, slug: place.slug }, { ref: 'pre' })
@@ -354,7 +378,7 @@ export function BusinessTeamSection() {
 /* ───────────── Business details ───────────── */
 
 export function BusinessDetailsSection() {
-  const { business, reload, place } = useBusiness()
+  const { business, reload, place, href } = useBusiness()
   const p = business.profile
   const [name, setName] = useState(p.name ?? '')
   const [category, setCategory] = useState<BusinessCategory | ''>(p.category ?? '')
@@ -367,7 +391,6 @@ export function BusinessDetailsSection() {
   const [checkOut, setCheckOut] = useState(p.checkOut ?? '')
   const [amenities, setAmenities] = useState((p.amenities ?? []).join(', '))
   const [languages, setLanguages] = useState((p.languages ?? []).join(', '))
-  const [logoUrl, setLogoUrl] = useState(p.logoUrl ?? '')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -390,7 +413,6 @@ export function BusinessDetailsSection() {
         checkOut: checkOut.trim(),
         amenities: splitList(amenities),
         languages: splitList(languages),
-        logoUrl: logoUrl.trim(),
       })
       setSaved(true)
       void reload()
@@ -437,9 +459,9 @@ export function BusinessDetailsSection() {
                 className={cx(fieldClass, 'resize-y')}
               />
             </Field>
-            <Field label="Logo image URL" hint="An https link to a square image." className="sm:col-span-2">
-              <input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} inputMode="url" maxLength={300} className={fieldClass} />
-            </Field>
+            <p className="text-[13px] text-n-muted sm:col-span-2">
+              Logo and photos: <Link href={href('photos')} className="font-medium text-n-accent-strong">Photos</Link>.
+            </p>
           </div>
         </Panel>
 

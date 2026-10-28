@@ -4,13 +4,14 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
-import { useAdminHref } from '@/components/admin/admin-shell'
+import { useAdmin, useAdminHref } from '@/components/admin/admin-shell'
 import { ShellTitle } from '@/components/dash/app-shell'
 import { Icon } from '@/components/dash/icons'
 import { Badge, Button, EmptyState, LoadingBlock, Notice, PageHeader, Panel, cx, fieldClass } from '@/components/dash/ui'
 import { listConsolePlaces, toSlugPrefix, type ConsolePlaceRow } from '@/lib/admin-console'
 import { parsePlaceRef, resolvePlaceRef } from '@/lib/admin-chats'
 import { placeChatRetentionLabel } from '@/lib/place-chat/retention'
+import { backfillStoryPhotos } from '@/lib/place-photos'
 
 type State =
   | { kind: 'loading' }
@@ -24,6 +25,7 @@ function placeHref(adminHref: (p: string) => string, placeId: string) {
 export function AdminPlacesList() {
   const router = useRouter()
   const adminHref = useAdminHref()
+  const { role } = useAdmin()
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [q, setQ] = useState('')
   const [busyMore, setBusyMore] = useState(false)
@@ -115,7 +117,8 @@ export function AdminPlacesList() {
       <ShellTitle crumbs={[{ label: 'Places' }]} />
       <PageHeader
         title="Places"
-        description="Live chat settings, QR codes, stats, business and history for any place — including places no business manages yet."
+        description="Live chat settings, QR codes, stats, photos, business and history for any place — including places no business manages yet."
+        actions={role === 'super_admin' ? <StoryPhotoImport /> : null}
       />
 
       <Panel>
@@ -237,5 +240,39 @@ export function AdminPlacesList() {
         )}
       </Panel>
     </>
+  )
+}
+
+/** Super Admin: mirror existing public story photos into every Place's photo library. */
+function StoryPhotoImport() {
+  const [state, setState] = useState<{ kind: 'idle' } | { kind: 'busy'; scanned: number } | { kind: 'done'; text: string } | { kind: 'error'; text: string }>({
+    kind: 'idle',
+  })
+  const run = async () => {
+    setState({ kind: 'busy', scanned: 0 })
+    try {
+      const r = await backfillStoryPhotos(scanned => setState({ kind: 'busy', scanned }))
+      setState({ kind: 'done', text: `Checked ${r.scanned} public stories · ${r.places} places updated` })
+    } catch (e) {
+      setState({ kind: 'error', text: e instanceof Error ? e.message : 'Could not import story photos.' })
+    }
+  }
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {state.kind === 'done' || state.kind === 'error' ? (
+        <span role="status" className={cx('text-[13px]', state.kind === 'error' ? 'text-n-danger' : 'text-n-muted')}>
+          {state.text}
+        </span>
+      ) : null}
+      <Button
+        size="sm"
+        icon="image"
+        loading={state.kind === 'busy'}
+        onClick={() => void run()}
+        title="Use photos from public stories as Place covers (safe to run again)"
+      >
+        {state.kind === 'busy' ? `Importing… ${state.scanned}` : 'Import story photos'}
+      </Button>
+    </div>
   )
 }

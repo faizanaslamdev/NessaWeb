@@ -11,7 +11,7 @@ import {
 import { accountRoutes } from '@/lib/account/constants'
 import { BusinessActionError, requestPlaceClaim } from '@/lib/business'
 import { fetchPublicPlaceLanding, type PublicPlaceLanding } from '@/lib/place-landing'
-import { placePhotoUrlForWebVariant } from '@/lib/place-photo'
+import { nessaCoverUrl } from '@/lib/place-photo'
 import { Icon } from '@/components/dash/icons'
 
 export function ClaimForm({ placeId }: { placeId: string }) {
@@ -198,7 +198,7 @@ function ClaimFrame({
   children: React.ReactNode
 }) {
   const where = place ? [place.city, place.country].filter(Boolean).join(', ') : ''
-  const cover = place?.coverImageUrl ? placePhotoUrlForWebVariant(place.coverImageUrl, 'landing') : null
+  const cover = nessaCoverUrl(place, true)
   return (
     <div>
       <ol aria-label="Claim steps" className="mb-8 flex flex-wrap items-center gap-x-3 gap-y-2 text-[13px]">

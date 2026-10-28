@@ -30,7 +30,9 @@ import {
 } from '@/components/dash/ui'
 import { ChatRetentionPanel } from '@/components/manage/chat-retention'
 import { QrStudio } from '@/components/manage/qr-studio'
+import { PlacePhotosManager } from '@/components/manage/photos-panel'
 import { PlaceWifiPanel } from '@/components/manage/wifi-panel'
+import { nessaCoverUrl } from '@/lib/place-photo'
 import { getPlaceHistory, type ConsoleAuditItem } from '@/lib/admin-console'
 import { parsePlaceRef, resolvePlaceRef } from '@/lib/admin-chats'
 import { isGooglePlaceId } from '@/lib/place-chat/constants'
@@ -39,8 +41,8 @@ import { BusinessActionError, listQrPlacements, type QrPlacement, type QrPlaceme
 import { fetchPublicPlaceLanding, type PublicPlaceLanding } from '@/lib/place-landing'
 import { placeChatOutboundUrl, placeOutboundUrl, placePublicUrl } from '@/lib/place-slug'
 
-type Tab = 'overview' | 'qr' | 'chat' | 'guests' | 'business' | 'history'
-const TABS: Tab[] = ['overview', 'qr', 'chat', 'guests', 'business', 'history']
+type Tab = 'overview' | 'qr' | 'chat' | 'guests' | 'photos' | 'business' | 'history'
+const TABS: Tab[] = ['overview', 'qr', 'chat', 'guests', 'photos', 'business', 'history']
 
 type State =
   | { kind: 'loading' }
@@ -178,10 +180,10 @@ function AdminPlaceDetailById({ placeId }: { placeId: string }) {
       <ShellTitle crumbs={[placesCrumb, { label: place.name || 'Place' }]} />
 
       <Panel className="overflow-hidden">
-        {landing?.coverImageUrl ? (
+        {nessaCoverUrl(landing) ? (
           <div className="h-28 bg-n-sunken sm:h-36">
-            {/* eslint-disable-next-line @next/next/no-img-element -- remote Places photo */}
-            <img src={landing.coverImageUrl} alt="" className="h-full w-full object-cover" />
+            {/* eslint-disable-next-line @next/next/no-img-element -- NessaChat cover (Firebase Storage) */}
+            <img src={nessaCoverUrl(landing)!} alt="" className="h-full w-full object-cover" />
           </div>
         ) : (
           <div aria-hidden className="n-brand-gradient h-2" />
@@ -246,6 +248,7 @@ function AdminPlaceDetailById({ placeId }: { placeId: string }) {
             { value: 'qr', label: 'QR codes', count: placements.filter(p => p.active).length },
             { value: 'chat', label: 'Live chat' },
             { value: 'guests', label: 'Guest info' },
+            { value: 'photos', label: 'Photos' },
             { value: 'business', label: 'Business' },
             { value: 'history', label: 'History' },
           ]}
@@ -277,6 +280,17 @@ function AdminPlaceDetailById({ placeId }: { placeId: string }) {
               </div>
             </Panel>
           </div>
+        ) : tab === 'photos' ? (
+          <PlacePhotosManager
+            placeId={placeId}
+            placeName={place.name || 'this place'}
+            actor="admin"
+            onCoverChange={() => {
+              void fetchPublicPlaceLanding(placeId)
+                .then(setLanding)
+                .catch(() => undefined)
+            }}
+          />
         ) : tab === 'guests' ? (
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
             <PlaceWifiPanel

@@ -240,6 +240,7 @@ function BusinessFrame({
         { href: href('qr'), label: 'QR codes', icon: 'qr', active: section === 'qr' },
         { href: href('stats'), label: 'Stats', icon: 'chart', active: section === 'stats' },
         { href: href('guests'), label: 'Guest info', icon: 'wifi', active: section === 'guests' },
+        { href: href('photos'), label: 'Photos', icon: 'image', active: section === 'photos' },
       ],
     },
     {

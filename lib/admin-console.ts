@@ -161,6 +161,24 @@ export function describeAuditChange(item: ConsoleAuditItem): string {
       return `${d.networkName ? `set the guest Wi-Fi to “${str(d.networkName)}”` : 'updated the guest Wi-Fi'} at ${target}`
     case 'wifi_remove':
       return `removed the guest Wi-Fi at ${target}`
+    case 'photo_add':
+      return `added a photo to ${target}${d.madeCover ? ' as the cover' : ''}`
+    case 'photo_cover':
+      return `chose the cover photo of ${target}`
+    case 'photo_cover_clear':
+      return `cleared the cover choice of ${target}`
+    case 'photo_hide':
+      return `hid a photo at ${target}`
+    case 'photo_unhide':
+      return `restored a hidden photo at ${target}`
+    case 'photo_remove':
+      return `removed a photo from ${target}`
+    case 'logo_set':
+      return `updated the logo of ${target}`
+    case 'logo_remove':
+      return `removed the logo of ${target}`
+    case 'photos_backfill':
+      return 'imported photos from public stories into the photo library'
     // Businesses
     case 'claim_approve':
       return `approved ${str(d.email) || 'a claim'} as ${roleLabel(d.grantedRole) || 'member'} of ${target}`
