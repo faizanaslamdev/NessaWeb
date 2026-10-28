@@ -8,7 +8,7 @@ import { useAdminHref } from '@/components/admin/admin-shell'
 import { ShellTitle } from '@/components/dash/app-shell'
 import { Icon } from '@/components/dash/icons'
 import { Badge, Button, EmptyState, LoadingBlock, Notice, PageHeader, Panel, cx, fieldClass } from '@/components/dash/ui'
-import { listConsolePlaces, type ConsolePlaceRow } from '@/lib/admin-console'
+import { listConsolePlaces, toSlugPrefix, type ConsolePlaceRow } from '@/lib/admin-console'
 import { parsePlaceRef, resolvePlaceRef } from '@/lib/admin-chats'
 import { placeChatRetentionLabel } from '@/lib/place-chat/retention'
 
@@ -54,7 +54,7 @@ export function AdminPlacesList() {
       }
       setNotice('No Nessa place uses that link or ID.')
     }
-    void load(value.includes('/') ? '' : value)
+    void load(value.includes('/') ? '' : toSlugPrefix(value))
   }
 
   // ?place=<slug|id|link> (old deep links) opens the place; ?q= prefills the search.

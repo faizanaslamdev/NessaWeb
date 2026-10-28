@@ -187,3 +187,14 @@ export function auditTargetPlaceId(item: ConsoleAuditItem): string | null {
   const placeId = item.details?.placeId
   return typeof placeId === 'string' ? placeId : null
 }
+
+/** "Café Tortoni" → "cafe-tortoni": search runs on the address (slug) prefix. */
+export function toSlugPrefix(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+/, '')
+}

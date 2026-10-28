@@ -19,6 +19,7 @@ import { AppShell, SidebarAccount, type NavGroup } from '@/components/dash/app-s
 import { Badge, buttonClass } from '@/components/dash/ui'
 import { UserMenu } from '@/components/dash/user-menu'
 import { useAccountAuth } from '@/hooks/use-account-auth'
+import { useProfileName } from '@/hooks/use-profile-name'
 import { accountRoutes, ADMIN_HOSTNAME_PREFIX } from '@/lib/account/constants'
 import { ADMIN_ROLE_LABELS, readMyAdminRole, type AdminRole } from '@/lib/admin'
 import { getConsoleOverview, type ConsoleOverview } from '@/lib/admin-console'
@@ -80,6 +81,7 @@ function AdminGate({ children }: { children: ReactNode }) {
   const { user, signOut } = useAccountAuth()
   const router = useRouter()
   const base = useBase()
+  const profileName = useProfileName(user)
   const [role, setRole] = useState<AdminRole | null | undefined>(undefined)
   const [overview, setOverview] = useState<ConsoleOverview | null>(null)
   const [overviewError, setOverviewError] = useState<string | null>(null)
@@ -112,9 +114,9 @@ function AdminGate({ children }: { children: ReactNode }) {
   const ctx = useMemo<AdminCtx | null>(
     () =>
       role && user
-        ? { role, uid: user.uid, email: user.email ?? '', displayName: user.displayName, base, overview, overviewError, refreshOverview }
+        ? { role, uid: user.uid, email: user.email ?? '', displayName: profileName, base, overview, overviewError, refreshOverview }
         : null,
-    [role, user, base, overview, overviewError, refreshOverview],
+    [role, user, profileName, base, overview, overviewError, refreshOverview],
   )
 
   const doSignOut = useCallback(() => {

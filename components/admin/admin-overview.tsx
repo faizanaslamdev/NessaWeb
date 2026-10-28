@@ -31,14 +31,8 @@ function greeting(d = new Date()): string {
   return h < 5 ? 'Good evening' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
 }
 
-function firstName(email: string): string {
-  const local = email.split('@')[0] ?? ''
-  const first = local.split(/[._-]/)[0] ?? ''
-  return first ? first[0].toUpperCase() + first.slice(1) : ''
-}
-
 export function AdminOverview() {
-  const { email, displayName, overview, overviewError, refreshOverview } = useAdmin()
+  const { displayName, overview, overviewError, refreshOverview } = useAdmin()
   const adminHref = useAdminHref()
   const [claims, setClaims] = useState<AdminClaim[] | null>(null)
   const [claimsError, setClaimsError] = useState<string | null>(null)
@@ -64,7 +58,7 @@ export function AdminOverview() {
   }, [refreshOverview])
 
   const c = overview?.counts
-  const name = displayName?.trim().split(/\s+/)[0] || firstName(email)
+  const name = displayName?.trim().split(/\s+/)[0] ?? ''
 
   return (
     <>
