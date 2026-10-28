@@ -176,3 +176,39 @@ export function parseDirectoryPlace(raw: unknown): DirectoryPlace | null {
   if (typeof r.lastActivityAt === 'number') place.lastActivityAt = r.lastActivityAt
   return place
 }
+
+/** Google's photo for a listing card (only for Places without our own photo). */
+export type GoogleListingPhoto = {
+  url: string
+  authors: { displayName: string; uri?: string }[]
+  googleMapsUri?: string
+}
+
+/**
+ * Validates the browser-only `googlePhotos` map from the directory callable.
+ * Only Places API media URLs are accepted; credits are sanitised.
+ */
+export function parseGooglePhotos(raw: unknown): Record<string, GoogleListingPhoto> {
+  const out: Record<string, GoogleListingPhoto> = {}
+  if (!raw || typeof raw !== 'object') return out
+  for (const [placeId, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!/^ChIJ[A-Za-z0-9_-]+$/.test(placeId) || !value || typeof value !== 'object') continue
+    const v = value as { url?: unknown; attribution?: { authors?: unknown; googleMapsUri?: unknown } }
+    if (typeof v.url !== 'string' || !v.url.startsWith('https://places.googleapis.com/')) continue
+    const authors: GoogleListingPhoto['authors'] = []
+    if (Array.isArray(v.attribution?.authors)) {
+      for (const a of v.attribution.authors as { displayName?: unknown; uri?: unknown }[]) {
+        const name = typeof a?.displayName === 'string' ? a.displayName.trim().slice(0, 80) : ''
+        if (!name) continue
+        const uri = typeof a.uri === 'string' && a.uri.startsWith('https://') ? a.uri : undefined
+        authors.push(uri ? { displayName: name, uri } : { displayName: name })
+        if (authors.length >= 2) break
+      }
+    }
+    const maps = v.attribution?.googleMapsUri
+    const photo: GoogleListingPhoto = { url: v.url, authors }
+    if (typeof maps === 'string' && maps.startsWith('https://')) photo.googleMapsUri = maps
+    out[placeId] = photo
+  }
+  return out
+}

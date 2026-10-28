@@ -12,6 +12,7 @@ import {
   placeTypeLabel,
   searchPlaces,
   stripKeyedPhoto,
+  parseGooglePhotos,
   topTowns,
   type DirectoryPlace,
 } from './place-directory'
@@ -78,5 +79,24 @@ describe('place directory helpers', () => {
     assert.equal(ok.recommenderCount, 0)
     assert.equal(ok.photoUrl, undefined)
     assert.equal(ok.placeType, 'Place')
+  })
+})
+
+describe('Google photo fallbacks for listings', () => {
+  it('keeps only Places API media URLs and safe credits', () => {
+    const map = parseGooglePhotos({
+      ChIJok: {
+        url: 'https://places.googleapis.com/v1/places/ChIJok/photos/x/media?maxWidthPx=800&key=K',
+        attribution: { authors: [{ displayName: ' Bob ', uri: 'https://maps.google.com/c/1' }, { displayName: 'Eve', uri: 'javascript:x' }], googleMapsUri: 'https://maps.google.com/p' },
+      },
+      ChIJnocredits: { url: 'https://places.googleapis.com/v1/places/y/photos/z/media?key=K' },
+      ChIJevil: { url: 'https://evil.example/x.jpg' },
+      bad: { url: 'https://places.googleapis.com/v1/x' },
+    })
+    assert.deepEqual(Object.keys(map), ['ChIJok', 'ChIJnocredits'])
+    assert.deepEqual(map.ChIJok.authors, [{ displayName: 'Bob', uri: 'https://maps.google.com/c/1' }, { displayName: 'Eve' }])
+    assert.equal(map.ChIJok.googleMapsUri, 'https://maps.google.com/p')
+    assert.deepEqual(map.ChIJnocredits.authors, [])
+    assert.deepEqual(parseGooglePhotos(null), {})
   })
 })
