@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Icon, type IconName } from '@/components/dash/icons'
 import { ChatPreview } from '@/components/site/chat-preview'
 import { PlaceCard } from '@/components/site/place-card'
-import { PlaceSearch } from '@/components/site/place-search'
+import { HomeSearch } from '@/components/site/home-search'
 import { SiteShell } from '@/components/site/site-shell'
 import { Container, Eyebrow, SectionHeading, SiteButton, StoreBadges } from '@/components/site/ui'
 import { siteConfig, siteRoutes } from '@/lib/constants'
@@ -88,7 +88,7 @@ export default async function HomePage() {
               See where travellers and locals recommend, read their stories, and talk live with everyone at the same
               spot — in your own language.
             </p>
-            <PlaceSearch places={searchList} className="mt-8 max-w-[34rem]" />
+            <HomeSearch places={searchList} className="mt-8 max-w-[34rem]" />
             {towns.length ? (
               <div className="mt-5 flex flex-wrap items-center gap-2">
                 <span className="mr-1 text-[13px] text-n-subtle">Popular:</span>

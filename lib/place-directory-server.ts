@@ -10,7 +10,7 @@ import { unstable_cache } from 'next/cache'
 import { parseDirectoryPlace, stripKeyedPhoto, type DirectoryData } from '@/lib/place-directory'
 
 const REVALIDATE_SECONDS = 600
-const TIMEOUT_MS = 8000
+const TIMEOUT_MS = 15000
 
 function callableUrl(): string | null {
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim()
@@ -46,13 +46,31 @@ async function fetchDirectory(): Promise<DirectoryData> {
   }
 }
 
-const cached = unstable_cache(fetchDirectory, ['public-place-directory-v1'], { revalidate: REVALIDATE_SECONDS })
+/** Two attempts: the first call after a deploy can hit a cold function. */
+async function fetchDirectoryWithRetry(): Promise<DirectoryData> {
+  try {
+    return await fetchDirectory()
+  } catch {
+    await new Promise(r => setTimeout(r, 1500))
+    return fetchDirectory()
+  }
+}
 
-/** Never throws: an outage renders the pages without the list (not cached). */
+const cached = unstable_cache(fetchDirectoryWithRetry, ['public-place-directory-v1'], { revalidate: REVALIDATE_SECONDS })
+
+const isBuild = () => process.env.NEXT_PHASE === 'phase-production-build'
+
+/**
+ * During `next build` an outage must not fail the deploy: the pages render
+ * without the list (the browser then loads it, see PlacesBrowser). At
+ * runtime (ISR regeneration) the error is re-thrown so Next keeps serving
+ * the last good page instead of caching an empty one.
+ */
 export async function getPlaceDirectory(): Promise<DirectoryData | null> {
   try {
     return await cached()
-  } catch {
-    return null
+  } catch (e) {
+    if (isBuild()) return null
+    throw e
   }
 }

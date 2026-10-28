@@ -24,10 +24,12 @@ import {
   type GooglePlaceResult,
 } from '@/lib/google-place-search'
 import { placeHref, type DirectoryPlace } from '@/lib/place-directory'
+import { useDirectoryPlaces } from '@/lib/place-directory-client'
 
 const claimHref = (placeId: string) => `${accountRoutes.claim}/${encodeURIComponent(placeId)}`
 
-export function FindYourPlace({ places }: { places: DirectoryPlace[] }) {
+export function FindYourPlace({ places: initialPlaces }: { places: DirectoryPlace[] }) {
+  const { places } = useDirectoryPlaces(initialPlaces)
   const params = useSearchParams()
   const initialQuery = params.get('q') ?? ''
   const [mode, setMode] = useState<'nessa' | 'google'>(params.get('find') === 'google' ? 'google' : 'nessa')
@@ -99,7 +101,7 @@ export function FindYourPlace({ places }: { places: DirectoryPlace[] }) {
           )}
         </>
       ) : (
-        <GoogleSearch initialQuery={query} />
+        <GoogleSearch initialQuery={query} places={places} />
       )}
     </div>
   )
@@ -129,7 +131,8 @@ function PickedPlace({ place, onClear }: { place: DirectoryPlace; onClear: () =>
   )
 }
 
-function GoogleSearch({ initialQuery }: { initialQuery: string }) {
+function GoogleSearch({ initialQuery, places }: { initialQuery: string; places: DirectoryPlace[] }) {
+  const onNessa = new Map(places.map(p => [p.placeId, p]))
   const { user, loading } = useAccountAuth()
   const [query, setQuery] = useState(initialQuery)
   const [results, setResults] = useState<GooglePlaceResult[] | null>(null)
@@ -217,20 +220,36 @@ function GoogleSearch({ initialQuery }: { initialQuery: string }) {
       {results ? (
         results.length ? (
           <ul className="mt-4 divide-y divide-n-line-soft rounded-2xl border border-n-line">
-            {results.map(r => (
+            {results.map(r => {
+              const known = onNessa.get(r.googlePlaceId)
+              return (
               <li key={r.googlePlaceId} className="flex items-center gap-3 px-4 py-3">
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-n-sunken text-n-muted">
                   <Icon name="store" size={18} />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-semibold">{r.name}</span>
+                  <span className="flex items-center gap-2">
+                    <span className="truncate text-[15px] font-semibold">{r.name}</span>
+                    {known ? (
+                      <span className="shrink-0 rounded-full bg-n-accent-soft px-2 py-0.5 text-[11px] font-semibold text-n-accent-strong">
+                        {known.verified ? 'Verified on Nessa' : 'On Nessa'}
+                      </span>
+                    ) : null}
+                  </span>
                   <span className="block truncate text-[13px] text-n-muted">{r.secondaryText || r.city}</span>
                 </span>
-                <Link href={claimHref(r.googlePlaceId)} className={siteButtonClass('secondary', 'md')}>
-                  Claim
-                </Link>
+                {known?.verified ? (
+                  <Link href={placeHref(known)} className={siteButtonClass('ghost', 'md')}>
+                    View
+                  </Link>
+                ) : (
+                  <Link href={claimHref(r.googlePlaceId)} className={siteButtonClass('secondary', 'md')}>
+                    Claim
+                  </Link>
+                )}
               </li>
-            ))}
+              )
+            })}
           </ul>
         ) : (
           <p className="mt-4 text-[14px] text-n-muted">No businesses found. Try adding the town or a different spelling.</p>

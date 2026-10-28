@@ -13,6 +13,7 @@ import { Icon } from '@/components/dash/icons'
 import { PlaceCard } from '@/components/site/place-card'
 import { cx, siteButtonClass } from '@/components/site/ui'
 import { siteRoutes } from '@/lib/constants'
+import { useDirectoryPlaces } from '@/lib/place-directory-client'
 import {
   PLACE_CATEGORIES,
   filterByCategory,
@@ -31,7 +32,8 @@ function readCategory(v: string | null): PlaceCategory {
   return PLACE_CATEGORIES.some(c => c.value === v) ? (v as PlaceCategory) : 'all'
 }
 
-export function PlacesBrowser({ places }: { places: DirectoryPlace[] }) {
+export function PlacesBrowser({ places: initialPlaces }: { places: DirectoryPlace[] }) {
+  const { places, loading } = useDirectoryPlaces(initialPlaces)
   const params = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
@@ -180,7 +182,18 @@ export function PlacesBrowser({ places }: { places: DirectoryPlace[] }) {
         ) : null}
       </div>
 
-      <p className="mt-8 text-[14px] text-n-muted" aria-live="polite">
+      {loading ? (
+        <ul className="mt-8 grid grid-cols-2 gap-x-3 gap-y-7 sm:gap-x-5 sm:gap-y-9 lg:grid-cols-3 xl:grid-cols-4" aria-busy="true">
+          {Array.from({ length: 8 }, (_, i) => (
+            <li key={i}>
+              <div className="n-skeleton aspect-[4/3] rounded-2xl" />
+              <div className="n-skeleton mt-3 h-4 w-2/3 rounded" />
+              <div className="n-skeleton mt-2 h-3 w-1/2 rounded" />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <p className={cx('mt-8 text-[14px] text-n-muted', loading && 'sr-only')} aria-live="polite">
         {results.length === 0
           ? 'No places found'
           : `${results.length.toLocaleString('en')} ${results.length === 1 ? 'place' : 'places'}`}
@@ -188,7 +201,7 @@ export function PlacesBrowser({ places }: { places: DirectoryPlace[] }) {
         {query.trim() ? ` for “${query.trim()}”` : ''}
       </p>
 
-      {results.length ? (
+      {loading ? null : results.length ? (
         <>
           <ul className="mt-5 grid grid-cols-2 gap-x-3 gap-y-7 sm:gap-x-5 sm:gap-y-9 lg:grid-cols-3 xl:grid-cols-4">
             {results.slice(0, limit).map((place, i) => (

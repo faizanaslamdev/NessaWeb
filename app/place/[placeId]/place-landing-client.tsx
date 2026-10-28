@@ -340,12 +340,12 @@ export function PlaceLandingClient({
               {place.visitedCount > 0 ? <StatPill icon="users" value={place.visitedCount} label="visited" /> : null}
             </ul>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             <PlaceCoverShareQr placeId={realPlaceId} slug={canonicalSlug} placeName={place.name} variant="buttons" />
             <a
               href={deepLink}
               title={`Opens this place in ${siteConfig.name} so you can recommend it.`}
-              className={siteButtonClass('secondary', 'md')}
+              className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-n-line-strong bg-n-surface px-3 text-[13px] font-semibold text-n-ink no-underline shadow-n-card transition-colors hover:bg-n-hover sm:h-10 sm:gap-2 sm:px-3.5 sm:text-[14px]"
             >
               <Icon name="star" size={16} />
               Recommend

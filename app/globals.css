@@ -288,6 +288,7 @@ body:has(.n-dash) {
   font-feature-settings: 'ss01' on;
   -webkit-font-smoothing: antialiased;
 }
+html:has(.n-site),
 body:has(.n-site) {
   background: #f7f6f3;
 }
