@@ -14,13 +14,13 @@ describe('place SEO', () => {
   it('titles include the city once', () => {
     assert.equal(
       buildPlaceSeoTitle({ name: 'KiteCabana', city: 'Cumbuco' }),
-      'KiteCabana, Cumbuco | Nessa',
+      'KiteCabana, Cumbuco | NessaChat',
     )
     assert.equal(
       buildPlaceSeoTitle({ name: 'Lahore Fort', city: 'Lahore' }),
-      'Lahore Fort | Nessa',
+      'Lahore Fort | NessaChat',
     )
-    assert.equal(buildPlaceSeoTitle({ name: '' }), 'Place on Nessa')
+    assert.equal(buildPlaceSeoTitle({ name: '' }), 'Place on NessaChat')
   })
 
   it('descriptions are unique per place and mention social proof', () => {
@@ -34,10 +34,10 @@ describe('place SEO', () => {
     })
     assert.equal(
       d,
-      'KiteCabana (hotel) in Cumbuco, Brazil. See 12 traveler recommendations and 1 story on Nessa.',
+      'KiteCabana (hotel) in Cumbuco, Brazil. See 12 traveler recommendations and 1 story on NessaChat.',
     )
     const empty = buildPlaceSeoDescription({ name: 'Quiet Spot', city: 'Jeri' })
-    assert.equal(empty, 'Quiet Spot in Jeri. See what travelers say on Nessa and recommend it.')
+    assert.equal(empty, 'Quiet Spot in Jeri. See what travelers say on NessaChat and recommend it.')
     const long = buildPlaceSeoDescription({ name: 'x'.repeat(300) })
     assert.ok(long.length <= 158)
   })

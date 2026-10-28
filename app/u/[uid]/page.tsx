@@ -11,7 +11,7 @@ type PageProps = {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { uid } = await params
   return {
-    title: `Profile – ${siteConfig.name}`,
+    title: `Profile | ${siteConfig.name}`,
     description: `Open this profile in the ${siteConfig.name} app.`,
     robots: { index: false, follow: false },
     openGraph: {
