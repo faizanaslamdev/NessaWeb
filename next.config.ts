@@ -9,11 +9,12 @@ import type { NextConfig } from 'next'
 const ADMIN_HOST_PATTERN = 'admin\\..+'
 
 /**
- * Once admin.nessachat.com is live, set NEXT_PUBLIC_ADMIN_ORIGIN
- * (https://admin.nessachat.com) in Vercel: www…/admin/* then redirects there
- * and account menus link to it. Unset, the console stays at www…/admin.
+ * The admin console's own domain. On the production public site
+ * (nessachat.com / www.nessachat.com) every /admin URL redirects there.
+ * NEXT_PUBLIC_ADMIN_ORIGIN overrides it; previews and local hosts don't match
+ * the host rule, so they keep /admin.
  */
-const ADMIN_ORIGIN = process.env.NEXT_PUBLIC_ADMIN_ORIGIN?.replace(/\/$/, '') ?? ''
+const ADMIN_ORIGIN = process.env.NEXT_PUBLIC_ADMIN_ORIGIN?.replace(/\/$/, '') || 'https://admin.nessachat.com'
 
 const nextConfig: NextConfig = {
   async redirects() {
@@ -39,16 +40,13 @@ const nextConfig: NextConfig = {
       // On the admin host the console lives at the root: /admin/places → /places.
       { source: '/admin', has: [{ type: 'host' as const, value: ADMIN_HOST_PATTERN }], destination: '/', permanent: false },
       { source: '/admin/:path+', has: [{ type: 'host' as const, value: ADMIN_HOST_PATTERN }], destination: '/:path+', permanent: false },
-      ...(ADMIN_ORIGIN
-        ? [
-            {
-              source: '/admin/:path*',
-              has: [{ type: 'host' as const, value: '(www\\.)?nessachat\\.com' }],
-              destination: `${ADMIN_ORIGIN}/:path*`,
-              permanent: false,
-            },
-          ]
-        : []),
+      // Public site → admin console domain (www…/admin/places → admin.nessachat.com/places).
+      {
+        source: '/admin/:path*',
+        has: [{ type: 'host' as const, value: '(www\\.)?nessachat\\.com' }],
+        destination: `${ADMIN_ORIGIN}/:path*`,
+        permanent: false,
+      },
     ]
   },
   async rewrites() {
