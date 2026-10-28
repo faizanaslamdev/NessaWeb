@@ -28,7 +28,7 @@ export function PlacePrearrivalCopy({
   slug,
   placeName,
   triggerLabel = 'Pre-arrival message for guests',
-  triggerClassName = 'text-[11px] font-medium text-gray-600 underline-offset-2 hover:text-gray-400 hover:underline',
+  triggerClassName = 'text-[13px] font-medium text-n-accent-strong underline-offset-2 hover:underline',
 }: {
   placeId: string
   slug?: string | null
@@ -58,26 +58,26 @@ export function PlacePrearrivalCopy({
 
       <PlaceSheet open={open} title="Share before guests arrive" onClose={() => setOpen(false)}>
         <div className="space-y-4 py-1 text-left">
-          <p className="text-xs text-gray-400">
+          <p className="text-[13px] leading-5 text-n-muted">
             Paste one of these into your booking confirmation, WhatsApp or welcome email.
             Guests join the chat in their browser — no app needed — and visits are counted
             as “pre-arrival” in this place’s stats.
           </p>
           {items.map(item => (
-            <div key={item.channel} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+            <div key={item.channel} className="rounded-xl border border-n-line bg-n-surface-2 p-3">
               <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold text-gray-200">{item.label}</p>
+                <p className="text-[13px] font-semibold text-n-ink">{item.label}</p>
                 <button
                   type="button"
                   onClick={() => {
                     void onCopy(item.channel, item.text)
                   }}
-                  className="rounded-lg bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-white/15"
+                  className="rounded-lg border border-n-line-strong bg-n-surface px-2.5 py-1 text-[12px] font-semibold text-n-ink hover:bg-n-hover"
                 >
                   {copied === item.channel ? 'Copied' : 'Copy'}
                 </button>
               </div>
-              <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words font-sans text-xs leading-5 text-gray-300">
+              <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words font-sans text-[13px] leading-5 text-n-ink-2">
                 {item.text}
               </pre>
             </div>

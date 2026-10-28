@@ -77,18 +77,18 @@ export default function ChatThread({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, delay: 0.1 }}
-      className="flex min-h-0 flex-1 flex-col overflow-hidden bg-linear-to-b from-black via-black to-black/80"
+      className="flex min-h-0 flex-1 flex-col overflow-hidden bg-n-canvas"
     >
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-6 sm:px-6 sm:py-6">
         {messagesLoading && messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-gray-400">Loading messages…</p>
+            <p className="text-sm text-n-muted">Loading messages…</p>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
               <div className="mb-4 text-4xl">💬</div>
-              <p className="text-gray-400">No messages yet. Start the conversation!</p>
+              <p className="text-n-muted">No messages yet. Start the conversation!</p>
             </div>
           </div>
         ) : (
@@ -124,7 +124,7 @@ export default function ChatThread({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.2 }}
-        className="shrink-0 border-t border-white/10 bg-black/50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:p-6"
+        className="shrink-0 border-t border-n-line bg-n-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:p-6"
       >
         <div className="flex items-end gap-2 sm:gap-3">
           <Button
@@ -134,7 +134,7 @@ export default function ChatThread({
             aria-label="Attachments — available in the mobile app"
             title="Attachments"
             disabled={composerDisabled}
-            className="h-9 w-9 shrink-0 border-white/20 p-0 text-white hover:bg-white/10 disabled:opacity-50"
+            className="h-9 w-9 shrink-0 border-n-line-strong p-0 text-n-ink hover:bg-n-hover disabled:opacity-50"
             onClick={() => setDownloadAppModalOpen(true)}
           >
             <PaperclipIcon className="size-[1.05rem] sm:size-4.5" />
@@ -160,7 +160,7 @@ export default function ChatThread({
             disabled={!inputValue.trim() || composerDisabled}
             title="Send message"
             aria-label="Send message"
-            className="h-9 w-9 shrink-0 bg-linear-to-r from-purple-600 to-violet-600 p-0 font-medium text-white hover:from-purple-700 hover:to-violet-700 disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:min-h-9 sm:w-auto sm:px-6"
+            className="h-9 w-9 shrink-0 bg-n-accent p-0 font-medium text-white hover:bg-n-accent-strong disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:min-h-9 sm:w-auto sm:px-6"
           >
             <SendIcon className="size-[1.2rem] sm:hidden" aria-hidden />
             <span className="hidden sm:inline">Send</span>

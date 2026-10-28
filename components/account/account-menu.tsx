@@ -54,8 +54,12 @@ export function AccountMenu({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
     }
   }, [open])
 
-  const linkTone =
-    tone === 'dark' ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-gray-950'
+  const light = tone === 'light'
+  const linkTone = light ? 'text-n-ink-2 hover:text-n-ink' : 'text-gray-300 hover:text-white'
+  const menuClass = light
+    ? 'absolute right-0 top-11 z-50 w-64 overflow-hidden rounded-xl border border-n-line bg-n-surface py-1 text-sm text-n-ink-2 shadow-n-pop'
+    : 'absolute right-0 top-11 z-50 w-60 overflow-hidden rounded-xl border border-white/10 bg-neutral-950 py-1 text-sm text-gray-200 shadow-xl'
+  const itemClass = light ? 'block px-3 py-2 text-n-ink-2 no-underline hover:bg-n-hover hover:text-n-ink' : 'block px-3 py-2 hover:bg-white/5'
 
   if (loading) {
     return <span aria-hidden className="inline-block h-9 w-16" />
@@ -63,7 +67,7 @@ export function AccountMenu({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
 
   if (!user) {
     return (
-      <Link href={accountRoutes.signIn} className={`text-sm font-medium ${linkTone}`} data-testid="sign-in-link">
+      <Link href={accountRoutes.signIn} className={`text-sm font-medium no-underline ${linkTone}`} data-testid="sign-in-link">
         Sign in
       </Link>
     )
@@ -77,7 +81,11 @@ export function AccountMenu({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
         aria-expanded={open}
         aria-label={`Account menu for ${user.email ?? 'your account'}`}
         onClick={() => setOpen(v => !v)}
-        className="flex size-9 items-center justify-center rounded-full bg-violet-600 text-xs font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80"
+        className={
+          light
+            ? 'flex size-9 items-center justify-center rounded-full bg-n-accent text-xs font-semibold text-white hover:bg-n-accent-strong'
+            : 'flex size-9 items-center justify-center rounded-full bg-violet-600 text-xs font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80'
+        }
       >
         {initials(user.displayName, user.email)}
       </button>
@@ -85,24 +93,24 @@ export function AccountMenu({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
         <div
           role="menu"
           aria-label="Account"
-          className="absolute right-0 top-11 z-50 w-60 overflow-hidden rounded-xl border border-white/10 bg-neutral-950 py-1 text-sm text-gray-200 shadow-xl"
+          className={menuClass}
         >
-          <div className="border-b border-white/10 px-3 py-2">
-            <p className="truncate font-medium text-white">{user.displayName || 'Your account'}</p>
-            <p className="truncate text-xs text-gray-500">{user.email}</p>
+          <div className={light ? 'border-b border-n-line-soft px-3 py-2' : 'border-b border-white/10 px-3 py-2'}>
+            <p className={light ? 'truncate font-medium text-n-ink' : 'truncate font-medium text-white'}>{user.displayName || 'Your account'}</p>
+            <p className={light ? 'truncate text-xs text-n-subtle' : 'truncate text-xs text-gray-500'}>{user.email}</p>
           </div>
-          <Link role="menuitem" href={accountRoutes.business} className="block px-3 py-2 hover:bg-white/5" onClick={() => setOpen(false)}>
+          <Link role="menuitem" href={accountRoutes.business} className={itemClass} onClick={() => setOpen(false)}>
             Your business
           </Link>
           {role ? (
-            <Link role="menuitem" href={adminConsoleHref()} className="block px-3 py-2 hover:bg-white/5" onClick={() => setOpen(false)}>
+            <Link role="menuitem" href={adminConsoleHref()} className={itemClass} onClick={() => setOpen(false)}>
               Admin console
             </Link>
           ) : null}
           <button
             type="button"
             role="menuitem"
-            className="block w-full px-3 py-2 text-left text-gray-400 hover:bg-white/5 hover:text-gray-200"
+            className={light ? 'block w-full px-3 py-2 text-left text-n-muted hover:bg-n-hover hover:text-n-ink' : 'block w-full px-3 py-2 text-left text-gray-400 hover:bg-white/5 hover:text-gray-200'}
             onClick={() => {
               setOpen(false)
               void signOut().then(() => router.refresh())

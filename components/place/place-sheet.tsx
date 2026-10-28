@@ -58,10 +58,10 @@ export function PlaceSheet({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[90] flex items-end justify-center sm:items-center">
+    <div className="n-site fixed inset-0 z-[90] flex items-end justify-center bg-transparent sm:items-center">
       <button
         type="button"
-        className="absolute inset-0 bg-black/70"
+        className="absolute inset-0 bg-[rgb(27_26_23/0.45)]"
         aria-label="Close"
         onClick={onClose}
       />
@@ -69,21 +69,21 @@ export function PlaceSheet({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative z-10 flex max-h-[85vh] w-full max-w-md flex-col rounded-t-2xl border border-white/10 bg-[#0c0a12] sm:rounded-2xl"
+        className="n-anim-fade relative z-10 flex max-h-[88vh] w-full max-w-md flex-col rounded-t-3xl border border-n-line bg-n-surface text-n-ink shadow-n-pop sm:rounded-3xl"
       >
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-          <h2 className="text-sm font-semibold text-white">{title}</h2>
+        <div className="flex items-center justify-between border-b border-n-line-soft px-5 py-3.5">
+          <h2 className="text-[16px] font-semibold text-n-ink">{title}</h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-xs font-medium text-gray-200 hover:bg-white/10"
+            className="rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-n-muted hover:bg-n-hover hover:text-n-ink"
           >
             Close
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
         {footer ? (
-          <div className="border-t border-white/10 px-4 py-3">{footer}</div>
+          <div className="border-t border-n-line-soft px-5 py-3.5">{footer}</div>
         ) : null}
       </div>
     </div>,

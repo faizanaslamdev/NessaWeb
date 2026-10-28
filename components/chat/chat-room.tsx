@@ -192,7 +192,7 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
 
   if (authLoading || sessionLoading) {
     return (
-      <div className="fixed inset-0 z-0 flex items-center justify-center bg-black text-gray-400">
+      <div className="fixed inset-0 z-0 flex items-center justify-center bg-n-canvas text-n-muted">
         Loading…
       </div>
     )
@@ -200,9 +200,9 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
 
   if (sessionError || (!session && !sessionError)) {
     return (
-      <div className="fixed inset-0 z-0 flex flex-col items-center justify-center gap-4 bg-black px-6 text-center">
-        <p className="text-gray-300">This session is not available.</p>
-        <Button asChild className="bg-purple-600 text-white hover:bg-purple-700">
+      <div className="fixed inset-0 z-0 flex flex-col items-center justify-center gap-4 bg-n-canvas px-6 text-center">
+        <p className="text-n-ink-2">This session is not available.</p>
+        <Button asChild className="bg-n-accent text-white hover:bg-n-accent-strong">
           <Link href="/chat">Back to lobby</Link>
         </Button>
       </div>
@@ -212,15 +212,15 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
   if (!session) return null
 
   return (
-    <div className="fixed inset-0 z-0 flex flex-col overflow-hidden bg-black">
+    <div className="fixed inset-0 z-0 flex flex-col overflow-hidden bg-n-canvas">
       {copyNotice && (
         <div className="fixed top-4 right-4 z-120 max-w-[min(calc(100vw-2rem),20rem)]">
           <div
             className={[
               'rounded-xl border px-4 py-2 text-sm backdrop-blur-md',
               copyNotice.kind === 'success'
-                ? 'border-white/15 bg-black/60 text-white'
-                : 'border-red-500/30 bg-black/70 text-red-200',
+                ? 'border-n-line bg-n-surface text-n-ink shadow-n-card'
+                : 'border-n-danger/30 bg-n-danger-soft text-n-danger',
             ].join(' ')}
           >
             {copyNotice.text}
@@ -231,7 +231,7 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
       {ended && <ChatEndedOverlay variant={statusEnded ? 'expired' : 'time'} />}
 
       {member && !memberFirestoreSynced && !ended && (
-        <div className="fixed inset-0 z-95 flex items-center justify-center bg-black/90 text-gray-300">
+        <div className="fixed inset-0 z-95 flex items-center justify-center bg-n-canvas/95 text-n-ink-2">
           <p className="text-sm">Connecting to chat…</p>
         </div>
       )}
@@ -273,7 +273,7 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
               <button
                 aria-label="Close settings"
                 type="button"
-                className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                className="absolute inset-0 bg-[rgb(27_26_23/0.45)] backdrop-blur-sm"
                 onClick={() => setShowSettings(false)}
               />
               <div className="relative z-110 w-full max-h-[min(calc(100dvh-3rem),900px)] overflow-y-auto overscroll-contain sm:max-w-xl lg:max-w-3xl">
@@ -281,16 +281,16 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
                   initial={{ opacity: 0, scale: 0.98, y: 8 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   transition={{ duration: 0.2, ease: 'easeOut' }}
-                  className="rounded-2xl border border-white/15 bg-linear-to-br from-white/12 to-white/5 p-4 shadow-2xl shadow-black/50 sm:p-6 md:p-8"
+                  className="rounded-2xl border border-n-line-strong bg-n-surface p-4 shadow-2xl shadow-[rgb(27_26_23/0.12)] sm:p-6 md:p-8"
                 >
-                  <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
-                    <h2 className="min-w-0 truncate text-lg font-semibold tracking-tight text-white sm:text-xl md:text-2xl">
+                  <div className="flex items-center justify-between gap-3 border-b border-n-line pb-3">
+                    <h2 className="min-w-0 truncate text-lg font-semibold tracking-tight text-n-ink sm:text-xl md:text-2xl">
                       Room settings
                     </h2>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="shrink-0 border-white/20 text-white hover:bg-white/10"
+                      className="shrink-0 border-n-line-strong text-n-ink hover:bg-n-hover"
                       onClick={() => setShowSettings(false)}
                     >
                       Close
@@ -298,11 +298,11 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
                   </div>
 
                   <div className="mt-4 sm:mt-5 md:mt-6">
-                    <p className="text-sm font-medium text-gray-200 md:text-base">Invite others</p>
-                    <p className="mt-0.5 text-[11px] text-gray-500 sm:text-xs">QR or link — same join screen for guests.</p>
+                    <p className="text-sm font-medium text-n-ink md:text-base">Invite others</p>
+                    <p className="mt-0.5 text-[11px] text-n-subtle sm:text-xs">QR or link — same join screen for guests.</p>
                     <div className="mt-2.5 grid grid-cols-1 items-start gap-3 sm:mt-3 sm:gap-4 md:grid-cols-[minmax(0,11rem)_1fr] md:items-stretch md:gap-6 lg:grid-cols-[minmax(0,13rem)_1fr]">
                       <div className="mx-auto flex w-[min(9.5rem,64vw)] max-w-44 shrink-0 justify-center sm:w-[min(11rem,72vw)] sm:max-w-52 md:mx-0 md:w-full md:max-w-52 md:items-center md:self-stretch">
-                        <div className="flex aspect-square w-full max-w-44 items-center justify-center rounded-xl border-2 border-dashed border-purple-400/45 bg-white/6 p-1.5 sm:max-w-52 sm:rounded-2xl sm:p-2.5">
+                        <div className="flex aspect-square w-full max-w-44 items-center justify-center rounded-xl border-2 border-dashed border-n-accent-line bg-n-surface-2 p-1.5 sm:max-w-52 sm:rounded-2xl sm:p-2.5">
                           {origin ? (
                             <div className="flex h-full w-full max-h-44 max-w-44 items-center justify-center rounded-lg bg-white p-1.5 sm:max-h-50 sm:max-w-50 sm:rounded-xl sm:p-2">
                               <QRCode
@@ -316,21 +316,21 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
                               <p className="mb-1 text-2xl" aria-hidden>
                                 📱
                               </p>
-                              <p className="text-[11px] text-gray-500">Open in the browser for a scannable QR.</p>
+                              <p className="text-[11px] text-n-subtle">Open in the browser for a scannable QR.</p>
                             </div>
                           )}
                         </div>
                       </div>
                       <div className="flex min-w-0 flex-col gap-3 sm:gap-4">
                         <div className="min-w-0">
-                          <span className="text-xs font-medium text-gray-400 md:text-sm">Share link</span>
+                          <span className="text-xs font-medium text-n-muted md:text-sm">Share link</span>
                           <div className="mt-1.5 flex flex-row items-stretch gap-2">
                             <Input
                               readOnly
                               value={shareUrlWithoutScheme(roomLink)}
                               title={roomLink}
                               variant="landing"
-                              className="min-h-9 min-w-0 flex-1 font-mono text-[11px] leading-normal text-gray-200 sm:min-h-10 sm:text-xs md:text-sm"
+                              className="min-h-9 min-w-0 flex-1 font-mono text-[11px] leading-normal text-n-ink sm:min-h-10 sm:text-xs md:text-sm"
                               onCopy={(e) => {
                                 e.preventDefault()
                                 e.clipboardData?.setData('text/plain', roomLink)
@@ -348,13 +348,13 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
                           </div>
                         </div>
                         <div className="min-w-0">
-                          <span className="text-xs font-medium text-gray-400 md:text-sm">Room ID</span>
+                          <span className="text-xs font-medium text-n-muted md:text-sm">Room ID</span>
                           <div className="mt-1.5 flex flex-row items-stretch gap-2">
                             <Input
                               readOnly
                               value={roomId}
                               variant="landing"
-                              className="min-h-9 min-w-0 flex-1 font-mono text-[11px] leading-normal text-purple-200 sm:min-h-10 sm:text-xs md:text-sm"
+                              className="min-h-9 min-w-0 flex-1 font-mono text-[11px] leading-normal text-n-accent-strong sm:min-h-10 sm:text-xs md:text-sm"
                             />
                             <CopyLinkButton
                               textToCopy={roomId}
@@ -362,7 +362,7 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
                               styleVariant="outline"
                               label="Copy ID"
                               copiedLabel="✓ Copied"
-                              className="h-9 shrink-0 self-stretch border-white/20 sm:h-10"
+                              className="h-9 shrink-0 self-stretch border-n-line-strong sm:h-10"
                               onCopied={(ok) =>
                                 showNotice(ok ? 'success' : 'error', ok ? 'Room ID copied' : 'Copy blocked by browser')
                               }
@@ -373,10 +373,10 @@ export default function ChatRoom({ roomId }: ChatRoomProps) {
                     </div>
                   </div>
 
-                  <div className="mt-5 flex flex-col gap-2 border-t border-white/10 pt-4 sm:mt-6 md:flex-row md:justify-end md:gap-3">
+                  <div className="mt-5 flex flex-col gap-2 border-t border-n-line pt-4 sm:mt-6 md:flex-row md:justify-end md:gap-3">
                     <Button
                       variant="outline"
-                      className="w-full border-red-500/30 text-red-200 hover:bg-red-500/10 hover:text-red-100 md:w-auto"
+                      className="w-full border-n-danger/30 text-n-danger hover:bg-n-danger-soft md:w-auto"
                       onClick={() => void handleEndRoom()}
                     >
                       End chat for everyone

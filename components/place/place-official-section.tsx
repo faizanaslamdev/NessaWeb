@@ -15,7 +15,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 export function VerifiedBadge({ className = '' }: { className?: string }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-300 ${className}`}
+      className={`inline-flex items-center gap-1 rounded-full bg-n-accent-soft px-2 py-0.5 text-[12px] font-semibold text-n-accent-strong ${className}`}
       title="Verified business"
     >
       <svg viewBox="0 0 20 20" aria-hidden className="size-3.5 fill-current">
@@ -28,9 +28,9 @@ export function VerifiedBadge({ className = '' }: { className?: string }) {
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex gap-3 text-sm">
-      <dt className="w-24 shrink-0 text-gray-500">{label}</dt>
-      <dd className="min-w-0 flex-1 text-gray-200 [overflow-wrap:anywhere]">{children}</dd>
+    <div className="flex gap-4 border-t border-n-line-soft py-2.5 text-[14px] first:border-t-0">
+      <dt className="w-28 shrink-0 text-n-subtle">{label}</dt>
+      <dd className="min-w-0 flex-1 text-n-ink [overflow-wrap:anywhere]">{children}</dd>
     </div>
   )
 }
@@ -60,18 +60,18 @@ export function PlaceOfficialSection({ business }: { business: PublicBusinessPro
       </Row>,
     )
   }
-  if (business.phone) rows.push(<Row key="phone" label="Phone"><a href={telHref(business.phone)} className="text-violet-300 hover:text-violet-200">{business.phone}</a></Row>)
-  if (business.whatsapp) rows.push(<Row key="wa" label="WhatsApp"><a href={waHref(business.whatsapp)} target="_blank" rel="noopener noreferrer" className="text-violet-300 hover:text-violet-200">{business.whatsapp}</a></Row>)
+  if (business.phone) rows.push(<Row key="phone" label="Phone"><a href={telHref(business.phone)} className="font-medium text-n-accent-strong hover:underline">{business.phone}</a></Row>)
+  if (business.whatsapp) rows.push(<Row key="wa" label="WhatsApp"><a href={waHref(business.whatsapp)} target="_blank" rel="noopener noreferrer" className="font-medium text-n-accent-strong hover:underline">{business.whatsapp}</a></Row>)
   if (business.website) {
     let label = business.website
     try { label = new URL(business.website).hostname } catch { /* keep raw */ }
-    rows.push(<Row key="web" label="Website"><a href={business.website} target="_blank" rel="noopener noreferrer" className="text-violet-300 hover:text-violet-200">{label}</a></Row>)
+    rows.push(<Row key="web" label="Website"><a href={business.website} target="_blank" rel="noopener noreferrer" className="font-medium text-n-accent-strong hover:underline">{label}</a></Row>)
   }
   if (business.amenities?.length) rows.push(<Row key="am" label="Amenities">{business.amenities.join(' · ')}</Row>)
   if (business.languages?.length) rows.push(<Row key="lang" label="Staff speak">{business.languages.map(l => l.toUpperCase()).join(', ')}</Row>)
 
   return (
-    <section className="mt-6 w-full rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-5 text-left">
+    <section aria-label={`About ${business.name}`} className="w-full rounded-2xl border border-n-line bg-n-surface p-5 text-left shadow-n-card sm:p-6">
       <div className="flex items-start gap-3">
         {business.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- business-provided https URL
@@ -79,18 +79,18 @@ export function PlaceOfficialSection({ business }: { business: PublicBusinessPro
         ) : null}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-sm font-semibold text-white">{business.name}</h2>
+            <h2 className="text-[17px] font-semibold text-n-ink">{business.name}</h2>
             <VerifiedBadge />
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-[13px] text-n-muted">
             Official information from the {CATEGORY_LABELS[business.category ?? ''] ?? 'business'}
           </p>
         </div>
       </div>
       {business.description ? (
-        <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-gray-300">{business.description}</p>
+        <p className="mt-4 whitespace-pre-line text-[15px] leading-7 text-n-ink-2">{business.description}</p>
       ) : null}
-      {rows.length ? <dl className="mt-3 space-y-2">{rows}</dl> : null}
+      {rows.length ? <dl className="mt-4">{rows}</dl> : null}
     </section>
   )
 }

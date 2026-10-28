@@ -28,9 +28,9 @@ export default async function ProfileShareLandingPage({ params }: PageProps) {
 
   if (!uid) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-black px-6 py-12 text-center text-white">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-n-canvas px-6 py-12 text-center text-n-ink">
         <h1 className="mb-2 text-2xl font-semibold">{siteConfig.name}</h1>
-        <p className="mb-8 text-sm text-gray-400">Invalid profile link.</p>
+        <p className="mb-8 text-sm text-n-muted">Invalid profile link.</p>
         <OpenAppFallback />
       </div>
     )

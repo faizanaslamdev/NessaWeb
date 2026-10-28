@@ -3,6 +3,7 @@ import { permanentRedirect } from 'next/navigation'
 
 import { PlaceLandingClient } from './place-landing-client'
 import { PlaceVisitTracker } from '@/components/place/place-visit-tracker'
+import { SiteShell } from '@/components/site/site-shell'
 import { isPublicPlaceIdValid } from '@/lib/place-landing'
 import { buildPlaceSeoMetadata, placeOgImages } from '@/lib/place-page-metadata'
 import {
@@ -152,12 +153,12 @@ export default async function PlaceLandingPage({ params, searchParams }: PagePro
   }
 
   return (
-    <>
+    <SiteShell bottomBar>
       <PlaceVisitTracker placeId={placeId} />
       <PlaceLandingClient
         placeId={placeId}
         initialPlace={landing ? toSsrSafeLanding(landing) : null}
       />
-    </>
+    </SiteShell>
   )
 }

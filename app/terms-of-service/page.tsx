@@ -11,12 +11,12 @@ export const metadata: Metadata = {
 export default function TermsOfServicePage() {
   return (
     <MarketingPageShell title="Terms of Service">
-      <p className="text-gray-400">
+      <p className="text-n-muted">
         Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
       </p>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold text-white">Agreement</h2>
+        <h2 className="mb-3 text-[20px] font-semibold tracking-[-0.015em] text-n-ink">Agreement</h2>
         <p>
           By accessing or using {siteConfig.name} (&quot;Service&quot;), you agree to these Terms. If you do not
           agree, do not use the Service.
@@ -24,7 +24,7 @@ export default function TermsOfServicePage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold text-white">Eligibility &amp; accounts</h2>
+        <h2 className="mb-3 text-[20px] font-semibold tracking-[-0.015em] text-n-ink">Eligibility &amp; accounts</h2>
         <p>
           You must be able to form a binding contract in your jurisdiction. You are responsible for safeguarding
           your credentials and for activity under your account. Notify us promptly of unauthorized use.
@@ -32,15 +32,15 @@ export default function TermsOfServicePage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold text-white">Acceptable use</h2>
-        <ul className="list-inside list-disc space-y-2 text-gray-300">
+        <h2 className="mb-3 text-[20px] font-semibold tracking-[-0.015em] text-n-ink">Acceptable use</h2>
+        <ul className="list-inside list-disc space-y-2 text-n-ink-2">
           <li>No illegal, harmful, harassing, or hateful content or conduct.</li>
           <li>No attempts to disrupt, reverse engineer, or overload the Service.</li>
           <li>No scraping or automated access that violates our policies or applicable law.</li>
         </ul>
         <p className="mt-3">
           See the full{' '}
-          <a href="/acceptable-use" className="text-purple-400 underline hover:text-purple-300">
+          <a href="/acceptable-use" className="font-medium text-n-accent-strong underline underline-offset-2">
             Acceptable Use Policy
           </a>
           .
@@ -48,7 +48,7 @@ export default function TermsOfServicePage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold text-white">Content</h2>
+        <h2 className="mb-3 text-[20px] font-semibold tracking-[-0.015em] text-n-ink">Content</h2>
         <p>
           You retain rights to content you submit. You grant us a limited license to host, process, and display
           that content solely to operate and improve the Service. We may remove content that violates these Terms or
@@ -57,7 +57,7 @@ export default function TermsOfServicePage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold text-white">Disclaimers</h2>
+        <h2 className="mb-3 text-[20px] font-semibold tracking-[-0.015em] text-n-ink">Disclaimers</h2>
         <p>
           The Service is provided &quot;as is&quot; to the fullest extent permitted by law. We disclaim warranties of
           merchantability, fitness for a particular purpose, and non-infringement except where prohibited.
@@ -65,7 +65,7 @@ export default function TermsOfServicePage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold text-white">Limitation of liability</h2>
+        <h2 className="mb-3 text-[20px] font-semibold tracking-[-0.015em] text-n-ink">Limitation of liability</h2>
         <p>
           To the maximum extent permitted by law, {siteConfig.name} and its affiliates will not be liable for
           indirect, incidental, special, consequential, or punitive damages, or for loss of profits, data, or goodwill.
@@ -75,7 +75,7 @@ export default function TermsOfServicePage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold text-white">Termination</h2>
+        <h2 className="mb-3 text-[20px] font-semibold tracking-[-0.015em] text-n-ink">Termination</h2>
         <p>
           We may suspend or terminate access for violations of these Terms or to protect users and the Service. You
           may stop using the Service at any time.
@@ -83,11 +83,11 @@ export default function TermsOfServicePage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-xl font-semibold text-white">Changes</h2>
+        <h2 className="mb-3 text-[20px] font-semibold tracking-[-0.015em] text-n-ink">Changes</h2>
         <p>
           We may modify these Terms. Continued use after changes constitutes acceptance of the updated Terms. For
           questions, contact{' '}
-          <a href={`mailto:${siteConfig.supportEmail}`} className="text-purple-400 underline hover:text-purple-300">
+          <a href={`mailto:${siteConfig.supportEmail}`} className="font-medium text-n-accent-strong underline underline-offset-2">
             {siteConfig.supportEmail}
           </a>
           .

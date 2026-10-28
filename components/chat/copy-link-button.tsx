@@ -69,8 +69,8 @@
       variant={styleVariant === 'outline' ? 'outline' : 'default'}
        className={[
         styleVariant === 'outline'
-          ? 'border-white/20 text-white hover:bg-white/10 font-medium'
-          : 'bg-linear-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white font-medium',
+          ? 'border-n-line-strong text-n-ink hover:bg-n-hover font-medium'
+          : 'bg-n-accent hover:bg-n-accent-strong text-white font-medium',
          className,
        ]
          .filter(Boolean)

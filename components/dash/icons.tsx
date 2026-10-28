@@ -45,6 +45,14 @@ export type IconName =
   | 'filter'
   | 'trash'
   | 'refresh'
+  | 'star'
+  | 'languages'
+  | 'image'
+  | 'compass'
+  | 'badge-check'
+  | 'share'
+  | 'phone'
+  | 'arrow-up-right'
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: (
@@ -228,6 +236,55 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="M20 11a8 8 0 0 0-14.5-4.5L4 8" />
       <path d="M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5L20 16" />
       <path d="M20 20v-4h-4" />
+    </>
+  ),
+  star: <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9L12 3.5Z" />,
+  languages: (
+    <>
+      <path d="M4 5h8" />
+      <path d="M8 3v2" />
+      <path d="M5.5 5c.8 3 3 5.5 5.5 6.5" />
+      <path d="M10.5 5c-.8 3.4-3 6-6 7.5" />
+      <path d="m12 21 4.5-10L21 21" />
+      <path d="M13.6 17.5h5.8" />
+    </>
+  ),
+  image: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2.5" />
+      <circle cx="9" cy="10" r="1.75" />
+      <path d="m21 16-4.5-4.5L7 20" />
+    </>
+  ),
+  compass: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m15.5 8.5-2 5-5 2 2-5 5-2Z" />
+    </>
+  ),
+  'badge-check': (
+    <>
+      <path d="M12 2.8l2.3 1.6 2.8-.1.9 2.6 2.2 1.7-.8 2.7.8 2.7-2.2 1.7-.9 2.6-2.8-.1L12 21.2l-2.3-1.6-2.8.1-.9-2.6-2.2-1.7.8-2.7-.8-2.7 2.2-1.7.9-2.6 2.8.1L12 2.8Z" />
+      <path d="m8.8 12 2.2 2.2 4.2-4.4" />
+    </>
+  ),
+  share: (
+    <>
+      <path d="M12 3v12" />
+      <path d="m7.5 7.5 4.5-4.5 4.5 4.5" />
+      <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
+    </>
+  ),
+  phone: (
+    <>
+      <rect x="6.5" y="2.5" width="11" height="19" rx="2.5" />
+      <path d="M11 18.5h2" />
+    </>
+  ),
+  'arrow-up-right': (
+    <>
+      <path d="M7 17 17 7" />
+      <path d="M8 7h9v9" />
     </>
   ),
 }

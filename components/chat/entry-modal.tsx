@@ -66,10 +66,10 @@ function NameLanguageForm({
 
   return (
     <>
-      <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
+      <h2 className="text-xl sm:text-2xl font-bold text-n-ink mb-2">
         {isEdit ? 'Your profile' : 'Join the conversation'}
       </h2>
-      <p className="text-gray-400 text-sm mb-5 sm:mb-6">
+      <p className="text-n-muted text-sm mb-5 sm:mb-6">
         {isEdit
           ? 'Update how others see you in this place chat. Your messages stay in the room.'
           : 'Enter your details to get started'}
@@ -77,7 +77,7 @@ function NameLanguageForm({
 
       <div className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-gray-300 mb-2">
+          <label className="block text-xs font-medium text-n-ink-2 mb-2">
             Your Name
           </label>
           <Input
@@ -93,13 +93,13 @@ function NameLanguageForm({
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-300 mb-2">
+          <label className="block text-xs font-medium text-n-ink-2 mb-2">
             Preferred Language
           </label>
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all appearance-none cursor-pointer"
+            className="w-full px-4 py-2.5 rounded-lg bg-n-surface border border-n-line-strong text-n-ink focus:outline-none focus:ring-2 focus:ring-n-accent/30 transition-all appearance-none cursor-pointer"
           >
             {APP_CHAT_LANGUAGES.map((lang) => (
               <option key={lang.code} value={lang.code}>
@@ -113,7 +113,7 @@ function NameLanguageForm({
           <Button
             onClick={isEdit ? handleSave : handleJoin}
             disabled={!name.trim()}
-            className="min-w-0 flex-1 bg-linear-to-r from-purple-600 to-violet-600 py-2.5 font-semibold text-white hover:from-purple-700 hover:to-violet-700 disabled:cursor-not-allowed disabled:opacity-50 md:w-full"
+            className="min-w-0 flex-1 bg-n-accent py-2.5 font-semibold text-white hover:bg-n-accent-strong disabled:cursor-not-allowed disabled:opacity-50 md:w-full"
           >
             {isEdit ? 'Save changes' : 'Enter Chat'}
           </Button>
@@ -121,7 +121,7 @@ function NameLanguageForm({
             type="button"
             variant="outline"
             onClick={onClose}
-            className="shrink-0 border-white/20 px-4 text-white hover:bg-white/10 md:w-full"
+            className="shrink-0 border-n-line-strong px-4 text-n-ink hover:bg-n-hover md:w-full"
           >
             {isEdit ? 'Cancel' : 'Back'}
           </Button>
@@ -129,7 +129,7 @@ function NameLanguageForm({
       </div>
 
       {!isEdit ? (
-        <p className="text-xs text-gray-500 text-center mt-4">
+        <p className="text-xs text-n-subtle text-center mt-4">
           No signup required. Just chat and go.
         </p>
       ) : null}
@@ -171,7 +171,7 @@ export default function EntryModal({
                   ? onClose
                   : onClose
             }
-            className="fixed inset-0 z-100 bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 z-100 bg-[rgb(27_26_23/0.45)] backdrop-blur-sm"
           />
 
           {/* Modal */}
@@ -184,7 +184,7 @@ export default function EntryModal({
           >
             <div
               className={cn(
-                'my-auto w-full max-h-[min(92dvh,900px)] rounded-2xl border border-white/20 bg-linear-to-br from-white/10 to-white/5 overflow-hidden flex flex-col shadow-2xl shadow-black/40',
+                'my-auto w-full max-h-[min(92dvh,900px)] rounded-2xl border border-n-line-strong bg-n-surface overflow-hidden flex flex-col shadow-2xl shadow-black/40',
                 variant === 'invite-host' ? 'max-w-2xl' : 'max-w-md',
               )}
             >
@@ -200,13 +200,13 @@ export default function EntryModal({
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.4, delay: 0.1 }}
-                    className="bg-linear-to-b from-white/5 to-white/0 p-4 sm:p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-white/10 shrink-0"
+                    className="bg-n-surface-2 p-4 sm:p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-n-line shrink-0"
                   >
-                    <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">
+                    <h3 className="text-base sm:text-lg font-semibold text-n-ink mb-3 sm:mb-4">
                       Share This Chat
                     </h3>
 
-                    <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-lg border-2 border-dashed border-purple-400/50 bg-white/5 flex items-center justify-center mb-4 sm:mb-6 p-2 sm:p-2.5">
+                    <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-lg border-2 border-dashed border-n-accent-line bg-n-surface flex items-center justify-center mb-4 sm:mb-6 p-2 sm:p-2.5">
                       {showLiveQr ? (
                         <div className="flex max-h-full max-w-full items-center justify-center rounded-md bg-white p-1.5">
                           <QRCode
@@ -219,17 +219,17 @@ export default function EntryModal({
                       ) : (
                         <div className="text-center">
                           <div className="text-2xl sm:text-3xl mb-2">📱</div>
-                          <p className="text-xs text-gray-400">QR Code</p>
+                          <p className="text-xs text-n-muted">QR Code</p>
                         </div>
                       )}
                     </div>
 
-                    <p className="text-xs sm:text-sm text-gray-400 text-center mb-4 sm:mb-6 px-1">
+                    <p className="text-xs sm:text-sm text-n-muted text-center mb-4 sm:mb-6 px-1">
                       Scan to join this chat instantly
                     </p>
 
                     <div className="w-full space-y-2">
-                      <p className="text-xs font-medium text-gray-300">Or share this link:</p>
+                      <p className="text-xs font-medium text-n-ink-2">Or share this link:</p>
                       <div className="flex flex-row items-stretch gap-2">
                         <Input
                           type="text"
@@ -237,7 +237,7 @@ export default function EntryModal({
                           title={roomLink}
                           readOnly
                           variant="landing"
-                          className="min-w-0 flex-1 truncate text-xs text-gray-300"
+                          className="min-w-0 flex-1 truncate text-xs text-n-ink-2"
                           onCopy={(e) => {
                             e.preventDefault()
                             e.clipboardData?.setData('text/plain', roomLink)
@@ -261,15 +261,15 @@ export default function EntryModal({
                 >
                   {variant === 'invite-host' ? (
                     <>
-                      <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Room ready</h2>
-                      <p className="text-gray-400 text-sm mb-5 sm:mb-6">
+                      <h2 className="text-xl sm:text-2xl font-bold text-n-ink mb-2">Room ready</h2>
+                      <p className="text-n-muted text-sm mb-5 sm:mb-6">
                         Have someone scan the QR or copy the chat link. When you’re done sharing, continue to the chat.
                       </p>
                       <div className="mt-2 flex flex-row-reverse items-stretch gap-2 md:flex-col md:gap-3">
                         <Button
                           type="button"
                           onClick={() => onContinue?.()}
-                          className="min-w-0 flex-1 bg-linear-to-r from-purple-600 to-violet-600 py-2.5 font-semibold text-white hover:from-purple-700 hover:to-violet-700 md:w-full"
+                          className="min-w-0 flex-1 bg-n-accent py-2.5 font-semibold text-white hover:bg-n-accent-strong md:w-full"
                         >
                           Continue to chat
                         </Button>
@@ -277,12 +277,12 @@ export default function EntryModal({
                           type="button"
                           variant="outline"
                           onClick={onClose}
-                          className="shrink-0 border-white/20 px-4 text-white hover:bg-white/10 md:w-full"
+                          className="shrink-0 border-n-line-strong px-4 text-n-ink hover:bg-n-hover md:w-full"
                         >
                           Back to lobby
                         </Button>
                       </div>
-                      <p className="text-xs text-gray-500 text-center mt-4">
+                      <p className="text-xs text-n-subtle text-center mt-4">
                         No signup for guests
                       </p>
                     </>

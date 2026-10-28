@@ -3,6 +3,7 @@ import { notFound, permanentRedirect } from 'next/navigation'
 
 import { PlaceLandingClient } from '@/app/place/[placeId]/place-landing-client'
 import { PlaceVisitTracker } from '@/components/place/place-visit-tracker'
+import { SiteShell } from '@/components/site/site-shell'
 import { buildPlaceSeoMetadata } from '@/lib/place-page-metadata'
 import {
   PLACE_SHARE_BRAND,
@@ -113,7 +114,7 @@ export default async function PlaceSlugPage({ params, searchParams }: PageProps)
     : null
 
   return (
-    <>
+    <SiteShell bottomBar>
       {jsonLd ? (
         <script
           type="application/ld+json"
@@ -127,6 +128,6 @@ export default async function PlaceSlugPage({ params, searchParams }: PageProps)
         slug={canonicalSlug}
         initialPlace={landing ? toSsrSafeLanding(landing) : null}
       />
-    </>
+    </SiteShell>
   )
 }

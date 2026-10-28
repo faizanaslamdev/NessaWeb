@@ -13,10 +13,10 @@ export default function ParticipantsSidebar({ participants }: ParticipantsSideba
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-      className="hidden w-64 flex-col border-l border-white/10 bg-black/50 lg:flex"
+      className="hidden w-64 flex-col border-l border-n-line bg-n-surface lg:flex"
     >
-      <div className="shrink-0 border-b border-white/10 p-4">
-        <h2 className="text-sm font-semibold text-white">Participants ({participants.length})</h2>
+      <div className="shrink-0 border-b border-n-line p-4">
+        <h2 className="text-sm font-semibold text-n-ink">Participants ({participants.length})</h2>
       </div>
 
       <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain">

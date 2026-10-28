@@ -28,11 +28,11 @@ export function ProfileOpenClient({ uid }: ProfileOpenClientProps) {
   }, [deepLink])
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-black px-6 py-12 text-center text-white">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-n-canvas px-6 py-12 text-center text-n-ink">
       <h1 className="mb-2 text-2xl font-semibold tracking-tight">NessaChat</h1>
-      <p className="mb-6 max-w-sm text-sm text-gray-400">{headline}</p>
+      <p className="mb-6 max-w-sm text-sm text-n-muted">{headline}</p>
       {hintVisible ? (
-        <p className="mb-6 max-w-sm text-xs text-gray-500">
+        <p className="mb-6 max-w-sm text-xs text-n-subtle">
           If nothing happened, tap below — or install the app, then open this link again.
         </p>
       ) : null}

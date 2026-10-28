@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 
-import { OpenAppFallback } from '@/components/open-app-fallback'
-import { siteConfig, siteRoutes } from '@/lib/constants'
+import { SiteShell } from '@/components/site/site-shell'
+import { Container, SiteButton } from '@/components/site/ui'
+import { siteConfig } from '@/lib/constants'
 
 export const metadata: Metadata = {
   title: `Page not found | ${siteConfig.name}`,
@@ -12,28 +12,22 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-black px-6 py-16 text-center text-white">
-      <p className="mb-2 text-sm font-medium text-violet-400">404</p>
-      <h1 className="mb-3 text-2xl font-semibold tracking-tight sm:text-3xl">Page not found</h1>
-      <p className="mb-8 max-w-md text-sm text-gray-400">
-        That link doesn&apos;t match a page on {siteConfig.name}. Check the URL, or open the app if you were
-        following a share link.
-      </p>
-      <div className="mb-8 flex flex-wrap items-center justify-center gap-4 text-sm">
-        <Link
-          href="/"
-          className="rounded-xl bg-violet-600 px-5 py-2.5 font-semibold text-white no-underline hover:bg-violet-500"
-        >
-          Go home
-        </Link>
-        <Link
-          href={siteRoutes.privacyPolicy}
-          className="text-violet-400 no-underline hover:text-violet-300"
-        >
-          Privacy Policy
-        </Link>
-      </div>
-      <OpenAppFallback openLabel="Open NessaChat" />
-    </div>
+    <SiteShell>
+      <Container className="flex flex-col items-center py-20 text-center sm:py-28">
+        <p className="text-[14px] font-semibold text-n-accent-strong">404</p>
+        <h1 className="n-display mt-2 text-[34px] leading-tight sm:text-[44px]">We couldn’t find that page</h1>
+        <p className="mt-3 max-w-md text-[16px] leading-7 text-n-muted">
+          The link may be old or mistyped. If someone shared a place with you, try searching for it.
+        </p>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <SiteButton href="/places" icon="search" size="lg">
+            Explore places
+          </SiteButton>
+          <SiteButton href="/" variant="secondary" size="lg">
+            Go home
+          </SiteButton>
+        </div>
+      </Container>
+    </SiteShell>
   )
 }

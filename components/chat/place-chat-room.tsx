@@ -229,7 +229,7 @@ export default function PlaceChatRoom({ placeId, slug, placeName }: PlaceChatRoo
     return (
       <>
         {joinTracker}
-        <div className="fixed inset-0 z-0 flex items-center justify-center bg-black text-gray-400">
+        <div className="fixed inset-0 z-0 flex items-center justify-center bg-n-canvas text-n-muted">
           Loading…
         </div>
       </>
@@ -238,9 +238,9 @@ export default function PlaceChatRoom({ placeId, slug, placeName }: PlaceChatRoo
 
   if (roomError) {
     return (
-      <div className="fixed inset-0 z-0 flex flex-col items-center justify-center gap-4 bg-black px-6 text-center">
-        <p className="text-gray-300">{roomError}</p>
-        <Button asChild className="bg-purple-600 text-white hover:bg-purple-700">
+      <div className="fixed inset-0 z-0 flex flex-col items-center justify-center gap-4 bg-n-canvas px-6 text-center">
+        <p className="text-n-ink-2">{roomError}</p>
+        <Button asChild className="bg-n-accent text-white hover:bg-n-accent-strong">
           <Link href={placeHref}>Back to place</Link>
         </Button>
       </div>
@@ -250,7 +250,7 @@ export default function PlaceChatRoom({ placeId, slug, placeName }: PlaceChatRoo
   const entryOpen = Boolean(user && roomReady && !guestName)
 
   return (
-    <div className="fixed inset-0 z-0 flex flex-col overflow-hidden bg-black">
+    <div className="fixed inset-0 z-0 flex flex-col overflow-hidden bg-n-canvas">
       {joinTracker}
       {copyNotice ? (
         <div className="fixed top-4 right-4 z-120 max-w-[min(calc(100vw-2rem),20rem)]">
@@ -258,8 +258,8 @@ export default function PlaceChatRoom({ placeId, slug, placeName }: PlaceChatRoo
             className={[
               'rounded-xl border px-4 py-2 text-sm backdrop-blur-md',
               copyNotice.kind === 'success'
-                ? 'border-white/15 bg-black/60 text-white'
-                : 'border-red-500/30 bg-black/70 text-red-200',
+                ? 'border-n-line bg-n-surface text-n-ink shadow-n-card'
+                : 'border-n-danger/30 bg-n-danger-soft text-n-danger',
             ].join(' ')}
           >
             {copyNotice.text}

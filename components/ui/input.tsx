@@ -19,8 +19,8 @@ const inputVariants = cva(
           'focus-visible:border-ring focus-visible:ring-ring/50',
         ].join(' '),
         landing: [
-          'rounded-lg border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder:text-gray-500',
-          'focus-visible:border-purple-500/50 focus-visible:ring-purple-500/20',
+          'rounded-lg border-n-line bg-n-surface px-4 py-2.5 text-n-ink placeholder:text-n-subtle',
+          'focus-visible:border-n-accent focus-visible:ring-n-accent/20',
         ].join(' '),
       },
       /** Avoid name `size` — conflicts with native HTML input `size`. */

@@ -119,11 +119,14 @@ export function PlaceCoverShareQr({
   placeId,
   slug,
   placeName,
+  variant = 'overlay',
 }: {
   placeId: string
   /** Canonical slug; QR + share use the clean `/places/{slug}` URL when set. */
   slug?: string | null
   placeName: string
+  /** 'overlay': round buttons on the cover photo; 'buttons': labelled buttons in a toolbar. */
+  variant?: 'overlay' | 'buttons'
 }) {
   const [qrOpen, setQrOpen] = useState(false)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
@@ -186,6 +189,40 @@ export function PlaceCoverShareQr({
       return
     }
     setQrOpen(true)
+  }
+
+  if (variant === 'buttons') {
+    const btn =
+      'inline-flex h-10 items-center gap-2 rounded-[10px] border border-n-line-strong bg-n-surface px-3.5 text-[14px] font-semibold text-n-ink shadow-n-card transition-colors hover:bg-n-hover disabled:opacity-50'
+    return (
+      <>
+        <button type="button" className={btn} onClick={onShare} disabled={!shareUrl}>
+          <ShareIcon className="size-4" />
+          Share
+        </button>
+        <button type="button" className={btn} onClick={onOpenQr} disabled={!shareUrl}>
+          <QrIcon className="size-4" />
+          QR code
+        </button>
+        {feedback ? (
+          <span
+            role="status"
+            aria-live="polite"
+            className={`self-center text-[13px] font-medium ${feedback.kind === 'ok' ? 'text-n-ok' : 'text-n-danger'}`}
+          >
+            {feedback.text}
+          </span>
+        ) : null}
+        <PlaceQrSheet
+          open={qrOpen}
+          onClose={() => setQrOpen(false)}
+          placeId={placeId}
+          slug={slug}
+          placeName={placeName}
+          onFeedback={showFeedback}
+        />
+      </>
+    )
   }
 
   return (
@@ -342,7 +379,7 @@ export function PlaceQrSheet({
               void onDownloadQr()
             }}
             disabled={saving || !shareUrl}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#7C3AED] px-4 text-sm font-bold text-white transition-colors hover:bg-[#6D28D9] disabled:opacity-50"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-n-accent px-4 text-sm font-semibold text-white transition-colors hover:bg-n-accent-strong disabled:opacity-50"
           >
             {saving ? 'Downloading…' : 'Download QR'}
           </button>
@@ -350,11 +387,11 @@ export function PlaceQrSheet({
       >
         <div className="flex flex-col items-center gap-3 py-2">
           {localFeedback ? (
-            <p role="status" className={`text-xs font-semibold ${localFeedback.kind === 'ok' ? 'text-emerald-300' : 'text-red-300'}`}>
+            <p role="status" className={`text-xs font-semibold ${localFeedback.kind === 'ok' ? 'text-n-ok' : 'text-n-danger'}`}>
               {localFeedback.text}
             </p>
           ) : null}
-          <div className="rounded-2xl bg-white p-4">
+          <div className="rounded-2xl border border-n-line bg-white p-4">
             {shareUrl ? (
               <QRCode
                 value={qrUrl}
@@ -367,18 +404,18 @@ export function PlaceQrSheet({
               <p className="text-sm text-gray-500">QR unavailable</p>
             )}
           </div>
-          <p className="text-center text-sm font-semibold text-gray-200">
+          <p className="text-center text-sm font-semibold text-n-ink">
             {qrTarget === 'chat'
               ? 'Scan to join the live chat on Nessa'
               : 'Scan to view this place on Nessa'}
           </p>
           {shareUrl ? (
-            <p className="max-w-full break-all text-center text-xs text-gray-500">
+            <p className="max-w-full break-all text-center text-xs text-n-subtle">
               {shareUrlWithoutScheme(displayUrl)}
             </p>
           ) : null}
 
-          <div className="mt-1 w-full space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-left">
+          <div className="mt-1 w-full space-y-2 rounded-xl border border-n-line bg-n-surface-2 p-3 text-left">
             <div className="flex gap-2" role="group" aria-label="QR opens">
               {(['place', 'chat'] as const).map(target => (
                 <button
@@ -388,8 +425,8 @@ export function PlaceQrSheet({
                   aria-pressed={qrTarget === target}
                   className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
                     qrTarget === target
-                      ? 'bg-[#7C3AED] text-white'
-                      : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                      ? 'bg-n-accent text-white'
+                      : 'bg-n-surface text-n-ink-2 ring-1 ring-n-line hover:bg-n-hover'
                   }`}
                 >
                   {target === 'place' ? 'Place page' : 'Live chat'}
@@ -398,12 +435,12 @@ export function PlaceQrSheet({
             </div>
             {placements ? (
               placements.length > 0 ? (
-                <label className="block text-xs text-gray-400">
+                <label className="block text-xs text-n-muted">
                   Placement (optional)
                   <select
                     value={selected ? selected.qrId : ''}
                     onChange={event => setSelectedQrId(event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white focus:border-[#7C3AED] focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-n-line-strong bg-n-surface px-3 py-2 text-sm text-n-ink focus:border-n-accent focus:outline-none"
                   >
                     <option value="">No placement (general QR)</option>
                     {placements.map(p => (
@@ -412,12 +449,12 @@ export function PlaceQrSheet({
                       </option>
                     ))}
                   </select>
-                  <span className="mt-1 block text-[11px] text-gray-500">
+                  <span className="mt-1 block text-[11px] text-n-subtle">
                     Each placement is counted separately in the Place’s stats.
                   </span>
                 </label>
               ) : (
-                <p className="text-[11px] text-gray-500">
+                <p className="text-[11px] text-n-subtle">
                   {placementsHint ?? 'No placements yet. Add one to count each printed QR separately.'}
                 </p>
               )

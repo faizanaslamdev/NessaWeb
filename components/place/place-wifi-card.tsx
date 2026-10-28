@@ -85,25 +85,25 @@ export function PlaceWifiCard({
   return (
     <section
       className={[
-        'w-full rounded-2xl border border-violet-400/20 bg-linear-to-br from-violet-500/15 via-white/[0.04] to-purple-600/10 px-4 py-4 text-left shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]',
+        'w-full rounded-2xl border border-n-line bg-n-surface px-5 py-4 text-left shadow-n-card',
         className,
       ].join(' ')}
       aria-label={`Wi-Fi network ${wifi.networkName}`}
     >
       <div className="mb-3 flex items-center gap-2">
-        <WifiIcon className="size-4 shrink-0 text-violet-300" />
-        <h2 className="min-w-0 flex-1 text-sm font-semibold text-white">
-          Wi-Fi
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-n-accent-soft text-n-accent"><WifiIcon className="size-4" /></span>
+        <h2 className="min-w-0 flex-1 text-[15px] font-semibold text-n-ink">
+          Guest Wi-Fi
         </h2>
       </div>
 
       <div className="space-y-3">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-n-subtle">
               Network
             </p>
-            <p className="mt-0.5 break-all text-[15px] font-semibold text-white">
+            <p className="mt-0.5 break-all text-[15px] font-semibold text-n-ink">
               {wifi.networkName}
             </p>
           </div>
@@ -116,11 +116,11 @@ export function PlaceWifiCard({
 
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-n-subtle">
               Password
             </p>
             <p
-              className="mt-0.5 break-all text-[15px] font-semibold text-white"
+              className="mt-0.5 break-all font-mono text-[15px] font-semibold text-n-ink"
               aria-label={
                 revealed ? `Password ${wifi.password}` : 'Password hidden'
               }
@@ -132,7 +132,7 @@ export function PlaceWifiCard({
             <button
               type="button"
               onClick={() => setRevealed(v => !v)}
-              className="inline-flex min-w-[3.25rem] items-center justify-center rounded-lg px-2 py-1.5 text-xs font-medium text-gray-300 hover:bg-white/5"
+              className="inline-flex min-w-[3.25rem] items-center justify-center rounded-lg px-2 py-1.5 text-xs font-medium text-n-muted hover:bg-n-hover hover:text-n-ink"
               aria-label={
                 revealed ? 'Hide Wi-Fi password' : 'Show Wi-Fi password'
               }
@@ -148,7 +148,7 @@ export function PlaceWifiCard({
         </div>
 
         {wifi.note ? (
-          <p className="text-xs leading-relaxed text-gray-400">{wifi.note}</p>
+          <p className="text-[13px] leading-relaxed text-n-muted">{wifi.note}</p>
         ) : null}
       </div>
     </section>
@@ -169,8 +169,8 @@ function CopyButton({
       type="button"
       onClick={onClick}
       className={[
-        'inline-flex min-w-[3.5rem] shrink-0 items-center justify-center rounded-lg px-2 py-1.5 text-xs font-medium hover:bg-white/5',
-        copied ? 'text-emerald-300' : 'text-violet-300',
+        'inline-flex min-w-[3.5rem] shrink-0 items-center justify-center rounded-lg px-2 py-1.5 text-xs font-semibold hover:bg-n-hover',
+        copied ? 'text-n-ok' : 'text-n-accent-strong',
       ].join(' ')}
       aria-label={copied ? 'Copied' : ariaLabel}
     >
