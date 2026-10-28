@@ -25,6 +25,7 @@ import { Icon } from '@/components/dash/icons'
 import { ButtonLink, EmptyState, Panel, cx, menuItemClass, menuPanelClass, usePopover } from '@/components/dash/ui'
 import { UserMenu, type UserMenuLink } from '@/components/dash/user-menu'
 import { useAccountAuth } from '@/hooks/use-account-auth'
+import { useProfileName } from '@/hooks/use-profile-name'
 import { accountRoutes, adminConsoleHref } from '@/lib/account/constants'
 import { readMyAdminRole } from '@/lib/admin'
 import {
@@ -214,6 +215,7 @@ function BusinessFrame({
   const router = useRouter()
   const [isAdmin, setIsAdmin] = useState(false)
   const email = user?.email ?? ''
+  const profileName = useProfileName(user)
 
   useEffect(() => {
     if (!user) return
@@ -274,10 +276,10 @@ function BusinessFrame({
           >
             View public page
           </ButtonLink>
-          <UserMenu email={email} name={user?.displayName} subtitle={`${role} · ${business.profile.name}`} links={links} onSignOut={onSignOut} />
+          <UserMenu email={email} name={profileName} subtitle={`${role} · ${business.profile.name}`} links={links} onSignOut={onSignOut} />
         </>
       }
-      sidebarFooter={<SidebarAccount email={email} name={user?.displayName} subtitle={role} onSignOut={onSignOut} />}
+      sidebarFooter={<SidebarAccount email={email} name={profileName} subtitle={role} onSignOut={onSignOut} />}
     >
       {children}
     </AppShell>

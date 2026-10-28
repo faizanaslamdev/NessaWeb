@@ -150,7 +150,7 @@ export function AdminTeam() {
         </Notice>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <Panel aria-label="Admin team">
           <PanelHeader title={`Members (${state.admins.length})`} />
           <ul className="divide-y divide-n-line-soft border-t border-n-line-soft">

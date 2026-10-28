@@ -36,6 +36,17 @@ type ListState = { kind: 'loading' } | { kind: 'ready'; claims: AdminClaim[] } |
 
 type Review = { claim: AdminClaim; decision: 'approve' | 'reject'; grantRole?: 'owner' | 'staff' }
 
+function clearAssignParam() {
+  try {
+    const url = new URL(window.location.href)
+    if (!url.searchParams.has('assign')) return
+    url.searchParams.delete('assign')
+    window.history.replaceState(null, '', url.toString())
+  } catch {
+    // ignore
+  }
+}
+
 function errorText(e: unknown, fallback: string) {
   return e instanceof BusinessActionError ? e.message : fallback
 }
@@ -144,9 +155,13 @@ export function AdminClaims() {
       <AssignDialog
         open={assignOpen}
         initialPlaceId={assignPlaceId}
-        onClose={() => setAssignOpen(false)}
+        onClose={() => {
+          setAssignOpen(false)
+          clearAssignParam()
+        }}
         onDone={text => {
           setAssignOpen(false)
+          clearAssignParam()
           setNotice({ tone: 'ok', text })
         }}
       />

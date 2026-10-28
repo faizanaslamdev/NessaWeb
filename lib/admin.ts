@@ -18,7 +18,7 @@ export const ADMIN_ROLE_LABELS: Record<AdminRole, string> = {
 }
 
 export const ADMIN_ROLE_DESCRIPTIONS: Record<AdminRole, string> = {
-  admin: 'Business claims, owner assignment and Place slug tools.',
+  admin: 'Business claims and owner assignment, places (live chat, QR codes, stats) and the audit log.',
   super_admin: 'Everything an Admin can do, plus managing admins and data-maintenance tools.',
 }
 

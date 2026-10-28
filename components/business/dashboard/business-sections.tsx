@@ -276,7 +276,7 @@ export function BusinessGuestsSection() {
     <>
       <ShellTitle crumbs={[{ label: 'Guest info' }]} />
       <PageHeader title="Guest info" description="Answers guests look for before and after they arrive." />
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid items-start gap-6 lg:grid-cols-2">
         <WifiForm
           key={`${place.placeId}:${landing ? 'l' : 'n'}`}
           placeId={place.placeId}
