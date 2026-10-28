@@ -7,12 +7,12 @@ describe('buildPlacePageTitle', () => {
   it('uses the Place name when present', () => {
     assert.equal(
       buildPlacePageTitle('Dunas Beach Bar e Restaurante'),
-      'Dunas Beach Bar e Restaurante | Nessa',
+      'Dunas Beach Bar e Restaurante | NessaChat',
     )
   })
 
   it('falls back when the name is missing', () => {
-    assert.equal(buildPlacePageTitle('  '), 'Place on Nessa')
-    assert.equal(buildPlacePageTitle(undefined), 'Place on Nessa')
+    assert.equal(buildPlacePageTitle('  '), 'Place on NessaChat')
+    assert.equal(buildPlacePageTitle(undefined), 'Place on NessaChat')
   })
 })

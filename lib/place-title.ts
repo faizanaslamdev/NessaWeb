@@ -1,5 +1,5 @@
 /** Consumer brand in Place share / helmet titles. */
-export const PLACE_SHARE_BRAND = 'Nessa'
+export const PLACE_SHARE_BRAND = 'NessaChat'
 
 /** Browser tab + OG title for a public Place page. */
 export function buildPlacePageTitle(placeName?: string | null): string {
