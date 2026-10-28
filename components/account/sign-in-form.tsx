@@ -12,12 +12,15 @@ import {
 import { useAccountAuth } from '@/hooks/use-account-auth'
 import { describeAccountAuthError } from '@/lib/account/auth-errors'
 import { accountRoutes } from '@/lib/account/constants'
-import { safeNextPath, validateEmail } from '@/lib/account/validation'
+import { defaultSignedInPath, safeNextPath, validateEmail } from '@/lib/account/validation'
 
 export function SignInForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const next = safeNextPath(searchParams.get('next'))
+  const next = safeNextPath(
+    searchParams.get('next'),
+    defaultSignedInPath(typeof window !== 'undefined' ? window.location.hostname : null),
+  )
   const { signIn } = useAccountAuth()
 
   const [email, setEmail] = useState('')

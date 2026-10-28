@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 import { useAdminHref } from '@/components/admin/admin-shell'
 import { AuditList } from '@/components/admin/audit-list'
@@ -30,6 +31,8 @@ import {
 import { ChatRetentionPanel } from '@/components/manage/chat-retention'
 import { QrStudio } from '@/components/manage/qr-studio'
 import { getPlaceHistory, type ConsoleAuditItem } from '@/lib/admin-console'
+import { parsePlaceRef, resolvePlaceRef } from '@/lib/admin-chats'
+import { isGooglePlaceId } from '@/lib/place-chat/constants'
 import { readPinnedPlaces, togglePinnedPlace } from '@/lib/admin-pins'
 import { BusinessActionError, listQrPlacements, type QrPlacement, type QrPlacementList } from '@/lib/business'
 import { fetchPublicPlaceLanding, type PublicPlaceLanding } from '@/lib/place-landing'
@@ -43,7 +46,46 @@ type State =
   | { kind: 'ready'; data: QrPlacementList }
   | { kind: 'error'; message: string }
 
+/**
+ * Console URLs normally carry the Google Place ID. An address works too
+ * (admin.nessachat.com/places/cumbuco): it is resolved and replaced by the ID.
+ */
 export function AdminPlaceDetail({ placeId }: { placeId: string }) {
+  const router = useRouter()
+  const adminHref = useAdminHref()
+  const isId = isGooglePlaceId(placeId)
+  const [missing, setMissing] = useState(false)
+
+  useEffect(() => {
+    if (isId) return
+    const ref = parsePlaceRef(placeId)
+    if (!ref) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMissing(true)
+      return
+    }
+    void resolvePlaceRef(ref).then(id => {
+      if (id) router.replace(`${adminHref(`places/${encodeURIComponent(id)}`)}${window.location.search}`)
+      else setMissing(true)
+    })
+  }, [isId, placeId, router, adminHref])
+
+  if (isId) return <AdminPlaceDetailById placeId={placeId} />
+  return (
+    <>
+      <ShellTitle crumbs={[{ label: 'Places', href: adminHref('places') }, { label: missing ? 'Not found' : 'Loading…' }]} />
+      <Panel>
+        {missing ? (
+          <EmptyState icon="pin" title="No place uses that address" action={<ButtonLink href={adminHref('places')}>Back to places</ButtonLink>} />
+        ) : (
+          <LoadingBlock rows={5} label="Opening place…" />
+        )}
+      </Panel>
+    </>
+  )
+}
+
+function AdminPlaceDetailById({ placeId }: { placeId: string }) {
   const adminHref = useAdminHref()
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [landing, setLanding] = useState<PublicPlaceLanding | null>(null)

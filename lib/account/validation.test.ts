@@ -4,6 +4,7 @@ import { describe, it } from 'node:test'
 import { describeAccountAuthError } from './auth-errors'
 import { buildInitialUserDoc } from './user-doc'
 import {
+  defaultSignedInPath,
   cleanDisplayName,
   normalizeEmail,
   safeNextPath,
@@ -60,5 +61,14 @@ describe('buildInitialUserDoc', () => {
     assert.deepEqual(doc.blockedUsers, [])
     assert.equal(doc.createdAt, 'TS')
     assert.equal((doc.settings as { translationLanguage: string }).translationLanguage, 'en')
+  })
+})
+
+describe('defaultSignedInPath', () => {
+  it('sends admin-host sign-ins to the console root', () => {
+    assert.equal(defaultSignedInPath('admin.nessachat.com'), '/')
+    assert.equal(defaultSignedInPath('ADMIN.nessachat.com'), '/')
+    assert.equal(defaultSignedInPath('www.nessachat.com'), '/business')
+    assert.equal(defaultSignedInPath(null), '/business')
   })
 })

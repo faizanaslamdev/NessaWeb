@@ -45,11 +45,13 @@ export function useAdmin(): AdminCtx {
   return ctx
 }
 
-function useBase(): string {
-  const [base, setBase] = useState('/admin')
+/** Base from the server (request host); re-checked on the client as a fallback. */
+function useBase(initial: string): string {
+  const [base, setBase] = useState(initial)
   useEffect(() => {
+    const onAdminHost = window.location.hostname.startsWith(ADMIN_HOSTNAME_PREFIX)
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (window.location.hostname.startsWith(ADMIN_HOSTNAME_PREFIX)) setBase('')
+    setBase(onAdminHost ? '' : '/admin')
   }, [])
   return base
 }
@@ -69,18 +71,18 @@ function useSection(): string {
   return pathname.replace(/^\/admin(?=\/|$)/, '').replace(/^\/+|\/+$/g, '')
 }
 
-export function AdminShell({ children }: { children: ReactNode }) {
+export function AdminShell({ children, base: initialBase = '/admin' }: { children: ReactNode; base?: string }) {
   return (
     <RequireAccount>
-      <AdminGate>{children}</AdminGate>
+      <AdminGate initialBase={initialBase}>{children}</AdminGate>
     </RequireAccount>
   )
 }
 
-function AdminGate({ children }: { children: ReactNode }) {
+function AdminGate({ children, initialBase }: { children: ReactNode; initialBase: string }) {
   const { user, signOut } = useAccountAuth()
   const router = useRouter()
-  const base = useBase()
+  const base = useBase(initialBase)
   const profileName = useProfileName(user)
   const [role, setRole] = useState<AdminRole | null | undefined>(undefined)
   const [overview, setOverview] = useState<ConsoleOverview | null>(null)

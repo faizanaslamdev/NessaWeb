@@ -52,6 +52,11 @@ export function cleanDisplayName(raw: string): string {
  * Only allow same-origin relative paths as post-sign-in destinations, so a
  * crafted link can't bounce someone to another site after they sign in.
  */
+/** Where to go after signing in when no `next` is given: the console on the admin host. */
+export function defaultSignedInPath(hostname: string | null | undefined): string {
+  return hostname && hostname.toLowerCase().startsWith('admin.') ? '/' : '/business'
+}
+
 export function safeNextPath(raw: string | null | undefined, fallback = '/business'): string {
   if (!raw) {
     return fallback
