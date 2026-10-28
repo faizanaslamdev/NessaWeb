@@ -33,6 +33,9 @@ const nextConfig: NextConfig = {
         destination: '/terms-of-service',
         permanent: true,
       },
+      // Chat settings moved to each Place's page (Live chat tab).
+      { source: '/admin/chats', destination: '/admin/places', permanent: false },
+      { source: '/chats', has: [{ type: 'host' as const, value: ADMIN_HOST_PATTERN }], destination: '/places', permanent: false },
       ...(ADMIN_ORIGIN
         ? [
             {
