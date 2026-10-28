@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 import { useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
@@ -83,7 +85,7 @@ export default function ChatHeader({
   const titleNode = titleHref ? (
     <a
       href={titleHref}
-      className="min-w-0 truncate text-white no-underline hover:text-violet-200 hover:underline underline-offset-2"
+      className="min-w-0 truncate text-n-ink no-underline hover:text-n-accent-strong hover:underline underline-offset-2"
       title="Open place"
     >
       {title}
@@ -97,24 +99,28 @@ export default function ChatHeader({
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="border-b border-white/10 bg-black/50 backdrop-blur-sm sticky top-0 z-40"
+      className="border-b border-n-line bg-n-surface backdrop-blur-sm sticky top-0 z-40"
     >
       <div className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-1 items-start gap-2">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <Link href="/" aria-label="NessaChat home" className="mt-0.5 shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element -- small static logo */}
+            <img src="/logo.png" alt="" width={32} height={32} className="size-8" />
+          </Link>
           {backHref ? (
             <a
               href={backHref}
-              className="mt-0.5 shrink-0 rounded-md border border-white/15 bg-white/5 px-2 py-1 text-xs font-medium text-gray-200 no-underline hover:bg-white/10"
+              className="mt-0.5 shrink-0 rounded-md border border-n-line-strong bg-n-surface px-2 py-1 text-xs font-medium text-n-ink no-underline hover:bg-n-hover"
             >
               {backLabel}
             </a>
           ) : null}
           <div className="min-w-0 flex-1">
-            <h1 className="mb-1 flex min-w-0 flex-wrap items-center gap-2 text-lg font-bold text-white sm:text-xl">
+            <h1 className="mb-1 flex min-w-0 flex-wrap items-center gap-2 text-lg font-bold text-n-ink sm:text-xl">
               {titleNode}
               {sessionRemainingLabel ? (
                 <span
-                  className="inline-flex shrink-0 items-center gap-1 rounded border border-amber-500/35 bg-amber-500/10 px-1.5 py-0.5 font-mono text-xs font-semibold tabular-nums text-amber-200 sm:text-sm"
+                  className="inline-flex shrink-0 items-center gap-1 rounded border border-n-warn/25 bg-n-warn-soft px-1.5 py-0.5 font-mono text-xs font-semibold tabular-nums text-n-warn sm:text-sm"
                   title="Time left before this room reaches its session limit."
                 >
                   <TimerIcon className="size-3.5 shrink-0 opacity-90 sm:size-4" aria-hidden />
@@ -123,7 +129,7 @@ export default function ChatHeader({
               ) : null}
             </h1>
             {metaLine ? (
-              <p className="text-xs text-gray-400 sm:text-sm">{metaLine}</p>
+              <p className="text-xs text-n-muted sm:text-sm">{metaLine}</p>
             ) : (
               <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <button
@@ -131,18 +137,18 @@ export default function ChatHeader({
                   onClick={() => void handleCopyRoomId()}
                   title="Copy room ID"
                   aria-label={`Copy room ID ${roomId}`}
-                  className="group max-w-full cursor-pointer rounded-md px-1 py-0.5 text-left text-xs text-gray-400 -mx-1 transition-colors hover:bg-white/10 hover:text-gray-200 sm:text-sm"
+                  className="group max-w-full cursor-pointer rounded-md px-1 py-0.5 text-left text-xs text-n-muted -mx-1 transition-colors hover:bg-n-hover hover:text-n-ink sm:text-sm"
                 >
                   Room ID:{' '}
-                  <span className="break-all font-mono text-purple-400 group-hover:text-purple-200">
+                  <span className="break-all font-mono text-n-accent-strong group-hover:text-n-accent-strong">
                     {roomId}
                   </span>
                 </button>
                 {!hideOnlineCount ? (
                   <>
-                    <span className="text-xs text-gray-500">•</span>
-                    <p className="text-xs sm:text-sm text-gray-400">
-                      <span className="text-green-400 font-semibold">{participantCount}</span>{' '}
+                    <span className="text-xs text-n-subtle">•</span>
+                    <p className="text-xs sm:text-sm text-n-muted">
+                      <span className="text-n-ok font-semibold">{participantCount}</span>{' '}
                       online
                     </p>
                   </>
@@ -160,7 +166,7 @@ export default function ChatHeader({
               variant="outline"
               onClick={onOpenParticipants}
               title="People in this room"
-              className="border-white/20 px-2.5 text-white hover:bg-white/10 sm:px-3 lg:hidden"
+              className="border-n-line-strong px-2.5 text-n-ink hover:bg-n-hover sm:px-3 lg:hidden"
               aria-label="View everyone in this room"
             >
               <UsersIcon className="size-4" />
@@ -174,7 +180,7 @@ export default function ChatHeader({
               onClick={onShare}
               title="Share room"
               aria-label="Share room"
-              className="border-white/20 px-2.5 text-white hover:bg-white/10 sm:px-3 lg:px-3"
+              className="border-n-line-strong px-2.5 text-n-ink hover:bg-n-hover sm:px-3 lg:px-3"
             >
               <ShareIcon className="size-4 lg:hidden" aria-hidden />
               <span className="hidden text-xs sm:text-sm lg:inline">Share</span>
@@ -188,7 +194,7 @@ export default function ChatHeader({
               onClick={onSettings}
               title="Room settings"
               aria-label="Room settings"
-              className="border-white/20 px-2.5 text-white hover:bg-white/10 sm:px-3"
+              className="border-n-line-strong px-2.5 text-n-ink hover:bg-n-hover sm:px-3"
             >
               <SettingsIcon className="size-4" />
             </Button>

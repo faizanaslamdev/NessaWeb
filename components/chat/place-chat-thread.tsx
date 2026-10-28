@@ -147,18 +147,18 @@ export default function PlaceChatThread({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, delay: 0.1 }}
-      className="flex min-h-0 flex-1 flex-col overflow-hidden bg-linear-to-b from-black via-black to-black/80"
+      className="flex min-h-0 flex-1 flex-col overflow-hidden bg-n-canvas"
     >
       {pinnedText ? (
         <div
           role="note"
           aria-label="Pinned message from the business"
-          className="shrink-0 border-b border-violet-500/20 bg-violet-500/10 px-4 py-2.5 sm:px-6"
+          className="shrink-0 border-b border-n-accent-line bg-n-accent-soft px-4 py-2.5 sm:px-6"
         >
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-300">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-n-accent-strong">
             Pinned
           </p>
-          <p className="mt-0.5 whitespace-pre-wrap wrap-break-word text-sm leading-5 text-gray-100">
+          <p className="mt-0.5 whitespace-pre-wrap wrap-break-word text-sm leading-5 text-n-ink">
             {pinnedText}
           </p>
         </div>
@@ -166,17 +166,17 @@ export default function PlaceChatThread({
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-6 sm:px-6 sm:py-6">
         {messagesLoading && messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-gray-400">Loading messages…</p>
+            <p className="text-sm text-n-muted">Loading messages…</p>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
-              <p className="text-gray-400">
+              <p className="text-n-muted">
                 {retentionHours > PLACE_CHAT_DEFAULT_RETENTION_HOURS
                   ? 'No messages yet. Say hello!'
                   : 'No messages yet today. Say hello!'}
               </p>
-              <p className="mt-2 text-xs text-gray-500">{placeChatRetentionHint(retentionHours)}</p>
+              <p className="mt-2 text-xs text-n-subtle">{placeChatRetentionHint(retentionHours)}</p>
             </div>
           </div>
         ) : (
@@ -218,7 +218,7 @@ export default function PlaceChatThread({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.2 }}
-        className="shrink-0 border-t border-white/10 bg-black/50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:p-6"
+        className="shrink-0 border-t border-n-line bg-n-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:p-6"
       >
         <div className="flex items-end gap-2 sm:gap-3">
           <Textarea
@@ -244,24 +244,24 @@ export default function PlaceChatThread({
             disabled={!inputValue.trim()}
             title="Send message"
             aria-label="Send message"
-            className="h-9 w-9 shrink-0 bg-linear-to-r from-purple-600 to-violet-600 p-0 font-medium text-white hover:from-purple-700 hover:to-violet-700 disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:min-h-9 sm:w-auto sm:px-6"
+            className="h-9 w-9 shrink-0 bg-n-accent p-0 font-medium text-white hover:bg-n-accent-strong disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:min-h-9 sm:w-auto sm:px-6"
           >
             <SendIcon className="size-[1.2rem] sm:hidden" aria-hidden />
             <span className="hidden sm:inline">Send</span>
           </Button>
         </div>
-        <p className="mt-2 text-center text-[11px] text-gray-500">
+        <p className="mt-2 text-center text-[11px] text-n-subtle">
           Guest chat on {siteConfig.name}.{' '}
           <a
             href={placeAppDeepLink(placeId)}
-            className="text-violet-300 underline-offset-2 hover:underline"
+            className="text-n-accent-strong underline-offset-2 hover:underline"
           >
             Open in app
           </a>
           {' · '}
           <a
             href={appStores[0]?.url ?? '/'}
-            className="text-violet-300 underline-offset-2 hover:underline"
+            className="text-n-accent-strong underline-offset-2 hover:underline"
             target="_blank"
             rel="noreferrer"
           >

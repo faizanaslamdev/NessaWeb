@@ -33,7 +33,7 @@ function Tile({
     <button
       type="button"
       onClick={onPress}
-      className={`relative block overflow-hidden bg-[#1a1525] p-0 ${className ?? ''}`}
+      className={`relative block overflow-hidden bg-n-sunken p-0 ${className ?? ''}`}
       style={style}
       aria-label={
         overlayLabel ? `View photos, ${overlayLabel} more` : 'View photo'
@@ -70,7 +70,7 @@ export function StoryPhotoCollage({
   }
 
   const press = (index: number) => () => onPressPhoto?.(index)
-  const wrap = `overflow-hidden rounded-xl bg-[#1a1525] ${className}`
+  const wrap = `overflow-hidden rounded-xl bg-n-sunken ${className}`
 
   if (photos.length === 1) {
     return (

@@ -19,36 +19,36 @@ export default function RequestDeletionPage() {
         of the options below.
       </p>
 
-      <section className="rounded-xl border border-white/10 bg-white/5 p-5">
-        <h2 className="mb-2 text-lg font-semibold text-white">Option 1: In the app (fastest)</h2>
-        <p className="text-gray-300">
-          Open {siteConfig.name} → <strong className="text-white">Profile</strong> →{' '}
-          <strong className="text-white">Settings</strong> → scroll down and tap{' '}
-          <strong className="text-white">Delete account</strong>. Confirm to permanently delete your account and
+      <section className="rounded-2xl border border-n-line bg-n-surface p-5">
+        <h2 className="mb-2 text-lg font-semibold text-n-ink">Option 1: In the app (fastest)</h2>
+        <p className="text-n-ink-2">
+          Open {siteConfig.name} → <strong className="font-semibold text-n-ink">Profile</strong> →{' '}
+          <strong className="font-semibold text-n-ink">Settings</strong> → scroll down and tap{' '}
+          <strong className="font-semibold text-n-ink">Delete account</strong>. Confirm to permanently delete your account and
           data. This cannot be undone.
         </p>
       </section>
 
-      <section className="rounded-xl border border-white/10 bg-white/5 p-5">
-        <h2 className="mb-2 text-lg font-semibold text-white">Option 2: By email</h2>
-        <p className="text-gray-300">
+      <section className="rounded-2xl border border-n-line bg-n-surface p-5">
+        <h2 className="mb-2 text-lg font-semibold text-n-ink">Option 2: By email</h2>
+        <p className="text-n-ink-2">
           If you cannot access the app, send an email with the subject{' '}
-          <strong className="text-white">Account and data deletion request</strong> and the email address you used
+          <strong className="font-semibold text-n-ink">Account and data deletion request</strong> and the email address you used
           to sign up. We will process your request in line with our Privacy Policy.
         </p>
         <p className="mt-3">
-          <a href={mailto} className="break-all text-violet-400 underline hover:text-violet-300">
+          <a href={mailto} className="break-all font-medium text-n-accent-strong underline underline-offset-2">
             Request deletion by email ({siteConfig.supportEmail})
           </a>
         </p>
       </section>
 
-      <p className="text-sm text-gray-500">
-        <Link href={siteRoutes.privacyPolicy} className="text-violet-400 underline hover:text-violet-300">
+      <p className="text-sm text-n-subtle">
+        <Link href={siteRoutes.privacyPolicy} className="font-medium text-n-accent-strong underline underline-offset-2">
           Privacy Policy
         </Link>
         {' · '}
-        <Link href={siteRoutes.termsOfService} className="text-violet-400 underline hover:text-violet-300">
+        <Link href={siteRoutes.termsOfService} className="font-medium text-n-accent-strong underline underline-offset-2">
           Terms of Service
         </Link>
       </p>

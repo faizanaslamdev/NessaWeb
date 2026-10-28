@@ -21,9 +21,9 @@ function ChatPageInner() {
 
   if (resolved.kind === 'error') {
     return (
-      <div className="fixed inset-0 z-0 flex flex-col items-center justify-center gap-4 bg-black px-6 text-center">
-        <p className="text-gray-300">{resolved.message}</p>
-        <Button asChild className="bg-purple-600 text-white hover:bg-purple-700">
+      <div className="fixed inset-0 z-0 flex flex-col items-center justify-center gap-4 bg-n-canvas px-6 text-center">
+        <p className="text-n-ink-2">{resolved.message}</p>
+        <Button asChild className="bg-n-accent text-white hover:bg-n-accent-strong">
           <Link href="/chat">Back to lobby</Link>
         </Button>
       </div>
@@ -41,7 +41,7 @@ export default function ChatPage() {
   return (
     <Suspense
       fallback={
-        <div className="fixed inset-0 z-0 flex items-center justify-center bg-black text-gray-400">
+        <div className="fixed inset-0 z-0 flex items-center justify-center bg-n-canvas text-n-muted">
           Loading…
         </div>
       }

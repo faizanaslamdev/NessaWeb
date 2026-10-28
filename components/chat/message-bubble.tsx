@@ -78,7 +78,7 @@ function ChevronIcon({ up, className }: { up: boolean; className?: string }) {
 function SenderBadge({ label }: { label: string }) {
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full border border-violet-400/40 bg-violet-500/15 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-violet-200"
+      className="inline-flex items-center gap-1 rounded-full border border-n-accent-line bg-n-accent-soft px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-n-accent-strong"
       title="Verified business"
     >
       <svg viewBox="0 0 24 24" fill="none" className="size-2.5" aria-hidden>
@@ -176,7 +176,7 @@ export default function MessageBubble({
       className={`mb-4 flex gap-2 ${isSent ? 'justify-end' : 'justify-start'}`}
     >
       {!isSent && avatar && (
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-purple-600 to-violet-600 text-xs font-semibold text-white">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-n-accent-soft text-xs font-semibold text-n-accent-strong">
           {avatar}
         </div>
       )}
@@ -185,7 +185,7 @@ export default function MessageBubble({
         className={`flex max-w-xs flex-col sm:max-w-md ${isSent ? 'items-end' : 'items-start'}`}
       >
         {!isSent && (
-          <p className="mb-1 flex flex-wrap items-center gap-1.5 px-2 text-xs text-gray-400">
+          <p className="mb-1 flex flex-wrap items-center gap-1.5 px-2 text-xs text-n-muted">
             <span>{senderName}</span>
             {senderBadge ? <SenderBadge label={senderBadge} /> : null}
           </p>
@@ -198,25 +198,25 @@ export default function MessageBubble({
         <div
           className={`wrap-break-word rounded-2xl px-4 py-2.5 ${
             isSent
-              ? 'rounded-br-none bg-linear-to-r from-purple-600 to-violet-600 text-white'
-              : 'rounded-bl-none border border-white/20 bg-white/10 text-gray-100'
+              ? 'rounded-br-md bg-n-accent text-white'
+              : 'rounded-bl-md border border-n-line bg-n-surface text-n-ink shadow-n-card'
           }`}
         >
           <p className="whitespace-pre-wrap wrap-break-word text-sm">{message}</p>
 
           {!isSent && showTranslationPending && (
-            <div className="mt-2 flex items-center gap-2 border-t border-white/20 pt-2">
+            <div className="mt-2 flex items-center gap-2 border-t border-n-line-soft pt-2">
               <span
-                className="inline-block size-3.5 animate-spin rounded-full border-2 border-gray-400 border-t-transparent"
+                className="inline-block size-3.5 animate-spin rounded-full border-2 border-n-faint border-t-transparent"
                 aria-hidden
               />
-              <p className="text-[13px] italic text-gray-400">Translating...</p>
+              <p className="text-[13px] italic text-n-muted">Translating...</p>
             </div>
           )}
 
           {!isSent && showTranslation && translationToShow?.trim() && (
-            <div className="mt-2 border-t border-white/20 pt-2">
-              <p className="whitespace-pre-wrap wrap-break-word text-[13px] italic text-white/80">
+            <div className="mt-2 border-t border-n-line-soft pt-2">
+              <p className="whitespace-pre-wrap wrap-break-word text-[13px] italic text-n-muted">
                 {translationToShow}
               </p>
             </div>
@@ -270,7 +270,7 @@ export default function MessageBubble({
           )}
         </div>
         {timestamp && (
-          <p className="mt-1 px-2 text-xs text-gray-500">{timestamp}</p>
+          <p className="mt-1 px-2 text-xs text-n-subtle">{timestamp}</p>
         )}
       </div>
     </motion.div>

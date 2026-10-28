@@ -14,7 +14,7 @@ export default function AuthActionPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-black text-sm text-gray-400">
+        <div className="flex min-h-screen items-center justify-center bg-n-canvas text-sm text-n-muted">
           Loading…
         </div>
       }

@@ -20,7 +20,7 @@ const textareaVariants = cva(
         ].join(' '),
         landing: [
           'min-h-[120px] resize-none rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder:text-gray-500',
-          'focus-visible:border-purple-500/50 focus-visible:ring-purple-500/20',
+          'focus-visible:border-n-accent focus-visible:ring-n-accent/20',
         ].join(' '),
       },
     },

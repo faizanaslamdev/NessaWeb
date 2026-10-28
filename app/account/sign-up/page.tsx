@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
-import Link from 'next/link'
 
 import { AccountShell } from '@/components/account/account-shell'
+import { AuthSwitchLink } from '@/components/account/auth-switch-link'
 import { SignUpForm } from '@/components/account/sign-up-form'
 import { accountRoutes } from '@/lib/account/constants'
 import { siteConfig } from '@/lib/constants'
@@ -15,14 +15,15 @@ export const metadata: Metadata = {
 export default function SignUpPage() {
   return (
     <AccountShell
+      aside
       title="Create your account"
-      subtitle="For business owners managing their place on Nessa."
+      subtitle="One account for the NessaChat app and website."
       footer={
         <>
           Already have an account?{' '}
-          <Link href={accountRoutes.signIn} className="font-medium text-n-accent-strong hover:underline">
-            Sign in
-          </Link>
+          <Suspense fallback={null}>
+            <AuthSwitchLink href={accountRoutes.signIn}>Sign in</AuthSwitchLink>
+          </Suspense>
         </>
       }
     >

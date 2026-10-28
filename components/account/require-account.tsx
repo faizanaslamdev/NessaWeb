@@ -19,7 +19,7 @@ import { accountRoutes } from '@/lib/account/constants'
  * This is UX only: every business / admin action is also enforced
  * server-side in Cloud Functions and Firestore rules.
  */
-export function RequireAccount({ children }: { children: ReactNode }) {
+export function RequireAccount({ children, inline = false }: { children: ReactNode; /** Inside a page layout (no full-screen frame). */ inline?: boolean }) {
   const { user, loading, emailVerified, resendVerification, refresh, signOut } = useAccountAuth()
   const router = useRouter()
   const pathname = usePathname()
@@ -33,12 +33,12 @@ export function RequireAccount({ children }: { children: ReactNode }) {
   }, [loading, user, router, pathname])
 
   if (loading || !user) {
-    return <FullPageLoading />
+    return <FullPageLoading inline={inline} />
   }
 
   if (!emailVerified) {
     return (
-      <div className="n-dash flex min-h-dvh flex-col items-center justify-center bg-n-canvas px-4 py-12 text-n-ink">
+      <div className={`n-dash flex flex-col items-center justify-center bg-n-canvas px-4 py-12 text-n-ink ${inline ? 'min-h-[360px]' : 'min-h-dvh'}`}>
         <div className={`w-full max-w-[420px] ${accountCardClass} text-center`}>
           <Image src="/logo.png" alt="" width={40} height={40} className="mx-auto h-10 w-10" />
           <h1 className="text-lg font-semibold">Verify your email</h1>
@@ -83,9 +83,9 @@ export function RequireAccount({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
-export function FullPageLoading({ label = 'Loading…' }: { label?: string }) {
+export function FullPageLoading({ label = 'Loading…', inline = false }: { label?: string; inline?: boolean }) {
   return (
-    <div className="n-dash flex min-h-dvh flex-col items-center justify-center gap-3 bg-n-canvas text-sm text-n-muted">
+    <div className={`n-dash flex flex-col items-center justify-center gap-3 bg-n-canvas text-sm text-n-muted ${inline ? 'min-h-[360px]' : 'min-h-dvh'}`}>
       <Image src="/logo.png" alt="" width={36} height={36} className="h-9 w-9" priority />
       <span className="inline-flex items-center gap-2">
         <Spinner size={14} /> {label}

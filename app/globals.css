@@ -276,3 +276,82 @@ body:has(.n-dash) {
 .n-dash .grid > * {
   min-width: 0;
 }
+
+/* ───────────────────────── Public website ─────────────────────────
+ * Same light, warm-neutral palette as the dashboards (n-* tokens) so the
+ * site, business tools and admin console read as one product.
+ */
+.n-site {
+  color-scheme: light;
+  background: #f7f6f3;
+  color: #1b1a17;
+  font-feature-settings: 'ss01' on;
+  -webkit-font-smoothing: antialiased;
+}
+body:has(.n-site) {
+  background: #f7f6f3;
+}
+.n-site :focus-visible {
+  outline: 2px solid #5b46e5;
+  outline-offset: 2px;
+}
+.n-site ::selection {
+  background: #ddd6fb;
+}
+.n-display {
+  letter-spacing: -0.035em;
+  font-weight: 650;
+  text-wrap: balance;
+}
+.n-prose p,
+.n-prose li {
+  color: #3b3833;
+  line-height: 1.7;
+}
+.n-prose h2 {
+  margin-top: 2.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: #1b1a17;
+}
+.n-prose h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #1b1a17;
+}
+.n-prose p + p {
+  margin-top: 0.9rem;
+}
+.n-prose ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0.75rem 0;
+}
+.n-prose li + li {
+  margin-top: 0.35rem;
+}
+.n-prose a {
+  color: #4a36c9;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+/* Speech-bubble corner used for Nessa "chat" accents. */
+.n-bubble {
+  border-radius: 18px 18px 18px 6px;
+}
+.n-bubble-me {
+  border-radius: 18px 18px 6px 18px;
+}
+.n-no-scrollbar {
+  scrollbar-width: none;
+}
+.n-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+/* Grid children may shrink below their content (long words, wide widgets). */
+.n-site .grid > * {
+  min-width: 0;
+}

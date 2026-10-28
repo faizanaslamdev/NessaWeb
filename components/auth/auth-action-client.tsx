@@ -55,16 +55,16 @@ function mapAuthError(
 
 function StatusBlock({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-center">
-      <h2 className="mb-2 text-lg font-semibold text-white">{title}</h2>
-      <p className="text-sm text-gray-400">{body}</p>
+    <div className="rounded-2xl border border-n-line bg-n-surface p-5 text-center">
+      <h2 className="mb-2 text-lg font-semibold text-n-ink">{title}</h2>
+      <p className="text-sm text-n-muted">{body}</p>
     </div>
   )
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-black px-6 py-12 text-white">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-n-canvas px-6 py-12 text-n-ink">
       <div className="w-full max-w-md">
         <p className="mb-1 text-center text-xs font-medium uppercase tracking-wide text-violet-400">
           {siteConfig.name}
@@ -73,8 +73,8 @@ function Shell({ children }: { children: React.ReactNode }) {
         {children}
         <div className="mt-8 flex flex-col items-center">
           <OpenAppFallback openLabel="Open NessaChat" />
-          <p className="mt-4 text-center text-xs text-gray-600">
-            <Link href={siteRoutes.requestDeletion} className="text-violet-400 hover:text-violet-300">
+          <p className="mt-4 text-center text-xs text-n-subtle">
+            <Link href={siteRoutes.requestDeletion} className="text-violet-400 hover:text-n-accent-strong">
               Account deletion help
             </Link>
           </p>
@@ -155,7 +155,7 @@ function VerifyEmailAction({ oobCode }: { oobCode: string }) {
   return (
     <Shell>
       {state.kind === 'loading' ? (
-        <p className="text-center text-sm text-gray-400">Verifying your email…</p>
+        <p className="text-center text-sm text-n-muted">Verifying your email…</p>
       ) : null}
 
       {state.kind === 'invalid' || state.kind === 'expired' ? (
@@ -235,7 +235,7 @@ function PasswordResetForm({ oobCode }: { oobCode: string }) {
   return (
     <Shell>
       {state.kind === 'loading' ? (
-        <p className="text-center text-sm text-gray-400">Checking your link…</p>
+        <p className="text-center text-sm text-n-muted">Checking your link…</p>
       ) : null}
 
       {state.kind === 'invalid' || state.kind === 'expired' ? (
@@ -250,37 +250,37 @@ function PasswordResetForm({ oobCode }: { oobCode: string }) {
       ) : null}
 
       {state.kind === 'ready' ? (
-        <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-5">
-          <p className="text-sm text-gray-300">
+        <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-n-line bg-n-surface p-5">
+          <p className="text-sm text-n-ink-2">
             Choose a new password
             {state.emailHint ? (
               <>
                 {' '}
-                for <span className="text-white">{state.emailHint}</span>
+                for <span className="text-n-ink">{state.emailHint}</span>
               </>
             ) : null}
             .
           </p>
-          <label className="block text-left text-xs text-gray-400">
+          <label className="block text-left text-xs text-n-muted">
             New password
             <input
               type="password"
               autoComplete="new-password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500"
+              className="mt-1 w-full rounded-xl border border-n-line-strong bg-n-surface px-3 py-2.5 text-sm text-n-ink outline-none focus:border-n-accent"
               minLength={6}
               required
             />
           </label>
-          <label className="block text-left text-xs text-gray-400">
+          <label className="block text-left text-xs text-n-muted">
             Confirm password
             <input
               type="password"
               autoComplete="new-password"
               value={confirm}
               onChange={e => setConfirm(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500"
+              className="mt-1 w-full rounded-xl border border-n-line-strong bg-n-surface px-3 py-2.5 text-sm text-n-ink outline-none focus:border-n-accent"
               minLength={6}
               required
             />
@@ -289,7 +289,7 @@ function PasswordResetForm({ oobCode }: { oobCode: string }) {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-60"
+            className="w-full rounded-xl bg-n-accent px-4 py-3 text-sm font-semibold text-white hover:bg-n-accent-strong disabled:opacity-60"
           >
             {submitting ? 'Updating…' : 'Update password'}
           </button>

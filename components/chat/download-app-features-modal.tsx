@@ -46,7 +46,7 @@ export default function DownloadAppFeaturesModal({
         <button
           type="button"
           aria-label="Close"
-          className="absolute inset-0 min-h-full bg-black/75 backdrop-blur-sm"
+          className="absolute inset-0 min-h-full bg-[rgb(27_26_23/0.45)] backdrop-blur-sm"
           onClick={onClose}
         />
         <motion.div
@@ -56,9 +56,9 @@ export default function DownloadAppFeaturesModal({
           initial={{ opacity: 0, y: 16, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="relative z-10 w-full max-w-md rounded-2xl border border-white/15 bg-linear-to-br from-white/12 to-white/5 p-5 shadow-2xl shadow-black/50 sm:p-6"
+          className="relative z-10 w-full max-w-md rounded-2xl border border-n-line-strong bg-n-surface p-5 shadow-2xl shadow-[rgb(27_26_23/0.12)] sm:p-6"
         >
-          <div className="mb-1 flex items-center gap-2 text-purple-200">
+          <div className="mb-1 flex items-center gap-2 text-n-accent-strong">
             {placement === 'chat' ? (
               <>
                 <PaperclipIcon className="size-5 shrink-0" aria-hidden />
@@ -71,10 +71,10 @@ export default function DownloadAppFeaturesModal({
               </>
             )}
           </div>
-          <h2 id="download-app-features-title" className="text-lg font-semibold text-white sm:text-xl">
+          <h2 id="download-app-features-title" className="text-lg font-semibold text-n-ink sm:text-xl">
             {placement === 'chat' ? 'Full features in the app' : 'Download NessaChat'}
           </h2>
-          <p className="mt-2 text-sm text-gray-400">
+          <p className="mt-2 text-sm text-n-muted">
             {placement === 'chat' ? (
               <>
                 Attachments, camera, voice, and more work in the NessaChat mobile app. Web instant chat is text-only for
@@ -88,13 +88,13 @@ export default function DownloadAppFeaturesModal({
             )}
           </p>
           <div className="mt-6">
-            <p className="mb-3 text-center text-xs text-gray-500">Download NessaChat</p>
+            <p className="mb-3 text-center text-xs text-n-subtle">Download NessaChat</p>
             <AppStoreButtons />
           </div>
           <Button
             type="button"
             variant="outline"
-            className="mt-5 w-full border-white/20 text-white hover:bg-white/10"
+            className="mt-5 w-full border-n-line-strong text-n-ink hover:bg-n-hover"
             onClick={onClose}
           >
             {placement === 'chat' ? 'Continue in browser' : 'Close'}

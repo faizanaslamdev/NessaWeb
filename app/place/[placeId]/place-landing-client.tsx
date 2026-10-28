@@ -4,10 +4,8 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 
 import {
-  appStores,
   placeAppDeepLink,
   siteConfig,
-  siteRoutes,
 } from '@/lib/constants'
 import { buildPlacePageTitle } from '@/lib/place-title'
 import {
@@ -21,14 +19,17 @@ import {
   type PublicPlaceRecommender,
   type PublicPlaceStoryPreview,
 } from '@/lib/place-landing'
+import { Icon, type IconName } from '@/components/dash/icons'
 import { StoryPhotoCollage } from '@/components/place/story-photo-collage'
 import { StoryMediaViewer } from '@/components/place/story-media-viewer'
 import { PlaceSheet } from '@/components/place/place-sheet'
 import { PlaceCoverShareQr } from '@/components/place/place-share-qr'
 import { PlacePrearrivalCopy } from '@/components/place/place-prearrival-copy'
 import { PlaceOfficialSection, VerifiedBadge } from '@/components/place/place-official-section'
-import { accountRoutes } from '@/lib/account/constants'
 import { PlaceWifiCard } from '@/components/place/place-wifi-card'
+import { Container, StoreBadges, siteButtonClass } from '@/components/site/ui'
+import { accountRoutes } from '@/lib/account/constants'
+import { placeTypeLabel } from '@/lib/place-directory'
 import { placePhotoUrlForWebVariant } from '@/lib/place-photo'
 import { isValidPlaceSlug, placeChatCanonicalPath } from '@/lib/place-slug'
 import {
@@ -134,17 +135,17 @@ function formatStoryType(type?: string): string | null {
 function storyTypeClasses(type?: string): string {
   switch (type) {
     case 'language_question':
-      return 'bg-violet-500/15 text-violet-300'
+      return 'bg-[#eeebfd] text-[#4a36c9]'
     case 'travel_update':
-      return 'bg-blue-500/15 text-blue-300'
+      return 'bg-[#e6effc] text-[#1f5fbf]'
     case 'recommendation':
-      return 'bg-emerald-500/15 text-emerald-300'
+      return 'bg-[#e3f2ee] text-[#0e6b5c]'
     case 'daily_life':
-      return 'bg-amber-500/15 text-amber-300'
+      return 'bg-[#fbf0dd] text-[#8a4a06]'
     case 'cultural_post':
-      return 'bg-orange-500/15 text-orange-300'
+      return 'bg-[#fbeee4] text-[#a2531c]'
     default:
-      return 'bg-white/10 text-gray-300'
+      return 'bg-n-sunken text-n-ink-2'
   }
 }
 
@@ -161,8 +162,9 @@ function initialLetter(name: string): string {
 }
 
 /**
- * Business-first Place QR landing with read-only social proof.
- * Recommend / Open try the native deep link; store fallback stays secondary.
+ * Public Place page: who recommends it, their stories, the live chat, guest
+ * Wi-Fi and the verified business layer. Server-rendered content hydrates
+ * here, then refreshes quietly.
  */
 export function PlaceLandingClient({
   placeId,
@@ -250,39 +252,25 @@ export function PlaceLandingClient({
 
   if (!placeIdValid || state.kind === 'invalid') {
     return (
-      <Shell>
-        <StatusBlock
-          title="Invalid place link"
-          body="This QR or URL doesn’t point to a valid Nessa place."
-        />
-        <StoreFallback className="mt-8" />
-      </Shell>
+      <StatusBlock
+        title="This place link isn’t valid"
+        body="The QR code or link doesn’t point to a place on NessaChat."
+      />
     )
   }
 
   if (state.kind === 'error') {
     return (
-      <Shell>
-        <StatusBlock title={state.title} body={state.body} />
-        <div className="mt-6 w-full max-w-sm space-y-3">
-          <a
-            href={deepLink}
-            className="inline-flex w-full items-center justify-center rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-gray-200 no-underline hover:bg-white/10"
-          >
-            Open in Nessa
-          </a>
-        </div>
-        <StoreFallback className="mt-6" />
-      </Shell>
+      <StatusBlock title={state.title} body={state.body}>
+        <a href={deepLink} className={siteButtonClass('secondary', 'md')}>
+          Open in the app
+        </a>
+      </StatusBlock>
     )
   }
 
   if (state.kind !== 'ready') {
-    return (
-      <Shell>
-        <PlaceSkeleton />
-      </Shell>
-    )
+    return <PlaceSkeleton />
   }
 
   const { place } = state
@@ -292,177 +280,238 @@ export function PlaceLandingClient({
   const moreStories = Math.max(0, place.storyCount - stories.length)
   const rawCoverUrl = place.coverImageUrl?.trim() || ''
   const coverUrl =
-    placePhotoUrlForWebVariant(rawCoverUrl, 'landing') ?? rawCoverUrl
+    placePhotoUrlForWebVariant(rawCoverUrl, 'lightbox') ?? rawCoverUrl
   const coverLightboxUrl =
     placePhotoUrlForWebVariant(rawCoverUrl, 'lightbox') ?? rawCoverUrl
   const hasCover = coverUrl.startsWith('https://') && !coverBroken
   const canonicalSlug = place.slug ?? slug ?? null
+  const realPlaceId = place.googlePlaceId || placeId
   // Clean chat URL when the Place has a slug; legacy chat route otherwise.
   const chatHref =
     canonicalSlug && isValidPlaceSlug(canonicalSlug)
       ? placeChatCanonicalPath(canonicalSlug)
       : `/place/${encodeURIComponent(place.googlePlaceId)}/chat`
+  const retention = placeChatRetentionLabel(place.chatRetentionHours ?? PLACE_CHAT_DEFAULT_RETENTION_HOURS)
+  const claimHref = `${accountRoutes.claim}/${encodeURIComponent(realPlaceId)}`
+  const hasCommunity = recommenders.length > 0 || stories.length > 0
 
   return (
-    <Shell>
-      <div className="w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-        <div className="relative aspect-[16/10] w-full bg-[#14101f]">
-          {hasCover ? (
-            <button
-              type="button"
-              onClick={() => setCoverViewerOpen(true)}
-              className="group relative block h-full w-full cursor-zoom-in p-0"
-              aria-label={`View photo of ${place.name}`}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element -- remote Google Places media URLs */}
-              <img
-                src={coverUrl}
-                alt=""
-                className="h-full w-full object-cover"
-                fetchPriority="high"
-                onError={() => {
-                  setCoverBroken(true)
-                  setCoverViewerOpen(false)
-                }}
-              />
-              <span className="pointer-events-none absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
-            </button>
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-gray-500">
-              {siteConfig.name}
-            </div>
-          )}
-          <PlaceCoverShareQr
-            placeId={place.googlePlaceId || placeId}
-            slug={place.slug ?? slug ?? null}
-            placeName={place.name}
-          />
-        </div>
+    <>
+      <Container className="pt-6 pb-16 sm:pt-8 lg:pb-20">
+        <nav aria-label="Breadcrumb" className="mb-5 flex min-w-0 items-center gap-1.5 text-[13px] text-n-subtle">
+          <Link href="/places" className="shrink-0 text-n-subtle no-underline hover:text-n-ink">
+            Places
+          </Link>
+          {place.city ? (
+            <>
+              <span aria-hidden>/</span>
+              <Link
+                href={`/places?town=${encodeURIComponent(place.city)}`}
+                className="shrink-0 text-n-subtle no-underline hover:text-n-ink"
+              >
+                {place.city}
+              </Link>
+            </>
+          ) : null}
+          <span aria-hidden>/</span>
+          <span aria-current="page" className="truncate text-n-ink-2">
+            {place.name}
+          </span>
+        </nav>
 
-        <div className="space-y-3 p-5 text-left">
-          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-            <p className="min-w-0 flex-1 self-center text-xs font-medium uppercase leading-none tracking-wide text-violet-400 [overflow-wrap:anywhere]">
-              {place.placeType}
-            </p>
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-[14px] font-medium text-n-accent-strong">{placeTypeLabel(place.placeType)}</p>
+            <h1 className="n-display mt-1 flex flex-wrap items-center gap-x-3 gap-y-2 text-[32px] leading-[1.1] sm:text-[44px]">
+              <span className="[overflow-wrap:anywhere]">{place.name}</span>
+              {place.business ? <VerifiedBadge className="translate-y-0.5" /> : null}
+            </h1>
+            {location || place.formattedAddress ? (
+              <p className="mt-2 flex items-start gap-1.5 text-[15px] text-n-muted">
+                <Icon name="pin" size={16} className="mt-0.5 shrink-0" />
+                <span>
+                  {place.formattedAddress && place.formattedAddress !== location ? place.formattedAddress : location}
+                </span>
+              </p>
+            ) : null}
+            <ul className="mt-4 flex flex-wrap gap-2 text-[13px]">
+              <StatPill icon="star" value={place.recommenderCount} label="recommended" />
+              <StatPill icon="image" value={place.storyCount} label={place.storyCount === 1 ? 'story' : 'stories'} />
+              {place.visitedCount > 0 ? <StatPill icon="users" value={place.visitedCount} label="visited" /> : null}
+            </ul>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <PlaceCoverShareQr placeId={realPlaceId} slug={canonicalSlug} placeName={place.name} variant="buttons" />
             <a
               href={deepLink}
               title={`Opens this place in ${siteConfig.name} so you can recommend it.`}
-              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#2A2A2A] px-2.5 py-1.5 text-[13px] font-bold text-[#22C55E] no-underline transition-colors hover:bg-[rgba(34,197,94,0.15)] sm:px-3 sm:py-2"
+              className={siteButtonClass('secondary', 'md')}
             >
-              <StarIcon className="size-4 shrink-0" />
+              <Icon name="star" size={16} />
               Recommend
             </a>
           </div>
-          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight text-white">
-            {place.name}
-            {place.business ? <VerifiedBadge className="translate-y-px" /> : null}
-          </h1>
-          {location ? <p className="text-sm text-gray-400">{location}</p> : null}
-          {place.formattedAddress && place.formattedAddress !== location ? (
-            <p className="text-xs text-gray-500">{place.formattedAddress}</p>
-          ) : null}
+        </div>
 
-          <div className="flex flex-wrap gap-3 pt-2 text-xs text-gray-400">
-            <span>
-              <span className="font-semibold text-white">
-                {formatCount(place.recommenderCount)}
-              </span>{' '}
-              recommended
-            </span>
-            <span className="text-white/20">·</span>
-            <span>
-              <span className="font-semibold text-white">
-                {formatCount(place.storyCount)}
-              </span>{' '}
-              stories
-            </span>
-            {place.visitedCount > 0 ? (
-              <>
-                <span className="text-white/20">·</span>
-                <span>
-                  <span className="font-semibold text-white">
-                    {formatCount(place.visitedCount)}
-                  </span>{' '}
-                  visited
-                </span>
-              </>
-            ) : null}
+        <div className="relative mt-6 overflow-hidden rounded-3xl bg-n-sunken">
+          <div className={hasCover ? 'aspect-[4/3] w-full sm:aspect-[2/1] lg:aspect-[5/2]' : 'h-36 w-full sm:h-44'}>
+            {hasCover ? (
+              <button
+                type="button"
+                onClick={() => setCoverViewerOpen(true)}
+                className="group relative block h-full w-full cursor-zoom-in p-0"
+                aria-label={`View photo of ${place.name}`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- remote Google Places media URLs */}
+                <img
+                  src={coverUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  fetchPriority="high"
+                  onError={() => {
+                    setCoverBroken(true)
+                    setCoverViewerOpen(false)
+                  }}
+                />
+                <span className="pointer-events-none absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/5" />
+              </button>
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-2 text-n-faint">
+                <Icon name="image" size={36} strokeWidth={1.4} />
+                <span className="text-[13px]">No photo yet</span>
+              </div>
+            )}
           </div>
         </div>
-      </div>
 
-      <StoryMediaViewer
-        key={coverViewerOpen ? `cover-${coverLightboxUrl}` : 'cover-closed'}
-        open={coverViewerOpen && hasCover}
-        uris={hasCover ? [coverLightboxUrl] : []}
-        initialIndex={0}
-        onClose={() => setCoverViewerOpen(false)}
-      />
-
-      <div className="mt-6 w-full max-w-sm space-y-3">
-        <a
-          href={chatHref}
-          aria-label="Join Live Chat"
-          className="inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-[#8B5CF6] px-4 py-3.5 text-[15px] font-bold text-white no-underline transition-colors hover:bg-[#7C3AED] sm:min-h-[52px]"
-        >
-          <MessageCircleIcon className="size-[18px] shrink-0" />
-          Join Live Chat
-        </a>
-        <p className="text-center text-xs leading-4 text-[#737373]">
-          See what&apos;s happening here now · messages last{' '}
-          {placeChatRetentionLabel(place.chatRetentionHours ?? PLACE_CHAT_DEFAULT_RETENTION_HOURS)}
-        </p>
-        <div className="text-center">
-          <PlacePrearrivalCopy
-            placeId={place.googlePlaceId || placeId}
-            slug={canonicalSlug}
-            placeName={place.name}
-          />
-        </div>
-      </div>
-
-      {place.wifi ? (
-        <div className="mt-6 w-full max-w-sm">
-          <PlaceWifiCard wifi={place.wifi} />
-        </div>
-      ) : null}
-
-      {place.business ? (
-        <>
-          <PlaceOfficialSection business={place.business} />
-          <p className="mt-2 text-center text-[11px] text-gray-600">
-            Run this place?{' '}
-            <Link href={accountRoutes.business} className="text-gray-500 underline-offset-2 hover:text-gray-300 hover:underline">
-              Manage it in business tools
-            </Link>
-          </p>
-        </>
-      ) : (
-        <p className="mt-4 text-center text-[11px] text-gray-600">
-          Own or manage this place? Claim it to add Wi-Fi and official details.{' '}
-          <Link
-            href={`${accountRoutes.claim}/${encodeURIComponent(place.googlePlaceId || placeId)}`}
-            className="text-gray-500 underline-offset-2 hover:text-gray-300 hover:underline"
-          >
-            Claim this place
-          </Link>
-        </p>
-      )}
-
-      {recommenders.length > 0 ? (
-        <RecommendedBySection
-          placeId={place.googlePlaceId}
-          recommenders={recommenders}
-          recommenderCount={place.recommenderCount}
+        <StoryMediaViewer
+          key={coverViewerOpen ? `cover-${coverLightboxUrl}` : 'cover-closed'}
+          open={coverViewerOpen && hasCover}
+          uris={hasCover ? [coverLightboxUrl] : []}
+          initialIndex={0}
+          onClose={() => setCoverViewerOpen(false)}
         />
-      ) : null}
 
-      {stories.length > 0 ? (
-        <StoriesSection stories={stories} moreCount={moreStories} />
-      ) : null}
+        <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-12">
+          <div className="min-w-0 space-y-10">
+            {/* Phones: Wi-Fi first — it's what guests scanning a QR look for. */}
+            {place.wifi ? <PlaceWifiCard wifi={place.wifi} className="lg:hidden" /> : null}
+            {place.business ? <PlaceOfficialSection business={place.business} /> : null}
 
-      <StoreFallback className="mt-8" />
-    </Shell>
+            {recommenders.length > 0 ? (
+              <RecommendedBySection
+                placeId={place.googlePlaceId}
+                recommenders={recommenders}
+                recommenderCount={place.recommenderCount}
+              />
+            ) : null}
+
+            {stories.length > 0 ? (
+              <StoriesSection stories={stories} moreCount={moreStories} />
+            ) : null}
+
+            {!hasCommunity ? (
+              <section className="rounded-2xl border border-dashed border-n-line-strong bg-n-surface px-6 py-10 text-center">
+                <Icon name="star" size={26} className="mx-auto text-n-faint" />
+                <h2 className="mt-3 text-[17px] font-semibold">Be the first to recommend {place.name}</h2>
+                <p className="mx-auto mt-1.5 max-w-md text-[15px] leading-6 text-n-muted">
+                  Been here? Add a recommendation or a story in the NessaChat app so other travellers know what to
+                  expect.
+                </p>
+                <a href={deepLink} className={siteButtonClass('secondary', 'md', 'mt-5')}>
+                  Recommend in the app
+                </a>
+              </section>
+            ) : null}
+          </div>
+
+          <aside aria-label="Live chat and guest info" className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+            <section aria-labelledby="live-chat-title" className="rounded-2xl border border-n-line bg-n-surface p-5 shadow-n-card">
+              <div className="flex items-center gap-2">
+                <span className="relative flex size-2.5">
+                  <span className="absolute inline-flex size-full rounded-full bg-[#1f9d6b] opacity-30" />
+                  <span className="relative inline-flex size-2.5 rounded-full bg-[#1f9d6b]" />
+                </span>
+                <h2 id="live-chat-title" className="text-[16px] font-semibold">
+                  Live chat
+                </h2>
+              </div>
+              <p className="mt-2 text-[14px] leading-6 text-n-muted">
+                Talk with everyone at {place.name} — guests, locals{place.business ? ' and the team' : ''}. Messages are
+                translated into your language and last {retention}.
+              </p>
+              <a href={chatHref} className={siteButtonClass('primary', 'lg', 'mt-4 w-full')}>
+                <Icon name="chat" size={18} />
+                Join live chat
+              </a>
+              <p className="mt-2.5 text-center text-[12px] text-n-subtle">No app or sign-up needed.</p>
+              <div className="mt-3 border-t border-n-line-soft pt-3 text-center">
+                <PlacePrearrivalCopy placeId={realPlaceId} slug={canonicalSlug} placeName={place.name} />
+              </div>
+            </section>
+
+            {place.wifi ? <PlaceWifiCard wifi={place.wifi} className="hidden lg:block" /> : null}
+
+            {place.business ? (
+              <section className="rounded-2xl border border-n-line bg-n-surface p-5">
+                <p className="text-[14px] text-n-muted">
+                  Managed by <span className="font-semibold text-n-ink">{place.business.name}</span>, a verified
+                  business on Nessa.
+                </p>
+                <Link href={accountRoutes.business} className="mt-2 inline-block text-[13px] font-semibold text-n-accent-strong no-underline hover:underline">
+                  Work here? Open business tools →
+                </Link>
+              </section>
+            ) : (
+              <section aria-labelledby="claim-title" className="rounded-2xl border border-n-accent-line bg-n-accent-soft p-5">
+                <div className="flex items-start gap-3">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-n-accent text-white">
+                    <Icon name="store" size={18} />
+                  </span>
+                  <div className="min-w-0">
+                    <h2 id="claim-title" className="text-[15px] font-semibold">
+                      Is this your business?
+                    </h2>
+                    <p className="mt-1 text-[14px] leading-6 text-n-ink-2">
+                      Claim {place.name} for free to add official details and guest Wi-Fi, and to welcome guests in the
+                      live chat.
+                    </p>
+                  </div>
+                </div>
+                <Link href={claimHref} className={siteButtonClass('dark', 'md', 'mt-4 w-full')}>
+                  Claim this place
+                </Link>
+              </section>
+            )}
+
+            <section className="rounded-2xl border border-n-line bg-n-surface p-5">
+              <h2 className="text-[15px] font-semibold">Recommend it in the app</h2>
+              <p className="mt-1 text-[14px] leading-6 text-n-muted">
+                Add your recommendation, post stories and follow travellers with the NessaChat app.
+              </p>
+              <StoreBadges className="mt-4" tone="light" />
+            </section>
+          </aside>
+        </div>
+      </Container>
+
+      {/* Phone: the main action stays in reach. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-n-line bg-n-surface/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:hidden">
+        <a href={chatHref} className={siteButtonClass('primary', 'lg', 'w-full')}>
+          <Icon name="chat" size={18} />
+          Join live chat
+        </a>
+      </div>
+    </>
+  )
+}
+
+function StatPill({ icon, value, label }: { icon: IconName; value: number; label: string }) {
+  return (
+    <li className="inline-flex items-center gap-1.5 rounded-full border border-n-line bg-n-surface px-3 py-1.5 text-n-ink-2">
+      <Icon name={icon} size={14} className="text-n-accent" />
+      <span className="font-semibold text-n-ink tabular-nums">{formatCount(value)}</span> {label}
+    </li>
   )
 }
 
@@ -472,20 +521,20 @@ function RecommenderCard({ person }: { person: PublicPlaceRecommender }) {
   const note = person.note?.trim()
 
   return (
-    <li className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+    <li className="rounded-2xl border border-n-line bg-n-surface px-4 py-3.5">
       <div className="flex items-start gap-3">
         <PersonAvatar name={person.displayName} avatarUrl={person.avatarUrl} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <p className="truncate text-sm font-medium text-gray-100">
+            <p className="truncate text-[15px] font-semibold text-n-ink">
               {person.displayName}
             </p>
             {relative ? (
-              <p className="text-[11px] text-gray-500">{relative}</p>
+              <p className="text-[12px] text-n-subtle">{relative}</p>
             ) : null}
           </div>
           {note ? (
-            <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-gray-300">
+            <p className="mt-1 whitespace-pre-wrap text-[15px] leading-6 text-n-ink-2">
               {note}
             </p>
           ) : null}
@@ -508,9 +557,9 @@ function RecommendedBySection({
   const moreCount = Math.max(0, recommenderCount - recommenders.length)
 
   return (
-    <section className="mt-6 w-full text-left">
-      <h2 className="mb-3 text-sm font-semibold text-white">Recommended by</h2>
-      <ul className="space-y-2.5">
+    <section aria-labelledby="recs-title" className="w-full text-left">
+      <h2 id="recs-title" className="mb-4 text-[20px] font-semibold tracking-[-0.015em]">Recommended by</h2>
+      <ul className="grid gap-3 md:grid-cols-2">
         {recommenders.map((person, index) => (
           <RecommenderCard
             key={`${person.displayName}-${person.createdAt ?? index}`}
@@ -522,7 +571,7 @@ function RecommendedBySection({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="mt-3 text-xs font-medium text-violet-300 hover:text-violet-200"
+          className="mt-4 text-[14px] font-semibold text-n-accent-strong hover:underline"
         >
           View all {formatCount(recommenderCount)} recommendations
         </button>
@@ -556,8 +605,8 @@ function StoriesSection({
   const hydrated = useHydrated()
 
   return (
-    <section className="mt-6 w-full text-left">
-      <h2 className="mb-3 text-sm font-semibold text-white">
+    <section aria-labelledby="stories-title" className="w-full text-left">
+      <h2 id="stories-title" className="mb-4 text-[20px] font-semibold tracking-[-0.015em]">
         Stories from this place
       </h2>
       <ul className="space-y-4">
@@ -571,7 +620,7 @@ function StoriesSection({
           return (
             <li
               key={story.id}
-              className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
+              className="overflow-hidden rounded-2xl border border-n-line bg-n-surface"
             >
               <div className="space-y-3 p-4">
                 <div className="flex items-start gap-3">
@@ -581,25 +630,25 @@ function StoriesSection({
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="truncate text-sm font-semibold text-white">
+                      <p className="truncate text-[15px] font-semibold text-n-ink">
                         {story.author.displayName}
                       </p>
                       {typeLabel ? (
                         <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${storyTypeClasses(story.type)}`}
+                          className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${storyTypeClasses(story.type)}`}
                         >
                           {typeLabel}
                         </span>
                       ) : null}
                     </div>
                     {relative ? (
-                      <p className="mt-0.5 text-[11px] text-gray-500">{relative}</p>
+                      <p className="mt-0.5 text-[12px] text-n-subtle">{relative}</p>
                     ) : null}
                   </div>
                 </div>
 
                 {story.caption ? (
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-200">
+                  <p className="whitespace-pre-wrap text-[15px] leading-6 text-n-ink-2">
                     {story.caption}
                   </p>
                 ) : null}
@@ -615,11 +664,11 @@ function StoriesSection({
               ) : null}
 
               {(comments.length > 0 || commentCount > 0) && (
-                <div className="space-y-2.5 border-t border-white/10 px-4 py-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                <div className="space-y-2.5 border-t border-n-line-soft px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-n-subtle">
                     Comments
                     {commentCount > 0 ? (
-                      <span className="ml-1 font-medium normal-case text-gray-400">
+                      <span className="ml-1 font-medium normal-case text-n-muted">
                         · {formatCount(commentCount)}
                       </span>
                     ) : null}
@@ -637,14 +686,14 @@ function StoriesSection({
                             size="sm"
                           />
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs text-gray-200">
-                              <span className="font-semibold text-white">
+                            <p className="text-[13px] text-n-ink-2">
+                              <span className="font-semibold text-n-ink">
                                 {comment.displayName}
                               </span>{' '}
-                              <span className="text-gray-300">{comment.text}</span>
+                              <span>{comment.text}</span>
                             </p>
                             {hydrated && formatRelativeDate(comment.createdAt) ? (
-                              <p className="mt-0.5 text-[10px] text-gray-500">
+                              <p className="mt-0.5 text-[11px] text-n-subtle">
                                 {formatRelativeDate(comment.createdAt)}
                               </p>
                             ) : null}
@@ -657,7 +706,7 @@ function StoriesSection({
                     <button
                       type="button"
                       onClick={() => setCommentsStory(story)}
-                      className="text-xs font-medium text-violet-300 hover:text-violet-200"
+                      className="text-[13px] font-semibold text-n-accent-strong hover:underline"
                     >
                       View all {formatCount(commentCount)} comments
                     </button>
@@ -669,9 +718,9 @@ function StoriesSection({
         })}
       </ul>
       {moreCount > 0 ? (
-        <p className="mt-2 text-xs text-gray-500">
-          +{formatCount(moreCount)} more stor{moreCount === 1 ? 'y' : 'ies'} in{' '}
-          {siteConfig.name}
+        <p className="mt-3 text-[13px] text-n-subtle">
+          +{formatCount(moreCount)} more stor{moreCount === 1 ? 'y' : 'ies'} in the{' '}
+          {siteConfig.name} app
         </p>
       ) : null}
 
@@ -780,7 +829,7 @@ function RecommendersSheet({
             type="button"
             onClick={loadMore}
             disabled={loading}
-            className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-medium text-gray-200 hover:bg-white/10 disabled:opacity-50"
+            className="w-full rounded-xl border border-n-line-strong bg-n-surface px-4 py-2.5 text-sm font-semibold text-n-ink hover:bg-n-hover disabled:opacity-50"
           >
             {loading ? 'Loading…' : 'Load more'}
           </button>
@@ -792,7 +841,7 @@ function RecommendersSheet({
           {[0, 1, 2, 3].map(i => (
             <li
               key={i}
-              className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5"
+              className="rounded-xl border border-n-line bg-n-surface px-3 py-2.5"
             >
               <div className="flex items-start gap-3">
                 <SkeletonBone className="h-9 w-9 shrink-0 rounded-full" />
@@ -806,9 +855,9 @@ function RecommendersSheet({
           ))}
         </ul>
       ) : error && items.length === 0 ? (
-        <p className="py-8 text-center text-sm text-gray-400">{error}</p>
+        <p className="py-8 text-center text-sm text-n-muted">{error}</p>
       ) : items.length === 0 ? (
-        <p className="py-8 text-center text-sm text-gray-500">
+        <p className="py-8 text-center text-sm text-n-subtle">
           No recommendations yet.
         </p>
       ) : (
@@ -913,7 +962,7 @@ function CommentsSheet({
             type="button"
             onClick={loadMore}
             disabled={loading}
-            className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-medium text-gray-200 hover:bg-white/10 disabled:opacity-50"
+            className="w-full rounded-xl border border-n-line-strong bg-n-surface px-4 py-2.5 text-sm font-semibold text-n-ink hover:bg-n-hover disabled:opacity-50"
           >
             {loading ? 'Loading…' : 'Load more'}
           </button>
@@ -934,9 +983,9 @@ function CommentsSheet({
           ))}
         </ul>
       ) : error && items.length === 0 ? (
-        <p className="py-8 text-center text-sm text-gray-400">{error}</p>
+        <p className="py-8 text-center text-sm text-n-muted">{error}</p>
       ) : items.length === 0 ? (
-        <p className="py-8 text-center text-sm text-gray-500">No comments yet.</p>
+        <p className="py-8 text-center text-sm text-n-subtle">No comments yet.</p>
       ) : (
         <ul className="space-y-3">
           {items.map((comment, index) => (
@@ -950,14 +999,14 @@ function CommentsSheet({
                 size="sm"
               />
               <div className="min-w-0 flex-1">
-                <p className="text-xs text-gray-200">
-                  <span className="font-semibold text-white">
+                <p className="text-[13px] text-n-ink-2">
+                  <span className="font-semibold text-n-ink">
                     {comment.displayName}
                   </span>{' '}
-                  <span className="text-gray-300">{comment.text}</span>
+                  <span>{comment.text}</span>
                 </p>
                 {formatRelativeDate(comment.createdAt) ? (
-                  <p className="mt-0.5 text-[10px] text-gray-500">
+                  <p className="mt-0.5 text-[11px] text-n-subtle">
                     {formatRelativeDate(comment.createdAt)}
                   </p>
                 ) : null}
@@ -985,7 +1034,7 @@ function PersonAvatar({
 
   return (
     <div
-      className={`relative shrink-0 overflow-hidden rounded-full bg-violet-500/20 ${dim}`}
+      className={`relative shrink-0 overflow-hidden rounded-full bg-n-accent-soft ${dim}`}
     >
       {showImage ? (
         // eslint-disable-next-line @next/next/no-img-element -- Firebase download URLs
@@ -998,7 +1047,7 @@ function PersonAvatar({
           onError={() => setFailed(true)}
         />
       ) : (
-        <span className="flex h-full w-full items-center justify-center font-semibold text-violet-200">
+        <span className="flex h-full w-full items-center justify-center font-semibold text-n-accent-strong">
           {initialLetter(name)}
         </span>
       )}
@@ -1006,185 +1055,55 @@ function PersonAvatar({
   )
 }
 
-/** Lucide Star (v0.563) — same glyph as DiscoveryPlaceScreen Recommend. */
-function StarIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
-      <path
-        d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-/** Lucide MessageCircle (v0.563) — same glyph as DiscoveryPlaceScreen Join Live Chat. */
-function MessageCircleIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
-      <path
-        d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
 function SkeletonBone({ className }: { className?: string }) {
-  return <div className={`nessa-skeleton ${className ?? ''}`} aria-hidden />
+  return <div className={`n-skeleton ${className ?? ''}`} aria-hidden />
 }
 
 function PlaceSkeleton() {
   return (
-    <div className="w-full" aria-busy="true" aria-live="polite">
-      <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-        <SkeletonBone className="aspect-[16/10] w-full rounded-none" />
-        <div className="space-y-3 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-            <SkeletonBone className="h-3 w-20 min-w-0 flex-1 self-center rounded" />
-            <SkeletonBone className="h-8 w-[7.25rem] shrink-0 rounded-xl bg-[#2A2A2A]" />
-          </div>
-          <SkeletonBone className="h-7 w-2/3 rounded-lg" />
-          <SkeletonBone className="h-4 w-1/2 rounded" />
-          <div className="flex flex-wrap gap-3 pt-1">
-            <SkeletonBone className="h-3 w-24 rounded" />
-            <SkeletonBone className="h-3 w-20 rounded" />
-            <SkeletonBone className="h-3 w-16 rounded" />
-          </div>
+    <Container className="pt-6 pb-20 sm:pt-8">
+      <span className="sr-only" role="status" aria-busy="true">
+        Loading place…
+      </span>
+      <SkeletonBone className="h-3 w-40 rounded" />
+      <SkeletonBone className="mt-6 h-4 w-24 rounded" />
+      <SkeletonBone className="mt-3 h-10 w-2/3 max-w-md rounded-lg" />
+      <SkeletonBone className="mt-3 h-4 w-1/2 max-w-sm rounded" />
+      <SkeletonBone className="mt-6 aspect-[4/3] w-full rounded-3xl sm:aspect-[2/1] lg:aspect-[5/2]" />
+      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-12">
+        <div className="space-y-3">
+          <SkeletonBone className="h-5 w-40 rounded" />
+          <SkeletonBone className="h-24 w-full rounded-2xl" />
+          <SkeletonBone className="h-24 w-full rounded-2xl" />
+        </div>
+        <SkeletonBone className="h-56 w-full rounded-2xl" />
+      </div>
+    </Container>
+  )
+}
+
+function StatusBlock({
+  title,
+  body,
+  children,
+}: {
+  title: string
+  body: string
+  children?: React.ReactNode
+}) {
+  return (
+    <Container className="py-16 sm:py-24">
+      <div className="mx-auto max-w-lg rounded-3xl border border-n-line bg-n-surface p-8 text-center shadow-n-card">
+        <Icon name="pin" size={28} className="mx-auto text-n-faint" />
+        <h1 className="mt-4 text-[22px] font-semibold tracking-[-0.02em]">{title}</h1>
+        <p className="mt-2 text-[15px] leading-6 text-n-muted">{body}</p>
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <Link href="/places" className={siteButtonClass('primary', 'md')}>
+            Explore places
+          </Link>
+          {children}
         </div>
       </div>
-
-      <div className="mt-6 w-full max-w-sm space-y-2">
-        <SkeletonBone className="h-12 w-full rounded-xl bg-[#8B5CF6]/20 sm:h-[52px]" />
-        <SkeletonBone className="mx-auto h-3 w-56 rounded" />
-      </div>
-
-      {/*
-        Wi-Fi is omitted from the skeleton on purpose: it only renders when the
-        Place has public wifi configured (Add Wi-Fi is a tiny secondary text
-        control). Showing a permanent Wi-Fi placeholder would flash an empty
-        card for most Places.
-      */}
-
-      <div className="mt-6 w-full space-y-2.5 text-left">
-        <SkeletonBone className="h-4 w-28 rounded" />
-        {[0, 1].map(i => (
-          <div
-            key={i}
-            className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5"
-          >
-            <div className="flex items-start gap-3">
-              <SkeletonBone className="h-9 w-9 shrink-0 rounded-full" />
-              <div className="min-w-0 flex-1 space-y-2">
-                <div className="flex items-center gap-2">
-                  <SkeletonBone className="h-3.5 w-28 rounded" />
-                  <SkeletonBone className="h-2.5 w-12 rounded" />
-                </div>
-                <SkeletonBone className="h-3 w-full rounded" />
-                <SkeletonBone className="h-3 w-4/5 rounded" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-6 w-full space-y-4 text-left">
-        <SkeletonBone className="h-4 w-40 rounded" />
-        {[0, 1].map(i => (
-          <div
-            key={i}
-            className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
-          >
-            <div className="space-y-3 p-4">
-              <div className="flex items-start gap-3">
-                <SkeletonBone className="h-9 w-9 shrink-0 rounded-full" />
-                <div className="min-w-0 flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <SkeletonBone className="h-3.5 w-28 rounded" />
-                    <SkeletonBone className="h-4 w-16 rounded-full" />
-                  </div>
-                  <SkeletonBone className="h-2.5 w-14 rounded" />
-                </div>
-              </div>
-              <SkeletonBone className="h-3 w-full rounded" />
-              <SkeletonBone className="h-3 w-2/3 rounded" />
-            </div>
-            <div className="px-2 pb-2 sm:px-3 sm:pb-3">
-              <SkeletonBone className="h-[220px] w-full rounded-xl sm:h-[260px]" />
-            </div>
-            <div className="space-y-2.5 border-t border-white/10 px-4 py-3">
-              <SkeletonBone className="h-2.5 w-20 rounded" />
-              <div className="flex gap-2.5">
-                <SkeletonBone className="h-7 w-7 shrink-0 rounded-full" />
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  <SkeletonBone className="h-3 w-3/4 rounded" />
-                  <SkeletonBone className="h-2 w-10 rounded" />
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <p className="mt-8 text-center text-sm text-gray-500">Loading place…</p>
-    </div>
-  )
-}
-
-function Shell({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex min-h-screen flex-col items-center bg-black px-5 py-10 text-white">
-      <div className="mb-6 flex w-full max-w-md items-center justify-between">
-        <Link
-          href="/"
-          className="text-sm font-semibold tracking-tight text-white no-underline"
-        >
-          {siteConfig.name}
-        </Link>
-        <Link
-          href={siteRoutes.privacyPolicy}
-          className="text-xs text-gray-500 no-underline hover:text-gray-300"
-        >
-          Privacy
-        </Link>
-      </div>
-      <div className="flex w-full max-w-md flex-col items-center">{children}</div>
-    </div>
-  )
-}
-
-function StatusBlock({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-5 text-center">
-      <h1 className="mb-2 text-lg font-semibold text-white">{title}</h1>
-      <p className="text-sm text-gray-400">{body}</p>
-    </div>
-  )
-}
-
-function StoreFallback({ className = '' }: { className?: string }) {
-  return (
-    <div className={`flex w-full max-w-sm flex-col items-center gap-3 ${className}`}>
-      <p className="text-xs text-gray-500">Don&apos;t have the app?</p>
-      <div className="flex w-full flex-col gap-2 sm:flex-row">
-        {appStores.map(store => (
-          <a
-            key={store.name}
-            href={store.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex flex-1 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-xs font-medium text-gray-200 no-underline hover:bg-white/10"
-          >
-            {store.label}
-          </a>
-        ))}
-      </div>
-    </div>
+    </Container>
   )
 }

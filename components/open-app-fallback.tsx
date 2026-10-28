@@ -32,11 +32,11 @@ export function OpenAppFallback({
     <div className={`flex w-full max-w-sm flex-col items-center gap-3 ${className}`}>
       <a
         href={deepLink}
-        className="inline-flex w-full items-center justify-center rounded-xl bg-violet-600 px-6 py-3 text-sm font-semibold text-white no-underline hover:bg-violet-500"
+        className="inline-flex w-full items-center justify-center rounded-xl bg-n-accent px-6 py-3 text-sm font-semibold text-white no-underline hover:bg-n-accent-strong"
       >
         {openLabel}
       </a>
-      <p className="text-xs text-gray-500">Don&apos;t have the app?</p>
+      <p className="text-xs text-n-subtle">Don&apos;t have the app?</p>
       <div className="flex w-full flex-col gap-2 sm:flex-row">
         {appStores.map(store => (
           <a
@@ -44,20 +44,20 @@ export function OpenAppFallback({
             href={store.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex flex-1 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-xs font-medium text-gray-200 no-underline hover:bg-white/10"
+            className="inline-flex flex-1 items-center justify-center rounded-xl border border-n-line-strong bg-n-surface px-4 py-2.5 text-xs font-medium text-n-ink no-underline hover:bg-n-hover"
           >
             {store.label}
           </a>
         ))}
       </div>
-      <p className="mt-2 text-center text-xs text-gray-600">
+      <p className="mt-2 text-center text-xs text-n-subtle">
         <Link href="/" className="text-violet-400 no-underline hover:text-violet-300">
           {siteConfig.name} home
         </Link>
         {' · '}
         <Link
           href={siteRoutes.privacyPolicy}
-          className="text-violet-400 no-underline hover:text-violet-300"
+          className="text-violet-400 no-underline hover:text-n-accent-strong"
         >
           Privacy
         </Link>
