@@ -71,16 +71,9 @@ export default async function PlacesPage() {
 
       <section id="search" className="scroll-mt-20 py-8 sm:py-10">
         <Container>
-          {places.length ? (
-            <Suspense fallback={<PlacesGridStatic places={places} />}>
-              <PlacesBrowser places={places} />
-            </Suspense>
-          ) : (
-            <div className="rounded-2xl border border-n-line bg-n-surface px-6 py-12 text-center">
-              <p className="text-[17px] font-semibold">Places are taking a moment to load</p>
-              <p className="mt-1.5 text-[15px] text-n-muted">Please refresh the page in a minute.</p>
-            </div>
-          )}
+          <Suspense fallback={places.length ? <PlacesGridStatic places={places} /> : <div className="n-skeleton h-[480px] rounded-2xl" aria-hidden />}>
+            <PlacesBrowser places={places} />
+          </Suspense>
         </Container>
       </section>
 

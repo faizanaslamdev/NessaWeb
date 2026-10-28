@@ -193,7 +193,7 @@ export function PlaceCoverShareQr({
 
   if (variant === 'buttons') {
     const btn =
-      'inline-flex h-10 items-center gap-2 rounded-[10px] border border-n-line-strong bg-n-surface px-3.5 text-[14px] font-semibold text-n-ink shadow-n-card transition-colors hover:bg-n-hover disabled:opacity-50'
+      'inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-n-line-strong bg-n-surface px-3 text-[13px] font-semibold text-n-ink shadow-n-card transition-colors hover:bg-n-hover disabled:opacity-50 sm:h-10 sm:gap-2 sm:px-3.5 sm:text-[14px]'
     return (
       <>
         <button type="button" className={btn} onClick={onShare} disabled={!shareUrl}>
