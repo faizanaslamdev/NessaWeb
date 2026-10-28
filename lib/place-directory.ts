@@ -7,6 +7,7 @@
  * and the browser photo fetch in `place-directory-client.ts`.
  */
 
+import { isNessaPhotoUrl } from '@/lib/place-photo'
 import { isValidPlaceSlug, placeCanonicalPath } from '@/lib/place-slug'
 
 export type DirectoryPlace = {
@@ -20,7 +21,10 @@ export type DirectoryPlace = {
   storyCount: number
   visitedCount: number
   verified: boolean
-  /** Only keyless photo URLs travel in server HTML; others load in the browser. */
+  /**
+   * NessaChat cover (our own photo). Listings never show Google photos: each
+   * view would be a billed Google request.
+   */
   photoUrl?: string
   lastActivityAt?: number
 }
@@ -138,10 +142,10 @@ export function compactCount(n: number): string {
   return String(n)
 }
 
-/** Drops key-bearing Google photo URLs (they must not be cached in HTML). */
+/** Keeps only NessaChat-hosted photos (drops Google / unknown hosts). */
 export function stripKeyedPhoto(place: DirectoryPlace): DirectoryPlace {
   if (!place.photoUrl) return place
-  if (/[?&]key=/.test(place.photoUrl) || !place.photoUrl.startsWith('https://')) {
+  if (/[?&]key=/.test(place.photoUrl) || !isNessaPhotoUrl(place.photoUrl)) {
     return { ...place, photoUrl: undefined }
   }
   return place
@@ -168,7 +172,7 @@ export function parseDirectoryPlace(raw: unknown): DirectoryPlace | null {
   }
   if (isValidPlaceSlug(s(r.slug))) place.slug = s(r.slug)
   if (s(r.country)) place.country = s(r.country)
-  if (s(r.photoUrl).startsWith('https://')) place.photoUrl = s(r.photoUrl)
+  if (isNessaPhotoUrl(s(r.photoUrl)) && !/[?&]key=/.test(s(r.photoUrl))) place.photoUrl = s(r.photoUrl)
   if (typeof r.lastActivityAt === 'number') place.lastActivityAt = r.lastActivityAt
   return place
 }

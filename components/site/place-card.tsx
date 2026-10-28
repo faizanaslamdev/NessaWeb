@@ -1,36 +1,11 @@
 'use client'
 
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
 import { Icon, type IconName } from '@/components/dash/icons'
 import { VerifiedMark, cx } from '@/components/site/ui'
-import { cardPhotoUrl, loadDirectoryPhotos } from '@/lib/place-directory-client'
 import { compactCount, placeCategory, placeHref, placeTypeLabel, type DirectoryPlace } from '@/lib/place-directory'
-
-/* One shared photo map for every card on the page (one callable per tab). */
-let photos: Record<string, string> = {}
-let requested = false
-const listeners = new Set<() => void>()
-function subscribe(fn: () => void) {
-  listeners.add(fn)
-  if (!requested) {
-    requested = true
-    void loadDirectoryPhotos().then(p => {
-      photos = p
-      listeners.forEach(l => l())
-    })
-  }
-  return () => listeners.delete(fn)
-}
-function usePhotoUrl(place: DirectoryPlace): string | null {
-  const fromMap = useSyncExternalStore(
-    subscribe,
-    () => photos[place.placeId] ?? null,
-    () => null,
-  )
-  return place.photoUrl ?? fromMap
-}
 
 const CATEGORY_ICON: Record<string, IconName> = { stay: 'home', eat: 'chat', beach: 'sparkle', do: 'compass' }
 const CATEGORY_TINT: Record<string, string> = {
@@ -43,13 +18,13 @@ const CATEGORY_TINT: Record<string, string> = {
 export function PlacePhoto({
   place,
   className,
-  sizes = 480,
 }: {
   place: DirectoryPlace
   className?: string
-  sizes?: number
 }) {
-  const url = usePhotoUrl(place)
+  // NessaChat cover only (from the server). No cover → styled placeholder;
+  // listings never load Google photos.
+  const url = place.photoUrl ?? null
   const [failed, setFailed] = useState(false)
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -62,9 +37,9 @@ export function PlacePhoto({
         <Icon name={place.placeType.toLowerCase() === 'locality' ? 'pin' : CATEGORY_ICON[category]} size={34} strokeWidth={1.5} />
       </div>
       {url && !failed ? (
-        // eslint-disable-next-line @next/next/no-img-element -- Google Places media URLs
+        // eslint-disable-next-line @next/next/no-img-element -- our own pre-sized variant (no optimizer cost)
         <img
-          src={cardPhotoUrl(url, sizes)}
+          src={url}
           alt=""
           loading="lazy"
           decoding="async"
@@ -128,7 +103,7 @@ export function PlaceRow({
   const where = [place.city, place.country].filter(Boolean).join(', ')
   const body = (
     <>
-      <PlacePhoto place={place} className="size-12 shrink-0 rounded-xl [&_svg]:size-5" sizes={160} />
+      <PlacePhoto place={place} className="size-12 shrink-0 rounded-xl [&_svg]:size-5" />
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
           <span className="truncate text-[15px] font-semibold text-n-ink">{place.name}</span>

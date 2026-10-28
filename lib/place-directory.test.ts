@@ -65,7 +65,9 @@ describe('place directory helpers', () => {
     assert.equal(compactCount(1200), '1.2k')
     assert.equal(compactCount(15400), '15k')
     assert.equal(stripKeyedPhoto(p('a', 'b', 'Hotel', { photoUrl: 'https://places.googleapis.com/v1/x/media?key=K' })).photoUrl, undefined)
-    assert.equal(stripKeyedPhoto(p('a', 'b', 'Hotel', { photoUrl: 'https://lh3.googleusercontent.com/x' })).photoUrl, 'https://lh3.googleusercontent.com/x')
+    assert.equal(stripKeyedPhoto(p('a', 'b', 'Hotel', { photoUrl: 'https://lh3.googleusercontent.com/x' })).photoUrl, undefined)
+    const own = 'https://firebasestorage.googleapis.com/v0/b/nessa-86e2f.appspot.com/o/places%2Fx%2Ffeed.jpg?alt=media&token=t'
+    assert.equal(stripKeyedPhoto(p('a', 'b', 'Hotel', { photoUrl: own })).photoUrl, own)
   })
   it('parses callable rows defensively', () => {
     assert.equal(parseDirectoryPlace({ placeId: 'bad', name: 'x' }), null)

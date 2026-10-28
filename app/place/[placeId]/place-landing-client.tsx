@@ -30,7 +30,13 @@ import { PlaceWifiCard } from '@/components/place/place-wifi-card'
 import { Container, StoreBadges, siteButtonClass } from '@/components/site/ui'
 import { accountRoutes } from '@/lib/account/constants'
 import { placeTypeLabel } from '@/lib/place-directory'
-import { placePhotoUrlForWebVariant } from '@/lib/place-photo'
+import { isNessaPhotoUrl, placePhotoUrlForWebVariant } from '@/lib/place-photo'
+import {
+  GoogleMapsMark,
+  GooglePhotoCredit,
+  NessaPhotoCredit,
+  PlaceGallerySection,
+} from '@/components/place/place-photos'
 import { isValidPlaceSlug, placeChatCanonicalPath } from '@/lib/place-slug'
 import {
   PLACE_CHAT_DEFAULT_RETENTION_HOURS,
@@ -279,11 +285,15 @@ export function PlaceLandingClient({
   const stories = place.stories ?? []
   const moreStories = Math.max(0, place.storyCount - stories.length)
   const rawCoverUrl = place.coverImageUrl?.trim() || ''
-  const coverUrl =
-    placePhotoUrlForWebVariant(rawCoverUrl, 'lightbox') ?? rawCoverUrl
-  const coverLightboxUrl =
-    placePhotoUrlForWebVariant(rawCoverUrl, 'lightbox') ?? rawCoverUrl
-  const hasCover = coverUrl.startsWith('https://') && !coverBroken
+  // NessaChat's own cover, or Google's photo (fallback, shown with its credits).
+  const nessaCover = place.coverSource === 'nessa' || isNessaPhotoUrl(rawCoverUrl)
+  const coverUrl = nessaCover
+    ? rawCoverUrl
+    : (placePhotoUrlForWebVariant(rawCoverUrl, 'lightbox') ?? rawCoverUrl)
+  const coverLightboxUrl = coverUrl
+  const hasCover = (coverUrl.startsWith('https://') || nessaCover) && !coverBroken
+  // Name, address and type come from Google Maps for every Place.
+  const showsGoogleData = Boolean(place.formattedAddress || place.placeType)
   const canonicalSlug = place.slug ?? slug ?? null
   const realPlaceId = place.googlePlaceId || placeId
   // Clean chat URL when the Place has a slug; legacy chat route otherwise.
@@ -355,14 +365,14 @@ export function PlaceLandingClient({
 
         <div className="relative mt-6 overflow-hidden rounded-3xl bg-n-sunken">
           <div className={hasCover ? 'aspect-[4/3] w-full sm:aspect-[2/1] lg:aspect-[5/2]' : 'h-36 w-full sm:h-44'}>
-            {hasCover ? (
+            {hasCover && nessaCover ? (
               <button
                 type="button"
                 onClick={() => setCoverViewerOpen(true)}
                 className="group relative block h-full w-full cursor-zoom-in p-0"
                 aria-label={`View photo of ${place.name}`}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element -- remote Google Places media URLs */}
+                {/* eslint-disable-next-line @next/next/no-img-element -- our own photo (Firebase Storage) */}
                 <img
                   src={coverUrl}
                   alt=""
@@ -375,6 +385,17 @@ export function PlaceLandingClient({
                 />
                 <span className="pointer-events-none absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/5" />
               </button>
+            ) : hasCover ? (
+              // Google's photo: loaded in the browser only (key-bearing, billed
+              // per load), never enlarged, always credited.
+              // eslint-disable-next-line @next/next/no-img-element -- remote Google Places media URL
+              <img
+                src={coverUrl}
+                alt=""
+                className="h-full w-full object-cover"
+                fetchPriority="high"
+                onError={() => setCoverBroken(true)}
+              />
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-2 text-n-faint">
                 <Icon name="image" size={36} strokeWidth={1.4} />
@@ -382,11 +403,20 @@ export function PlaceLandingClient({
               </div>
             )}
           </div>
+          {hasCover ? (
+            <div className="pointer-events-none absolute right-3 bottom-3 left-3 flex justify-end [&_a]:pointer-events-auto">
+              {nessaCover ? (
+                <NessaPhotoCredit name={place.coverCredit} />
+              ) : (
+                <GooglePhotoCredit attribution={place.googlePhotoAttribution} />
+              )}
+            </div>
+          ) : null}
         </div>
 
         <StoryMediaViewer
           key={coverViewerOpen ? `cover-${coverLightboxUrl}` : 'cover-closed'}
-          open={coverViewerOpen && hasCover}
+          open={coverViewerOpen && hasCover && nessaCover}
           uris={hasCover ? [coverLightboxUrl] : []}
           initialIndex={0}
           onClose={() => setCoverViewerOpen(false)}
@@ -397,6 +427,7 @@ export function PlaceLandingClient({
             {/* Phones: Wi-Fi first — it's what guests scanning a QR look for. */}
             {place.wifi ? <PlaceWifiCard wifi={place.wifi} className="lg:hidden" /> : null}
             {place.business ? <PlaceOfficialSection business={place.business} /> : null}
+            {place.photos?.length ? <PlaceGallerySection photos={place.photos} placeName={place.name} /> : null}
 
             {recommenders.length > 0 ? (
               <RecommendedBySection
@@ -422,6 +453,11 @@ export function PlaceLandingClient({
                   Recommend in the app
                 </a>
               </section>
+            ) : null}
+            {showsGoogleData ? (
+              <p className="text-[12px] text-n-subtle">
+                Place name, address and type from <GoogleMapsMark className="text-n-muted" />.
+              </p>
             ) : null}
           </div>
 

@@ -51,6 +51,19 @@ export type PublicPlaceLanding = {
   country?: string
   formattedAddress?: string
   coverImageUrl?: string
+  /**
+   * `nessa`: our own photo (fine in HTML / OG). `google`: Google's photo —
+   * key-bearing and billed per load; show it with `googlePhotoAttribution`.
+   */
+  coverSource?: 'nessa' | 'google'
+  /** Smaller variant of a NessaChat cover. */
+  coverFeedUrl?: string
+  /** Credit for a NessaChat cover ("Photo: Ana"). */
+  coverCredit?: string
+  /** Required credits for a Google cover. */
+  googlePhotoAttribution?: GooglePhotoAttribution
+  /** NessaChat gallery (business / admin uploads). */
+  photos?: PublicPlacePhoto[]
   recommenderCount: number
   storyCount: number
   visitedCount: number
@@ -64,6 +77,21 @@ export type PublicPlaceLanding = {
   business?: PublicBusinessProfile
   /** Place Chat message retention in hours (admin-managed; 24 when unset). */
   chatRetentionHours?: number
+}
+
+export type GooglePhotoAttribution = {
+  authors: { displayName: string; uri?: string }[]
+  googleMapsUri?: string
+}
+
+export type PublicPlacePhoto = {
+  id: string
+  url: string
+  feedUrl?: string
+  width?: number
+  height?: number
+  creditName?: string
+  caption?: string
 }
 
 export type PublicBusinessProfile = {
