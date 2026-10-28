@@ -114,6 +114,7 @@ export class PublicPlaceLandingError extends Error {
 
 export type SetPlaceWifiPublicErrorCode =
   | 'invalid-argument'
+  | 'unauthenticated'
   | 'not-found'
   | 'permission-denied'
   | 'resource-exhausted'
@@ -174,10 +175,16 @@ function mapSetWifiError(err: unknown): SetPlaceWifiPublicError {
       ? (err as { message: string }).message.replace(/^[^:]+:\s*/, '')
       : ''
 
+  if (code.includes('unauthenticated')) {
+    return new SetPlaceWifiPublicError(
+      'unauthenticated',
+      'Sign in with a verified email to manage this place.',
+    )
+  }
   if (code.includes('permission-denied')) {
     return new SetPlaceWifiPublicError(
       'permission-denied',
-      'Incorrect PIN.',
+      'Only Nessa admins and this place’s business team can change its Wi-Fi.',
     )
   }
   if (code.includes('invalid-argument')) {
@@ -377,15 +384,14 @@ export async function fetchPublicStoryComments(input: {
 }
 
 /**
- * Wi-Fi write. The server authorizes either a signed-in verified business
- * member (no PIN; the Firebase ID token travels with the callable) or, for an
- * unclaimed Place, the pilot management PIN. The client never writes
- * Firestore places directly.
+ * Wi-Fi write / remove. The server allows Nessa admins (any Place) and the
+ * Place's business — owners, and managers on the Places assigned to them —
+ * signed in with a verified email (the Firebase ID token travels with the
+ * callable). Every change is audited. The client never writes Firestore
+ * places directly.
  */
 export async function setPlaceWifiPublic(input: {
   placeId: string
-  /** Pilot PIN — omit when calling as a signed-in business member. */
-  pin?: string
   networkName: string
   password: string
   note?: string
@@ -398,7 +404,6 @@ export async function setPlaceWifiPublic(input: {
     const callable = httpsCallable<
       {
         placeId: string
-        pin?: string
         networkName: string
         password: string
         note?: string
@@ -408,7 +413,6 @@ export async function setPlaceWifiPublic(input: {
     >(getCallableFunctions(), 'setPlaceWifiPublic')
     const result = await callable({
       placeId: input.placeId.trim(),
-      ...(input.pin !== undefined ? { pin: input.pin.trim() } : {}),
       networkName: input.networkName,
       password: input.password,
       ...(input.note !== undefined ? { note: input.note } : {}),
@@ -438,24 +442,17 @@ export async function setPlaceWifiPublic(input: {
   }
 }
 
-/** Temporary pilot: verify management PIN without writing Wi-Fi. */
-export async function verifyPlaceWifiManagementPin(input: {
-  placeId: string
-  pin: string
-}): Promise<void> {
+/** Remove a Place's Wi-Fi (same permissions as `setPlaceWifiPublic`). */
+export async function removePlaceWifi(input: { placeId: string }): Promise<void> {
   if (!isPublicPlaceIdValid(input.placeId)) {
     throw new SetPlaceWifiPublicError('invalid-argument', 'Invalid place.')
   }
   try {
     const callable = httpsCallable<
-      { placeId: string; pin: string; verifyOnly: true },
-      { verified?: boolean }
+      { placeId: string; remove: true },
+      { removed?: boolean }
     >(getCallableFunctions(), 'setPlaceWifiPublic')
-    await callable({
-      placeId: input.placeId.trim(),
-      pin: input.pin.trim(),
-      verifyOnly: true,
-    })
+    await callable({ placeId: input.placeId.trim(), remove: true })
   } catch (e) {
     throw mapSetWifiError(e)
   }

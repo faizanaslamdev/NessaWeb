@@ -20,7 +20,6 @@ import {
   type PublicPlaceLanding,
   type PublicPlaceRecommender,
   type PublicPlaceStoryPreview,
-  type PublicPlaceWifi,
 } from '@/lib/place-landing'
 import { StoryPhotoCollage } from '@/components/place/story-photo-collage'
 import { StoryMediaViewer } from '@/components/place/story-media-viewer'
@@ -30,7 +29,6 @@ import { PlacePrearrivalCopy } from '@/components/place/place-prearrival-copy'
 import { PlaceOfficialSection, VerifiedBadge } from '@/components/place/place-official-section'
 import { accountRoutes } from '@/lib/account/constants'
 import { PlaceWifiCard } from '@/components/place/place-wifi-card'
-import { PlaceWifiManageSheet } from '@/components/place/place-wifi-manage-sheet'
 import { placePhotoUrlForWebVariant } from '@/lib/place-photo'
 import { isValidPlaceSlug, placeChatCanonicalPath } from '@/lib/place-slug'
 import {
@@ -182,7 +180,6 @@ export function PlaceLandingClient({
   })
   const [coverViewerOpen, setCoverViewerOpen] = useState(false)
   const [coverBroken, setCoverBroken] = useState(false)
-  const [wifiManageOpen, setWifiManageOpen] = useState(false)
 
   useEffect(() => {
     if (state.kind === 'ready') {
@@ -426,22 +423,9 @@ export function PlaceLandingClient({
 
       {place.wifi ? (
         <div className="mt-6 w-full max-w-sm">
-          <PlaceWifiCard
-            wifi={place.wifi}
-            onEdit={place.business ? undefined : () => setWifiManageOpen(true)}
-          />
+          <PlaceWifiCard wifi={place.wifi} />
         </div>
-      ) : place.business ? null : (
-        <div className="mt-4 w-full max-w-sm text-center">
-          <button
-            type="button"
-            onClick={() => setWifiManageOpen(true)}
-            className="text-[11px] font-medium text-gray-600 underline-offset-2 hover:text-gray-400 hover:underline"
-          >
-            Add Wi-Fi
-          </button>
-        </div>
-      )}
+      ) : null}
 
       {place.business ? (
         <>
@@ -455,7 +439,7 @@ export function PlaceLandingClient({
         </>
       ) : (
         <p className="mt-4 text-center text-[11px] text-gray-600">
-          Own or manage this place?{' '}
+          Own or manage this place? Claim it to add Wi-Fi and official details.{' '}
           <Link
             href={`${accountRoutes.claim}/${encodeURIComponent(place.googlePlaceId || placeId)}`}
             className="text-gray-500 underline-offset-2 hover:text-gray-300 hover:underline"
@@ -464,27 +448,6 @@ export function PlaceLandingClient({
           </Link>
         </p>
       )}
-
-      <PlaceWifiManageSheet
-        open={wifiManageOpen}
-        placeId={place.googlePlaceId}
-        initialWifi={place.wifi ?? null}
-        onClose={() => setWifiManageOpen(false)}
-        onSaved={(wifi: PublicPlaceWifi | null) => {
-          setState(prev => {
-            if (prev.kind !== 'ready') {
-              return prev
-            }
-            const next: PublicPlaceLanding = { ...prev.place }
-            if (wifi) {
-              next.wifi = wifi
-            } else {
-              delete next.wifi
-            }
-            return { kind: 'ready', place: next }
-          })
-        }}
-      />
 
       {recommenders.length > 0 ? (
         <RecommendedBySection

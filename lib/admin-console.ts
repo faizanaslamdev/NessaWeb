@@ -10,13 +10,14 @@ import { AdminActionError, ADMIN_ROLE_LABELS, isAdminRole, type AdminRole } from
 import { getFirebaseClient } from '@/lib/firebase'
 import { placeChatRetentionLabel } from '@/lib/place-chat/retention'
 
-export type AuditScope = 'admins' | 'chat' | 'links' | 'business'
+export type AuditScope = 'admins' | 'chat' | 'links' | 'business' | 'places'
 
 export const AUDIT_SCOPE_LABELS: Record<AuditScope, string> = {
   admins: 'Admin team',
   chat: 'Live chat',
   links: 'Links & QR',
   business: 'Businesses',
+  places: 'Place details',
 }
 
 export type ConsoleAuditItem = {
@@ -155,6 +156,11 @@ export function describeAuditChange(item: ConsoleAuditItem): string {
       return `retired the QR placement “${str(d.label)}” at ${target}`
     case 'qr_placement_restore':
       return `restored the QR placement “${str(d.label)}” at ${target}`
+    // Place details
+    case 'wifi_update':
+      return `${d.networkName ? `set the guest Wi-Fi to “${str(d.networkName)}”` : 'updated the guest Wi-Fi'} at ${target}`
+    case 'wifi_remove':
+      return `removed the guest Wi-Fi at ${target}`
     // Businesses
     case 'claim_approve':
       return `approved ${str(d.email) || 'a claim'} as ${roleLabel(d.grantedRole) || 'member'} of ${target}`

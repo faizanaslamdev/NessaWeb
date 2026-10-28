@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * Admin: one Place — stats, QR codes, live chat settings, business & team,
+ * Admin: one Place — stats, QR codes, live chat settings, guest Wi-Fi, business & team,
  * and history in one page. Works for Places without a business (Cumbuco).
  * Every call is authorized by its callable (admin role on the backend).
  */
@@ -30,6 +30,7 @@ import {
 } from '@/components/dash/ui'
 import { ChatRetentionPanel } from '@/components/manage/chat-retention'
 import { QrStudio } from '@/components/manage/qr-studio'
+import { PlaceWifiPanel } from '@/components/manage/wifi-panel'
 import { getPlaceHistory, type ConsoleAuditItem } from '@/lib/admin-console'
 import { parsePlaceRef, resolvePlaceRef } from '@/lib/admin-chats'
 import { isGooglePlaceId } from '@/lib/place-chat/constants'
@@ -38,8 +39,8 @@ import { BusinessActionError, listQrPlacements, type QrPlacement, type QrPlaceme
 import { fetchPublicPlaceLanding, type PublicPlaceLanding } from '@/lib/place-landing'
 import { placeChatOutboundUrl, placeOutboundUrl, placePublicUrl } from '@/lib/place-slug'
 
-type Tab = 'overview' | 'qr' | 'chat' | 'business' | 'history'
-const TABS: Tab[] = ['overview', 'qr', 'chat', 'business', 'history']
+type Tab = 'overview' | 'qr' | 'chat' | 'guests' | 'business' | 'history'
+const TABS: Tab[] = ['overview', 'qr', 'chat', 'guests', 'business', 'history']
 
 type State =
   | { kind: 'loading' }
@@ -244,6 +245,7 @@ function AdminPlaceDetailById({ placeId }: { placeId: string }) {
             { value: 'overview', label: 'Stats' },
             { value: 'qr', label: 'QR codes', count: placements.filter(p => p.active).length },
             { value: 'chat', label: 'Live chat' },
+            { value: 'guests', label: 'Guest info' },
             { value: 'business', label: 'Business' },
             { value: 'history', label: 'History' },
           ]}
@@ -273,6 +275,27 @@ function AdminPlaceDetailById({ placeId }: { placeId: string }) {
                 </ButtonLink>
                 <CopyButton text={chatUrl} label="Copy chat link" size="md" />
               </div>
+            </Panel>
+          </div>
+        ) : tab === 'guests' ? (
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+            <PlaceWifiPanel
+              key={`${placeId}:${landing ? 'l' : 'n'}`}
+              placeId={placeId}
+              initial={landing?.wifi ?? null}
+              hasWifi={Boolean(landing?.wifi)}
+              audience="admin"
+              onChange={() => {
+                void fetchPublicPlaceLanding(placeId)
+                  .then(setLanding)
+                  .catch(() => undefined)
+              }}
+            />
+            <Panel className="self-start">
+              <PanelHeader icon="shield" title="Who can change this" />
+              <p className="px-5 pb-5 text-[13px] leading-5 text-n-muted max-sm:px-4">
+                Nessa admins, and this place’s business — the owner, and managers assigned to it. Every change is recorded in History.
+              </p>
             </Panel>
           </div>
         ) : tab === 'business' ? (
