@@ -30,13 +30,28 @@ export const AUTH_EMAIL_ACTION_CODE_SETTINGS = {
   handleCodeInApp: false,
 } as const
 
+/** Production admin console origin (Vercel domain on the nessa-web project). */
+export const PRODUCTION_ADMIN_ORIGIN = 'https://admin.nessachat.com'
+
+/** Public-site hostnames whose admin links go to the admin console domain. */
+export const PRODUCTION_PUBLIC_HOSTS = ['nessachat.com', 'www.nessachat.com'] as const
+
 /**
- * The admin console lives at admin.nessachat.com once that domain is set up
- * (NEXT_PUBLIC_ADMIN_ORIGIN, e.g. https://admin.nessachat.com); until then,
- * and in development, at /admin on the same site.
+ * Origin of the admin console for links shown on this site:
+ * - NEXT_PUBLIC_ADMIN_ORIGIN when set (override);
+ * - https://admin.nessachat.com on the production public site;
+ * - '' (same site, /admin) in development and preview deployments.
  */
-export function adminConsoleHref(path = ''): string {
-  const origin = process.env.NEXT_PUBLIC_ADMIN_ORIGIN?.replace(/\/$/, '')
+export function adminConsoleOrigin(hostname?: string | null): string {
+  const override = process.env.NEXT_PUBLIC_ADMIN_ORIGIN?.replace(/\/$/, '')
+  if (override) return override
+  const host = (hostname ?? (typeof window !== 'undefined' ? window.location.hostname : '')).toLowerCase()
+  return (PRODUCTION_PUBLIC_HOSTS as readonly string[]).includes(host) ? PRODUCTION_ADMIN_ORIGIN : ''
+}
+
+/** Link to the admin console (optionally a page in it), e.g. adminConsoleHref('places'). */
+export function adminConsoleHref(path = '', hostname?: string | null): string {
+  const origin = adminConsoleOrigin(hostname)
   const clean = path ? `/${path.replace(/^\/+/, '')}` : ''
   return origin ? `${origin}${clean || '/'}` : `/admin${clean}`
 }
