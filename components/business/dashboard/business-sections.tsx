@@ -28,6 +28,7 @@ import {
   fieldClass,
 } from '@/components/dash/ui'
 import { QrStudio } from '@/components/manage/qr-studio'
+import { PlaceWifiPanel } from '@/components/manage/wifi-panel'
 import { accountRoutes } from '@/lib/account/constants'
 import {
   BUSINESS_CATEGORY_LABELS,
@@ -42,11 +43,6 @@ import {
 import { placeChatRetentionLabel } from '@/lib/place-chat/retention'
 import {
   fetchPublicPlaceLanding,
-  PLACE_WIFI_NETWORK_NAME_MAX,
-  PLACE_WIFI_NOTE_MAX,
-  PLACE_WIFI_PASSWORD_MAX,
-  setPlaceWifiPublic,
-  SetPlaceWifiPublicError,
   type PublicPlaceLanding,
 } from '@/lib/place-landing'
 import { buildPrearrivalCopy } from '@/lib/place-prearrival'
@@ -277,12 +273,12 @@ export function BusinessGuestsSection() {
       <ShellTitle crumbs={[{ label: 'Guest info' }]} />
       <PageHeader title="Guest info" description="Answers guests look for before and after they arrive." />
       <div className="grid items-start gap-6 lg:grid-cols-2">
-        <WifiForm
+        <PlaceWifiPanel
           key={`${place.placeId}:${landing ? 'l' : 'n'}`}
           placeId={place.placeId}
           initial={landing?.wifi ?? null}
           hasWifi={place.hasWifi}
-          onSaved={has => {
+          onChange={has => {
             patchPlace(place.placeId, { hasWifi: has })
             setReloadKey(k => k + 1)
           }}
@@ -290,107 +286,6 @@ export function BusinessGuestsSection() {
         <PrearrivalPanel />
       </div>
     </>
-  )
-}
-
-function WifiForm({
-  placeId,
-  initial,
-  hasWifi,
-  onSaved,
-}: {
-  placeId: string
-  initial: { networkName: string; password: string; note?: string } | null
-  hasWifi: boolean
-  onSaved: (hasWifi: boolean) => void
-}) {
-  const [networkName, setNetworkName] = useState(initial?.networkName ?? '')
-  const [password, setPassword] = useState(initial?.password ?? '')
-  const [note, setNote] = useState(initial?.note ?? '')
-  const [show, setShow] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
-
-  const onSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    const nn = networkName.trim()
-    const pw = password.trim()
-    if (!nn) return setError('Network name is required.')
-    if (!pw) return setError('Password is required.')
-    setBusy(true)
-    setError(null)
-    setSaved(false)
-    try {
-      await setPlaceWifiPublic({ placeId, networkName: nn, password: pw, note: note.trim(), isPublic: true })
-      setSaved(true)
-      onSaved(true)
-    } catch (err) {
-      setError(
-        err instanceof SetPlaceWifiPublicError
-          ? err.code === 'permission-denied'
-            ? 'You are not authorized to manage this place’s Wi-Fi.'
-            : err.message
-          : 'Could not save Wi-Fi. Please try again.',
-      )
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <Panel as="form" onSubmit={(e: FormEvent) => void onSubmit(e)} aria-labelledby="wifi-h" noValidate>
-      <PanelHeader
-        id="wifi-h"
-        icon="wifi"
-        title="Guest Wi-Fi"
-        description="Shown on your public page so guests don’t have to ask."
-      />
-      <div className="space-y-3 px-5 pb-5 max-sm:px-4">
-        {hasWifi && !initial ? (
-          <Notice>Wi-Fi is set but hidden from the page. Save it again here to show it.</Notice>
-        ) : null}
-        <Field label="Network name">
-          <input
-            value={networkName}
-            onChange={e => setNetworkName(e.target.value)}
-            maxLength={PLACE_WIFI_NETWORK_NAME_MAX}
-            autoComplete="off"
-            className={fieldClass}
-          />
-        </Field>
-        <Field label="Password">
-          <div className="relative">
-            <input
-              type={show ? 'text' : 'password'}
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              maxLength={PLACE_WIFI_PASSWORD_MAX}
-              autoComplete="off"
-              className={cx(fieldClass, 'pr-16')}
-            />
-            <button
-              type="button"
-              onClick={() => setShow(s => !s)}
-              className="absolute top-1/2 right-2 mt-0.5 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-medium text-n-muted hover:bg-n-hover hover:text-n-ink"
-            >
-              {show ? 'Hide' : 'Show'}
-            </button>
-          </div>
-        </Field>
-        <Field label="Note" hint="Optional — e.g. “Faster network upstairs”.">
-          <input value={note} onChange={e => setNote(e.target.value)} maxLength={PLACE_WIFI_NOTE_MAX} className={fieldClass} />
-        </Field>
-        {error ? <Notice tone="danger">{error}</Notice> : null}
-        {saved ? <Notice tone="ok">Wi-Fi saved. It’s on your public page now.</Notice> : null}
-      </div>
-      <PanelFooter>
-        <span className="text-xs text-n-subtle">Visible to anyone who opens your page.</span>
-        <Button type="submit" variant="primary" loading={busy}>
-          Save Wi-Fi
-        </Button>
-      </PanelFooter>
-    </Panel>
   )
 }
 

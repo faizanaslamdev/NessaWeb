@@ -19,6 +19,7 @@ const SCOPE_ICON: Record<AuditScope, IconName> = {
   chat: 'chat',
   links: 'qr',
   business: 'briefcase',
+  places: 'wifi',
 }
 
 /** Audit entries as a readable timeline ("who did what, when"). */

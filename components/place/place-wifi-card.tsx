@@ -7,11 +7,6 @@ import type { PublicPlaceWifi } from '@/lib/place-landing'
 type Props = {
   wifi: PublicPlaceWifi
   className?: string
-  /**
-   * Subtle pilot Edit action (web Place page only).
-   * TODO(business-profiles): keep card; swap auth for this callback later.
-   */
-  onEdit?: () => void
 }
 
 type CopyTarget = 'network' | 'password'
@@ -43,12 +38,12 @@ async function copyText(text: string): Promise<boolean> {
 
 /**
  * Public Place Wi-Fi card — password hidden by default.
- * Copy feedback stays on the Copy control so the header/Edit never reflows.
+ * Copy feedback stays on the Copy control so the header never reflows.
+ * Managed by Nessa admins and the Place's business team (dashboards).
  */
 export function PlaceWifiCard({
   wifi,
   className = '',
-  onEdit,
 }: Props) {
   const [revealed, setRevealed] = useState(false)
   const [copied, setCopied] = useState<CopyTarget | null>(null)
@@ -100,16 +95,6 @@ export function PlaceWifiCard({
         <h2 className="min-w-0 flex-1 text-sm font-semibold text-white">
           Wi-Fi
         </h2>
-        {onEdit ? (
-          <button
-            type="button"
-            onClick={onEdit}
-            className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-medium text-gray-500 hover:bg-white/5 hover:text-gray-300"
-            aria-label="Edit Wi-Fi"
-          >
-            Edit
-          </button>
-        ) : null}
       </div>
 
       <div className="space-y-3">

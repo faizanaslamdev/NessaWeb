@@ -22,6 +22,12 @@ describe('admin console helpers', () => {
       describeAuditChange({ ...base, scope: 'business', action: 'claim_approve', targetType: 'business', targetLabel: 'Kite Group', details: { email: 'o@x.dev', grantedRole: 'staff', placeId: 'ChIJp' } }),
       'approved o@x.dev as manager of Kite Group',
     )
+    assert.equal(
+      describeAuditChange({ ...base, scope: 'places', action: 'wifi_update', targetType: 'place', targetLabel: 'Kite Hotel', details: { networkName: 'Guests', isPublic: true, hasNote: false } }),
+      'set the guest Wi-Fi to “Guests” at Kite Hotel',
+    )
+    assert.equal(describeAuditChange({ ...base, scope: 'places', action: 'wifi_remove', targetType: 'place', targetLabel: 'Kite Hotel', details: {} }), 'removed the guest Wi-Fi at Kite Hotel')
+    assert.equal(auditTargetPlaceId({ ...base, scope: 'places', action: 'wifi_remove', targetType: 'place', targetId: 'ChIJh' }), 'ChIJh')
     assert.equal(describeAuditChange({ ...base, scope: 'admins', action: 'role_change', targetEmail: 'b@x.dev', role: 'admin', previousRole: 'super_admin' }), 'changed b@x.dev from Super Admin to Admin')
   })
   it('links entries to their place', () => {

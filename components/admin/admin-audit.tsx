@@ -40,7 +40,7 @@ export function AdminAudit() {
     void load(scope, null)
   }, [scope, load])
 
-  const scopes: Filter[] = ['all', 'business', 'chat', 'links', ...(role === 'super_admin' ? (['admins'] as const) : [])]
+  const scopes: Filter[] = ['all', 'business', 'places', 'chat', 'links', ...(role === 'super_admin' ? (['admins'] as const) : [])]
 
   return (
     <>
