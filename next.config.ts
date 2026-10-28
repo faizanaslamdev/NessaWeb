@@ -36,6 +36,9 @@ const nextConfig: NextConfig = {
       // Chat settings moved to each Place's page (Live chat tab).
       { source: '/admin/chats', destination: '/admin/places', permanent: false },
       { source: '/chats', has: [{ type: 'host' as const, value: ADMIN_HOST_PATTERN }], destination: '/places', permanent: false },
+      // On the admin host the console lives at the root: /admin/places → /places.
+      { source: '/admin', has: [{ type: 'host' as const, value: ADMIN_HOST_PATTERN }], destination: '/', permanent: false },
+      { source: '/admin/:path+', has: [{ type: 'host' as const, value: ADMIN_HOST_PATTERN }], destination: '/:path+', permanent: false },
       ...(ADMIN_ORIGIN
         ? [
             {

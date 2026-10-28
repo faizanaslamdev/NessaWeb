@@ -11,6 +11,7 @@ import {
 import { useAccountAuth } from '@/hooks/use-account-auth'
 import { describeAccountAuthError } from '@/lib/account/auth-errors'
 import {
+  defaultSignedInPath,
   safeNextPath,
   validateDisplayName,
   validateEmail,
@@ -20,7 +21,10 @@ import {
 export function SignUpForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const next = safeNextPath(searchParams.get('next'))
+  const next = safeNextPath(
+    searchParams.get('next'),
+    defaultSignedInPath(typeof window !== 'undefined' ? window.location.hostname : null),
+  )
   const { signUp } = useAccountAuth()
 
   const [name, setName] = useState('')
