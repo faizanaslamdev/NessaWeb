@@ -15,7 +15,7 @@ import { doc, serverTimestamp, setDoc } from 'firebase/firestore'
 
 import { getFirebaseClient } from '@/lib/firebase'
 import { AUTH_EMAIL_ACTION_CODE_SETTINGS } from '@/lib/account/constants'
-import { buildInitialUserDoc } from '@/lib/account/user-doc'
+import { buildInitialUserDoc, buildPrivateAccountDoc } from '@/lib/account/user-doc'
 import { cleanDisplayName, normalizeEmail } from '@/lib/account/validation'
 
 /**
@@ -93,13 +93,20 @@ export function useAccountAuth(): AccountAuthState & {
       await setDoc(
         doc(firestore, 'users', cred.user.uid),
         buildInitialUserDoc({
-          email: cred.user.email,
           name: cleanName,
           serverTimestamp: serverTimestamp(),
         }),
       )
     } catch {
       // The app creates/repairs the profile on its own first sign-in path.
+    }
+    try {
+      await setDoc(
+        doc(firestore, 'users', cred.user.uid, 'private', 'account'),
+        buildPrivateAccountDoc(cred.user.email),
+      )
+    } catch {
+      // Best effort: the email is also on the Auth account itself.
     }
     try {
       await updateProfile(cred.user, { displayName: cleanName })

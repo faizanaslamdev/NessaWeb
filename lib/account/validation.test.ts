@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import { describeAccountAuthError } from './auth-errors'
-import { buildInitialUserDoc } from './user-doc'
+import { buildInitialUserDoc, buildPrivateAccountDoc } from './user-doc'
 import {
   defaultSignedInPath,
   cleanDisplayName,
@@ -53,14 +53,21 @@ describe('describeAccountAuthError', () => {
 
 describe('buildInitialUserDoc', () => {
   it('matches the app profile shape', () => {
-    const doc = buildInitialUserDoc({ email: 'a@b.co', name: 'Ana', serverTimestamp: 'TS' })
+    const doc = buildInitialUserDoc({ name: 'Ana', serverTimestamp: 'TS' })
     assert.equal(doc.schemaVersion, 2)
+    assert.equal('email' in doc, false, 'email must not be on the public profile')
     assert.equal(doc.isProfileComplete, false)
     assert.equal(doc.requiresEmailVerification, true)
     assert.deepEqual(doc.socialCounts, { followers: 0, following: 0, stories: 0 })
     assert.deepEqual(doc.blockedUsers, [])
     assert.equal(doc.createdAt, 'TS')
     assert.equal((doc.settings as { translationLanguage: string }).translationLanguage, 'en')
+  })
+})
+
+describe('buildPrivateAccountDoc', () => {
+  it('keeps the email in the owner-only private doc', () => {
+    assert.deepEqual(buildPrivateAccountDoc('a@b.co'), { email: 'a@b.co' })
   })
 })
 

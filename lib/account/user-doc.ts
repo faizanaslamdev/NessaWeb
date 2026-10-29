@@ -6,19 +6,21 @@
  * without a profile doc) and goes through the app's normal profile setup
  * (`isProfileComplete: false`). Search-index fields are maintained by the
  * `onUserSearchFieldsSync` Cloud Function trigger.
+ *
+ * The email is NOT stored on the public profile (every signed-in user can read
+ * `users/{uid}`); it goes to the owner-only `users/{uid}/private/account` doc,
+ * like the 1.4.0 app (see buildPrivateAccountDoc).
  */
 
 /** Keep in sync with NessaChat/src/constants/schema.ts */
 export const WEB_USER_SCHEMA_VERSION = 2
 
 export function buildInitialUserDoc(input: {
-  email: string | null
   name: string
   serverTimestamp: unknown
 }): Record<string, unknown> {
   return {
     schemaVersion: WEB_USER_SCHEMA_VERSION,
-    email: input.email,
     name: input.name,
     avatar: '',
     country: '',
@@ -45,4 +47,9 @@ export function buildInitialUserDoc(input: {
     /** Where the account was created; informational only. */
     signupSource: 'web',
   }
+}
+
+/** Owner-only `users/{uid}/private/account` doc (rules: owner read/write). */
+export function buildPrivateAccountDoc(email: string | null): Record<string, unknown> {
+  return { email }
 }
