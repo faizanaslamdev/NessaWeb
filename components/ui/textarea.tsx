@@ -19,7 +19,8 @@ const textareaVariants = cva(
           'focus-visible:border-ring focus-visible:ring-ring/50',
         ].join(' '),
         landing: [
-          'min-h-[120px] resize-none rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder:text-gray-500',
+          // Same light n-* tokens as Input's landing variant (the chat composers sit on bg-n-surface).
+          'min-h-[120px] resize-none rounded-lg border border-n-line bg-n-surface px-4 py-2.5 text-n-ink placeholder:text-n-subtle',
           'focus-visible:border-n-accent focus-visible:ring-n-accent/20',
         ].join(' '),
       },
