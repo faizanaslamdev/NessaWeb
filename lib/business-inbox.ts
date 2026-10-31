@@ -107,8 +107,19 @@ export function buildInboxQuery(input: {
 /** Stable key for a spec (listener dependency). */
 export const inboxQueryKey = threadQueryKey
 
+/** Unread for the business: open, with unread customer messages, and still repliable. */
 export function isThreadUnread(thread: InboxThread): boolean {
-  return thread.businessUnread > 0 && thread.status === 'open'
+  return thread.businessUnread > 0 && thread.status === 'open' && !thread.customerBlocked
+}
+
+/**
+ * The rows a filter shows. "Needs reply" leaves out threads whose traveler
+ * blocked the business — nobody can reply to them (same as the app); they
+ * stay under All with a "Traveler blocked messages" label.
+ */
+export function visibleInboxThreads<T extends Pick<InboxThread, 'customerBlocked'>>(threads: T[], filter: InboxFilter): T[] {
+  if (filter !== 'needs_reply' || !threads.some(t => t.customerBlocked)) return threads
+  return threads.filter(t => !t.customerBlocked)
 }
 
 /** Nav badge: threads with unread customer messages. */

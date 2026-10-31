@@ -25,6 +25,7 @@ import {
   isThreadUnread,
   shortRelativeTime,
   staffRowLabel,
+  visibleInboxThreads,
   type InboxFilter,
   type InboxThread,
 } from '@/lib/business-inbox'
@@ -86,7 +87,7 @@ export function BusinessInboxSection() {
   )
   const own = useThreadList(spec)
   const list = sharedView ? inbox.needsReply : own
-  const threads = sharedView ? list.threads.slice(0, pageLimit) : list.threads
+  const threads = visibleInboxThreads(sharedView ? list.threads.slice(0, pageLimit) : list.threads, filter)
   const hasMore = sharedView ? list.rawCount > pageLimit : list.rawCount >= pageLimit
   const fullSpec = sharedView
     ? buildInboxQuery({ businessId: business.businessId, access: inbox.access, filter, placeId: null })

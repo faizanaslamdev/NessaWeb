@@ -26,6 +26,7 @@ import {
   staffRowLabel,
   toMillis,
   unreadBadgeLabel,
+  visibleInboxThreads,
   type InboxMessage,
   type InboxThread,
   type OutboxItem,
@@ -203,12 +204,25 @@ describe('filters and unread', () => {
         thread({ businessUnread: 0 }),
         thread({ businessUnread: 1, status: 'blocked' }),
         thread({ businessUnread: 1 }),
+        // The traveler blocked the business: nothing to reply to.
+        thread({ businessUnread: 1, customerBlocked: true }),
       ]),
       2,
     )
     assert.equal(unreadBadgeLabel(0), null)
     assert.equal(unreadBadgeLabel(3), '3')
     assert.equal(unreadBadgeLabel(100), '99+')
+  })
+})
+
+describe('visibleInboxThreads', () => {
+  it('Needs reply leaves out threads whose traveler blocked the business; other filters keep them', () => {
+    const open = thread({ id: 'a' })
+    const blockedByTraveler = thread({ id: 'b', customerBlocked: true })
+    assert.deepEqual(visibleInboxThreads([open, blockedByTraveler], 'needs_reply'), [open])
+    assert.deepEqual(visibleInboxThreads([open, blockedByTraveler], 'all'), [open, blockedByTraveler])
+    const list = [open]
+    assert.equal(visibleInboxThreads(list, 'needs_reply'), list)
   })
 })
 
