@@ -1,3 +1,4 @@
+import { ThreadAvatar } from '@/components/messaging/thread-avatar'
 import { PlaceMessageButton } from '@/components/place/place-message-button'
 import { PlaceOpeningHours } from '@/components/place/place-opening-hours'
 import { siteButtonClass } from '@/components/site/ui'
@@ -174,8 +175,8 @@ export function PlaceOfficialSection({ business, placeId }: { business: PublicBu
     <section aria-label={`About ${business.name}`} className="w-full rounded-2xl border border-n-line bg-n-surface p-5 text-left shadow-n-card sm:p-6">
       <div className="flex items-start gap-3">
         {business.logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- business-provided https URL
-          <img src={business.logoUrl} alt="" className="size-12 shrink-0 rounded-xl object-cover" />
+          // Initials under the logo; a dead logo link falls back to them.
+          <ThreadAvatar name={business.name} url={business.logoUrl} size={48} square />
         ) : null}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">

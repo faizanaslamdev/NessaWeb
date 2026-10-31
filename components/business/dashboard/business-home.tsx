@@ -32,6 +32,7 @@ import {
 import { nessaCoverUrl } from '@/lib/place-photo'
 import { fetchPublicPlaceLanding, type PublicPlaceLanding } from '@/lib/place-landing'
 import { placeOutboundUrl, placePublicUrl } from '@/lib/place-slug'
+import { ThreadAvatar } from '@/components/messaging/thread-avatar'
 
 type Step = { key: string; title: string; hint: string; href: string; done: boolean; icon: IconName }
 
@@ -153,8 +154,7 @@ export function BusinessHomeDashboard() {
           <div className="min-w-0">
             <div className="-mt-8 mb-2 inline-flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border-4 border-n-surface bg-n-surface text-lg font-semibold text-n-accent-strong shadow-n-card">
               {p.logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- owner-provided https logo
-                <img src={p.logoUrl} alt="" className="h-full w-full object-cover" />
+                <ThreadAvatar name={place.name} url={p.logoUrl} size={56} square />
               ) : (
                 <span className="flex h-full w-full items-center justify-center bg-n-accent-soft">{place.name.slice(0, 2).toUpperCase()}</span>
               )}

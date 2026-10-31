@@ -21,7 +21,7 @@ import {
 } from 'react'
 
 import { Icon } from '@/components/dash/icons'
-import { Avatar, Button, Dialog, EmptyState, LoadingBlock, Notice, cx, fieldClass } from '@/components/dash/ui'
+import { Button, Dialog, EmptyState, LoadingBlock, Notice, cx, fieldClass } from '@/components/dash/ui'
 import {
   BUSINESS_MESSAGE_MAX,
   MESSAGES_PAGE,
@@ -46,34 +46,7 @@ import { APP_CHAT_LANGUAGES } from '@/lib/chat/languages'
 
 /* ───────────── Small pieces ───────────── */
 
-export function ThreadAvatar({
-  name,
-  url,
-  size = 40,
-  square = false,
-}: {
-  name: string
-  url: string | null
-  size?: number
-  /** Business logos are rounded squares; people are circles. */
-  square?: boolean
-}) {
-  if (url && /^https:\/\//i.test(url)) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element -- avatar / logo (Firebase Storage / provider URL)
-      <img
-        src={url}
-        alt=""
-        width={size}
-        height={size}
-        style={{ width: size, height: size }}
-        className={cx('shrink-0 bg-n-sunken object-cover', square ? 'rounded-[10px]' : 'rounded-full')}
-        referrerPolicy="no-referrer"
-      />
-    )
-  }
-  return <Avatar name={name} size={size} />
-}
+export { ThreadAvatar, isAvatarUrlUsable } from '@/components/messaging/thread-avatar'
 
 export function languageName(code: string | null): string | null {
   if (!code) return null
