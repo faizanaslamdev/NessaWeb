@@ -148,6 +148,7 @@ function AdminFrame({ children, onSignOut }: { children: ReactNode; onSignOut: (
         { href: href(''), label: 'Overview', icon: 'home', active: top === '' },
         { href: href('places'), label: 'Places', icon: 'pin', active: top === 'places' || top === 'chats' },
         { href: href('business'), label: 'Business claims', icon: 'briefcase', active: top === 'business', badge: pending || null },
+        { href: href('reports'), label: 'Reports', icon: 'flag', active: top === 'reports' },
         { href: href('audit'), label: 'Audit log', icon: 'log', active: top === 'audit' },
       ],
     },
@@ -169,9 +170,16 @@ function AdminFrame({ children, onSignOut }: { children: ReactNode; onSignOut: (
       headerEnd={
         <>
           <span className="hidden sm:inline-flex">
-            <Badge tone="ok" dot>
-              Production
-            </Badge>
+            {/* Inlined at build time; only local builds pointed at the emulators set it. */}
+            {process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST ? (
+              <Badge tone="warn" dot>
+                Local emulators
+              </Badge>
+            ) : (
+              <Badge tone="ok" dot>
+                Production
+              </Badge>
+            )}
           </span>
           <UserMenu
             email={email}

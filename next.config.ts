@@ -84,6 +84,8 @@ const nextConfig: NextConfig = {
       { source: '/admin', headers: privateHeaders },
       { source: '/business/:path*', headers: privateHeaders },
       { source: '/business', headers: privateHeaders },
+      { source: '/messages/:path*', headers: privateHeaders },
+      { source: '/messages', headers: privateHeaders },
       { source: '/:path*', has: [{ type: 'host', value: ADMIN_HOST_PATTERN }], headers: privateHeaders },
     ]
   },

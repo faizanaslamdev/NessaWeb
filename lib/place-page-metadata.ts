@@ -13,7 +13,7 @@ import {
 import {
   buildPlaceSeoDescription,
   buildPlaceSeoTitle,
-  isPlaceIndexable,
+  placeRobots,
 } from '@/lib/place-seo'
 
 export function placeOgImages(
@@ -57,9 +57,7 @@ export function buildPlaceSeoMetadata(
     title,
     description,
     alternates: { canonical },
-    robots: isPlaceIndexable(share)
-      ? { index: true, follow: true }
-      : { index: false, follow: true },
+    robots: placeRobots(share),
     openGraph: {
       title,
       description,

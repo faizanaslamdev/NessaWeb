@@ -18,6 +18,8 @@ export const accountRoutes = {
   adminPlaces: '/admin/places',
   /** Admins: audit log of every admin / business change. */
   adminAudit: '/admin/audit',
+  /** Admins: reports on business ↔ traveler conversations. */
+  adminReports: '/admin/reports',
 } as const
 
 /**

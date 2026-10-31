@@ -13,7 +13,7 @@ import {
   placeFallbackOgImageUrl,
   toSsrSafeLanding,
 } from '@/lib/place-share-meta'
-import { buildPlaceJsonLd, serializeJsonLd } from '@/lib/place-seo'
+import { buildPlaceBreadcrumbJsonLd, buildPlaceJsonLd, serializeJsonLd } from '@/lib/place-seo'
 import {
   isValidPlaceSlug,
   placeCanonicalPath,
@@ -109,9 +109,9 @@ export default async function PlaceSlugPage({ params, searchParams }: PageProps)
   const landing = await getCachedPublicPlaceLanding(resolution.placeId)
   // Sanitized subset (no key-bearing URLs) for structured data.
   const share = await getCachedPublicPlaceShareMeta(resolution.placeId)
-  const jsonLd = share
-    ? buildPlaceJsonLd(share, placeCanonicalUrlForSlug(canonicalSlug))
-    : null
+  const canonicalUrl = placeCanonicalUrlForSlug(canonicalSlug)
+  const jsonLd = share ? buildPlaceJsonLd(share, canonicalUrl) : null
+  const breadcrumbLd = share ? buildPlaceBreadcrumbJsonLd(share, canonicalUrl) : null
 
   return (
     <SiteShell bottomBar>
@@ -120,6 +120,12 @@ export default async function PlaceSlugPage({ params, searchParams }: PageProps)
           type="application/ld+json"
           // Escaped via serializeJsonLd (no `</script>` breakout possible).
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
+        />
+      ) : null}
+      {breadcrumbLd ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbLd) }}
         />
       ) : null}
       <PlaceVisitTracker placeId={resolution.placeId} />

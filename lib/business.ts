@@ -8,18 +8,15 @@
 import { httpsCallable } from 'firebase/functions'
 import { getFunctions } from 'firebase/functions'
 
+import type {
+  BusinessCategory,
+  BusinessSocials,
+  OpeningHours,
+  PriceRange,
+} from '@/lib/business-profile'
 import { getFirebaseClient } from '@/lib/firebase'
 
-export type BusinessCategory =
-  | 'hostel'
-  | 'hotel'
-  | 'restaurant'
-  | 'bar'
-  | 'cafe'
-  | 'kite_school'
-  | 'tour'
-  | 'shop'
-  | 'other'
+export type { BusinessCategory }
 
 export const BUSINESS_CATEGORY_LABELS: Record<BusinessCategory, string> = {
   hostel: 'Hostel',
@@ -47,6 +44,16 @@ export type BusinessProfileInput = {
   languages?: string[]
   logoUrl?: string
   coverUrl?: string
+  /** Weekly timetable; omitted = hours unknown (clears it on save). */
+  openingHours?: OpeningHours
+  address?: string
+  email?: string
+  bookingUrl?: string
+  menuUrl?: string
+  /** URL or @handle as typed (the backend normalizes to a URL). */
+  socials?: BusinessSocials
+  priceRange?: PriceRange
+  paymentMethods?: string[]
 }
 
 export type MyBusinessPlace = {
@@ -87,7 +94,12 @@ export type BusinessPlaceStats = {
 export type MyBusiness = {
   businessId: string
   role: 'owner' | 'staff'
-  profile: BusinessProfileInput & { createdAt: string | null; updatedAt: string | null }
+  profile: BusinessProfileInput & {
+    createdAt: string | null
+    updatedAt: string | null
+    /** Customer messaging switch; absent = on (setBusinessMessaging, owners). */
+    messagingEnabled?: boolean
+  }
   places: MyBusinessPlace[]
 }
 
@@ -208,13 +220,21 @@ export async function getMyBusinesses(): Promise<{ businesses: MyBusiness[]; cla
   }
 }
 
+/**
+ * The profile form version this dashboard sends. The backend replaces the
+ * extended fields (address, email, links, hours, socials, price, payments)
+ * only for `profileSchema >= 2`, so a tab opened before they existed can't
+ * clear them on save.
+ */
+export const BUSINESS_PROFILE_SCHEMA = 2
+
 export async function updateBusinessProfile(businessId: string, profile: BusinessProfileInput): Promise<void> {
   try {
-    const callable = httpsCallable<{ businessId: string; profile: BusinessProfileInput }, { ok: true }>(
-      fns(),
-      'updateBusinessProfile',
-    )
-    await callable({ businessId, profile })
+    const callable = httpsCallable<
+      { businessId: string; profile: BusinessProfileInput; profileSchema: number },
+      { ok: true }
+    >(fns(), 'updateBusinessProfile')
+    await callable({ businessId, profile, profileSchema: BUSINESS_PROFILE_SCHEMA })
   } catch (e) {
     throw mapError(e)
   }
@@ -266,6 +286,20 @@ export async function adminAssignOwner(input: {
     >(fns(), 'runBusinessAdminOps')
     const res = await callable({ action: 'assignOwner', ...input })
     return res.data.result
+  } catch (e) {
+    throw mapError(e)
+  }
+}
+
+/** Owners turn customer messaging on / off (`messagingEnabled`; absent = on). */
+export async function setBusinessMessaging(businessId: string, enabled: boolean): Promise<{ messagingEnabled: boolean }> {
+  try {
+    const callable = httpsCallable<{ businessId: string; enabled: boolean }, { ok: true; messagingEnabled: boolean }>(
+      fns(),
+      'setBusinessMessaging',
+    )
+    const res = await callable({ businessId, enabled })
+    return { messagingEnabled: res.data.messagingEnabled }
   } catch (e) {
     throw mapError(e)
   }
@@ -444,14 +478,4 @@ export async function respondToInvite(inviteId: string, accept: boolean): Promis
   return callTeam<{ businessId: string }>({ action: accept ? 'acceptInvite' : 'declineInvite', inviteId })
 }
 
-/** "a, b, c" → ['a','b','c'] (trimmed, deduped). */
-export function splitList(raw: string): string[] {
-  const out: string[] = []
-  for (const part of raw.split(/[,\n]/)) {
-    const item = part.trim()
-    if (item && !out.includes(item)) {
-      out.push(item)
-    }
-  }
-  return out
-}
+export { splitList } from '@/lib/business-form'

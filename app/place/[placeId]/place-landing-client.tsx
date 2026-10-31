@@ -426,7 +426,7 @@ export function PlaceLandingClient({
           <div className="min-w-0 space-y-10">
             {/* Phones: Wi-Fi first — it's what guests scanning a QR look for. */}
             {place.wifi ? <PlaceWifiCard wifi={place.wifi} className="lg:hidden" /> : null}
-            {place.business ? <PlaceOfficialSection business={place.business} /> : null}
+            {place.business ? <PlaceOfficialSection business={place.business} placeId={realPlaceId} /> : null}
             {place.photos?.length ? <PlaceGallerySection photos={place.photos} placeName={place.name} /> : null}
 
             {recommenders.length > 0 ? (

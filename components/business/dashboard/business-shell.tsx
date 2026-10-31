@@ -20,6 +20,7 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { RequireAccount, FullPageLoading } from '@/components/account/require-account'
+import { InboxProvider, useInboxUnreadCount } from '@/components/business/dashboard/inbox/inbox-data'
 import { AppShell, SidebarAccount, type NavGroup } from '@/components/dash/app-shell'
 import { Icon } from '@/components/dash/icons'
 import { ButtonLink, EmptyState, Panel, cx, menuItemClass, menuPanelClass, usePopover } from '@/components/dash/ui'
@@ -28,6 +29,7 @@ import { useAccountAuth } from '@/hooks/use-account-auth'
 import { useProfileName } from '@/hooks/use-profile-name'
 import { accountRoutes, adminConsoleHref } from '@/lib/account/constants'
 import { readMyAdminRole } from '@/lib/admin'
+import { unreadBadgeLabel } from '@/lib/business-inbox'
 import {
   BusinessActionError,
   getMyBusinesses,
@@ -146,6 +148,14 @@ function BusinessLoader({ businessId, children }: { businessId: string; children
     )
   }, [])
 
+  const inboxAccess = useMemo(
+    () =>
+      state.kind === 'ready'
+        ? { role: state.business.role, placeIds: state.business.places.map(p => p.placeId) }
+        : { role: 'staff' as const, placeIds: [] },
+    [state],
+  )
+
   const ctx = useMemo<BusinessCtx | null>(
     () =>
       state.kind === 'ready' && place
@@ -191,12 +201,14 @@ function BusinessLoader({ businessId, children }: { businessId: string; children
 
   return (
     <BusinessContext.Provider value={ctx}>
-      <BusinessFrame
-        section={pathname.slice(base.length).replace(/^\/+|\/+$/g, '').split('/')[0] ?? ''}
-        onSwitchPlace={id => router.push(`${pathname}?place=${encodeURIComponent(id)}`)}
-      >
-        {children}
-      </BusinessFrame>
+      <InboxProvider businessId={businessId} access={inboxAccess}>
+        <BusinessFrame
+          section={pathname.slice(base.length).replace(/^\/+|\/+$/g, '').split('/')[0] ?? ''}
+          onSwitchPlace={id => router.push(`${pathname}?place=${encodeURIComponent(id)}`)}
+        >
+          {children}
+        </BusinessFrame>
+      </InboxProvider>
     </BusinessContext.Provider>
   )
 }
@@ -216,6 +228,7 @@ function BusinessFrame({
   const [isAdmin, setIsAdmin] = useState(false)
   const email = user?.email ?? ''
   const profileName = useProfileName(user)
+  const unread = useInboxUnreadCount()
 
   useEffect(() => {
     if (!user) return
@@ -236,6 +249,13 @@ function BusinessFrame({
     {
       items: [
         { href: href(''), label: 'Home', icon: 'home', active: section === '' },
+        {
+          href: href('inbox'),
+          label: 'Inbox',
+          icon: 'inbox',
+          active: section === 'inbox',
+          badge: unreadBadgeLabel(unread),
+        },
         { href: href('chat'), label: 'Live chat', icon: 'chat', active: section === 'chat' },
         { href: href('qr'), label: 'QR codes', icon: 'qr', active: section === 'qr' },
         { href: href('stats'), label: 'Stats', icon: 'chart', active: section === 'stats' },

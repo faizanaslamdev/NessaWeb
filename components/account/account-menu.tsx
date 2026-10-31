@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
+import { useCustomerThreadsSummary } from '@/components/messages/customer-threads-store'
 import { useAccountAuth } from '@/hooks/use-account-auth'
 import { accountRoutes, adminConsoleHref } from '@/lib/account/constants'
 import { readMyAdminRole, type AdminRole } from '@/lib/admin'
+import { MESSAGES_PATH, customerUnreadLabel } from '@/lib/customer-messages'
 
 function initials(name: string | null | undefined, email: string | null | undefined): string {
   const source = (name || email || '').trim()
@@ -26,6 +28,8 @@ export function AccountMenu({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
   const [open, setOpen] = useState(false)
   const [role, setRole] = useState<AdminRole | null>(null)
   const ref = useRef<HTMLDivElement>(null)
+  // One small listener (newest threads only) for the Messages badge.
+  const unread = customerUnreadLabel(useCustomerThreadsSummary(user?.uid).unread)
 
   useEffect(() => {
     if (!user) return
@@ -79,15 +83,21 @@ export function AccountMenu({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`Account menu for ${user.email ?? 'your account'}`}
+        aria-label={`Account menu for ${user.email ?? 'your account'}${unread ? ` (${unread} unread conversation${unread === '1' ? '' : 's'})` : ''}`}
         onClick={() => setOpen(v => !v)}
         className={
           light
-            ? 'flex size-9 items-center justify-center rounded-full bg-n-accent text-xs font-semibold text-white hover:bg-n-accent-strong'
-            : 'flex size-9 items-center justify-center rounded-full bg-violet-600 text-xs font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80'
+            ? 'relative flex size-9 items-center justify-center rounded-full bg-n-accent text-xs font-semibold text-white hover:bg-n-accent-strong'
+            : 'relative flex size-9 items-center justify-center rounded-full bg-violet-600 text-xs font-semibold text-white hover:bg-violet-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80'
         }
       >
         {initials(user.displayName, user.email)}
+        {unread ? (
+          <span
+            aria-hidden
+            className={`absolute -top-0.5 -right-0.5 size-3 rounded-full border-2 ${light ? 'border-n-canvas bg-n-danger' : 'border-neutral-950 bg-rose-500'}`}
+          />
+        ) : null}
       </button>
       {open ? (
         <div
@@ -99,6 +109,15 @@ export function AccountMenu({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
             <p className={light ? 'truncate font-medium text-n-ink' : 'truncate font-medium text-white'}>{user.displayName || 'Your account'}</p>
             <p className={light ? 'truncate text-xs text-n-subtle' : 'truncate text-xs text-gray-500'}>{user.email}</p>
           </div>
+          <Link role="menuitem" href={MESSAGES_PATH} className={`${itemClass} flex items-center justify-between gap-2`} onClick={() => setOpen(false)}>
+            <span>Messages</span>
+            {unread ? (
+              <span className="rounded-full bg-n-accent px-1.5 text-[11px] leading-[18px] font-semibold text-white tabular-nums">
+                {unread}
+                <span className="sr-only"> unread</span>
+              </span>
+            ) : null}
+          </Link>
           <Link role="menuitem" href={accountRoutes.business} className={itemClass} onClick={() => setOpen(false)}>
             Your business
           </Link>

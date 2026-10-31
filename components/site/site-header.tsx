@@ -17,8 +17,10 @@ import { Icon } from '@/components/dash/icons'
 import { Container, StoreBadges, cx, siteButtonClass } from '@/components/site/ui'
 import { useAccountAuth } from '@/hooks/use-account-auth'
 import { accountRoutes, adminConsoleHref } from '@/lib/account/constants'
+import { useCustomerThreadsSummary } from '@/components/messages/customer-threads-store'
 import { readMyAdminRole } from '@/lib/admin'
 import { siteRoutes } from '@/lib/constants'
+import { MESSAGES_PATH, customerUnreadLabel } from '@/lib/customer-messages'
 
 export const SITE_NAV = [
   { href: '/places', label: 'Explore places', match: ['/places', '/place'] },
@@ -116,13 +118,14 @@ export function SiteHeader() {
           </div>
           <button
             type="button"
-            className="flex size-10 items-center justify-center rounded-full text-n-ink hover:bg-n-hover lg:hidden"
+            className="relative flex size-10 items-center justify-center rounded-full text-n-ink hover:bg-n-hover lg:hidden"
             aria-expanded={open}
             aria-controls="site-menu"
             aria-label={open ? 'Close menu' : 'Open menu'}
             onClick={() => setOpen(v => !v)}
           >
             <Icon name={open ? 'x' : 'menu'} size={22} />
+            {open ? null : <MenuUnreadDot />}
           </button>
         </div>
       </Container>
@@ -189,6 +192,7 @@ function MobileMenu({ pathname, onClose }: { pathname: string; onClose: () => vo
           {loading ? null : user ? (
             <>
               <p className="truncate text-[13px] text-n-muted">Signed in as {user.email}</p>
+              <MobileMessagesLink uid={user.uid} onClose={onClose} />
               <div className="grid grid-cols-2 gap-2">
                 <Link href={accountRoutes.business} onClick={onClose} className={siteButtonClass('secondary', 'md')}>
                   Your business
@@ -241,5 +245,35 @@ function MobileMenu({ pathname, onClose }: { pathname: string; onClose: () => vo
         </div>
       </Container>
     </div>
+  )
+}
+
+function MobileMessagesLink({ uid, onClose }: { uid: string; onClose: () => void }) {
+  const unread = customerUnreadLabel(useCustomerThreadsSummary(uid).unread)
+  return (
+    <Link href={MESSAGES_PATH} onClick={onClose} className={siteButtonClass('secondary', 'md', 'w-full justify-between')}>
+      <span className="inline-flex items-center gap-2">
+        <Icon name="chat" size={18} />
+        Messages
+      </span>
+      {unread ? (
+        <span className="rounded-full bg-n-accent px-2 text-[12px] leading-5 font-semibold text-white tabular-nums">
+          {unread}
+          <span className="sr-only"> unread</span>
+        </span>
+      ) : null}
+    </Link>
+  )
+}
+
+/** Unread business messages, on the phone menu button. */
+function MenuUnreadDot() {
+  const { user } = useAccountAuth()
+  const unread = useCustomerThreadsSummary(user?.uid).unread
+  if (!unread) return null
+  return (
+    <span className="absolute top-1.5 right-1.5 size-2.5 rounded-full border-2 border-n-canvas bg-n-danger">
+      <span className="sr-only">Unread messages</span>
+    </span>
   )
 }
