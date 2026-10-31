@@ -89,6 +89,13 @@ export function CustomerThreadView({
     [threadId],
   )
 
+  // A refusal only stands while the thread is blocked: forget it once staff unblock.
+  const threadBlocked = thread?.status === 'blocked'
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- follow the live thread status
+    if (!threadBlocked) setRefusedAsBlocked(false)
+  }, [threadBlocked])
+
   // Whether the business still accepts messages (businesses/{id} is readable when signed in).
   const businessId = thread?.businessId ?? ''
   useEffect(() => {

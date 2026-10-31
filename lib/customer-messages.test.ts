@@ -170,7 +170,12 @@ describe('thread view', () => {
     assert.equal(customerComposerState(open), 'open')
     assert.equal(customerComposerState({ ...open, thread: thread({ customerBlocked: true }) }), 'you-blocked')
     assert.equal(customerComposerState({ ...open, thread: thread({ customerBlocked: true }), refusedAsBlocked: true }), 'you-blocked')
-    assert.equal(customerComposerState({ ...open, refusedAsBlocked: true }), 'business-blocked')
+    assert.equal(
+      customerComposerState({ ...open, thread: thread({ status: 'blocked' }), refusedAsBlocked: true }),
+      'business-blocked',
+    )
+    // Staff unblocked after the refusal: the composer comes back live.
+    assert.equal(customerComposerState({ ...open, thread: thread({ status: 'open' }), refusedAsBlocked: true }), 'open')
     assert.equal(customerComposerState({ ...open, messagingEnabled: false }), 'messaging-off')
     // The staff-side block isn't revealed up front.
     assert.equal(customerComposerState({ ...open, thread: thread({ status: 'blocked' }) }), 'open')

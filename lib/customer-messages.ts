@@ -222,17 +222,19 @@ export type CustomerComposerState = 'open' | 'you-blocked' | 'business-blocked' 
  * - 'you-blocked': they blocked the business (Unblock to write again);
  * - 'business-blocked': a send was refused with business/thread-blocked.
  *   The staff block itself isn't shown up front ("they aren't told they
- *   were blocked" on the staff side) — only once a message is refused;
+ *   were blocked" on the staff side) — only once a message is refused,
+ *   and only while the thread is still blocked (staff unblocking brings
+ *   the composer back without a reload);
  * - 'messaging-off': the business turned messaging off;
  * - 'open': the composer.
  */
 export function customerComposerState(input: {
-  thread: Pick<BusinessThread, 'customerBlocked'>
+  thread: Pick<BusinessThread, 'customerBlocked' | 'status'>
   messagingEnabled: boolean
   refusedAsBlocked: boolean
 }): CustomerComposerState {
   if (input.thread.customerBlocked) return 'you-blocked'
-  if (input.refusedAsBlocked) return 'business-blocked'
+  if (input.refusedAsBlocked && input.thread.status === 'blocked') return 'business-blocked'
   if (!input.messagingEnabled) return 'messaging-off'
   return 'open'
 }
