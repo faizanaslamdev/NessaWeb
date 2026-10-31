@@ -34,6 +34,8 @@ const nextConfig: NextConfig = {
         destination: '/terms-of-service',
         permanent: true,
       },
+      // Destination pages live at /destinations/{country}[/{city}]; their index is /places.
+      { source: '/destinations', destination: '/places#destinations', permanent: false },
       // Chat settings moved to each Place's page (Live chat tab).
       { source: '/admin/chats', destination: '/admin/places', permanent: false },
       { source: '/chats', has: [{ type: 'host' as const, value: ADMIN_HOST_PATTERN }], destination: '/places', permanent: false },

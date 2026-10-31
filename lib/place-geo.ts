@@ -208,6 +208,12 @@ export function hubsForPlace(
   }
 }
 
+/** The hub page of a town picked by name alone (home "Explore by town"): the biggest match. */
+export function cityHubForTown(hubs: PlaceHubs, town: string): CityHub | null {
+  const slug = geoSlug(town)
+  return slug ? (hubs.cities.find(c => c.citySlug === slug) ?? null) : null
+}
+
 /**
  * Other Places in the same town as `placeId` (canonical, indexable ones),
  * best first. Works for any town, with or without a hub page.

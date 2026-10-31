@@ -20,6 +20,7 @@ describe('robots.txt vs sitemap', () => {
     assert.equal(isDisallowedByRobots('/chat/'), true)
     assert.equal(isDisallowedByRobots('/business/x/details'), true)
     assert.equal(isDisallowedByRobots('/places/kitecabana-cumbuco'), false)
+    assert.equal(isDisallowedByRobots('/destinations/brazil/sao-luis'), false)
   })
 
   it('keeps private business messages out', () => {

@@ -7,6 +7,7 @@ import {
   buildHubDescription,
   buildHubItemListJsonLd,
   buildPlaceHubs,
+  cityHubForTown,
   geoSlug,
   hubsForPlace,
   isValidGeoSlug,
@@ -99,6 +100,13 @@ describe('buildPlaceHubs', () => {
     const verified = place({ name: 'Verified', recommenderCount: 0, verified: true })
     const hub = buildPlaceHubs([quiet, verified, busy]).cities[0]
     assert.deepEqual(hub.places.map(p => p.name), ['Busy', 'Verified', 'Quiet'])
+  })
+
+  it('finds a town hub by name alone', () => {
+    const hubs = buildPlaceHubs([place(), place(), place()])
+    assert.equal(cityHubForTown(hubs, 'São Luís')?.path, '/destinations/brazil/sao-luis')
+    assert.equal(cityHubForTown(hubs, 'Fortim'), null)
+    assert.equal(cityHubForTown(hubs, ''), null)
   })
 
   it('finds the hubs of a Place', () => {

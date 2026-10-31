@@ -8,6 +8,7 @@ import { Container, SiteButton } from '@/components/site/ui'
 import { siteRoutes } from '@/lib/constants'
 import { placeHref } from '@/lib/place-directory'
 import { getPlaceDirectory } from '@/lib/place-directory-server'
+import { buildPlaceHubs } from '@/lib/place-geo'
 import { PLACE_PUBLIC_ORIGIN } from '@/lib/place-slug'
 
 export const revalidate = 600
@@ -30,6 +31,7 @@ export const metadata: Metadata = {
 export default async function PlacesPage() {
   const directory = await getPlaceDirectory()
   const places = directory?.places ?? []
+  const hubs = buildPlaceHubs(places)
   const itemList = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
@@ -76,6 +78,37 @@ export default async function PlacesPage() {
           </Suspense>
         </Container>
       </section>
+
+      {hubs.countries.length ? (
+        <section aria-labelledby="destinations-title" id="destinations" className="scroll-mt-20 pb-12 sm:pb-16">
+          <Container>
+            <h2 id="destinations-title" className="text-[22px] font-semibold tracking-[-0.015em]">
+              Browse by destination
+            </h2>
+            <ul className="mt-5 grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
+              {hubs.countries.map(country => (
+                <li key={country.slug}>
+                  <Link href={country.path} className="text-[16px] font-semibold text-n-ink no-underline hover:underline">
+                    {country.name}
+                  </Link>
+                  <span className="ml-1.5 text-[13px] text-n-subtle tabular-nums">{country.places.length}</span>
+                  {country.cities.length ? (
+                    <ul className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[14px]">
+                      {country.cities.map(city => (
+                        <li key={city.citySlug}>
+                          <Link href={city.path} className="text-n-muted no-underline hover:text-n-ink hover:underline">
+                            {city.cityName}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </Container>
+        </section>
+      ) : null}
 
       <section className="pb-16 sm:pb-20">
         <Container>
