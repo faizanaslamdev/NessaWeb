@@ -170,9 +170,16 @@ function AdminFrame({ children, onSignOut }: { children: ReactNode; onSignOut: (
       headerEnd={
         <>
           <span className="hidden sm:inline-flex">
-            <Badge tone="ok" dot>
-              Production
-            </Badge>
+            {/* Inlined at build time; only local builds pointed at the emulators set it. */}
+            {process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST ? (
+              <Badge tone="warn" dot>
+                Local emulators
+              </Badge>
+            ) : (
+              <Badge tone="ok" dot>
+                Production
+              </Badge>
+            )}
           </span>
           <UserMenu
             email={email}
