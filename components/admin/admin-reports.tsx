@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 
-import { useAdminHref } from '@/components/admin/admin-shell'
+import { useAdmin, useAdminHref } from '@/components/admin/admin-shell'
 import { ShellTitle } from '@/components/dash/app-shell'
 import { Icon } from '@/components/dash/icons'
 import {
@@ -63,6 +63,7 @@ export function AdminReports() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const seq = useRef(0)
+  const { noteReportResolved } = useAdmin()
 
   const load = useCallback(async (status: ReportStatusFilter, cursor: string | null) => {
     const mine = ++seq.current
@@ -90,6 +91,8 @@ export function AdminReports() {
   const selected = useMemo(() => list.reports.find(r => r.id === selectedId) ?? null, [list.reports, selectedId])
 
   const onResolved = (report: AdminReport) => {
+    // The sidebar's open-reports badge counts down (no refetch).
+    if (list.reports.some(r => r.id === report.id && r.status === 'open')) noteReportResolved()
     setList(s => ({ ...s, reports: applyResolvedReport(s.reports, report, filter) }))
     setNotice(report.resolution === 'actioned' ? 'Report resolved — action taken.' : 'Report dismissed.')
     if (!reportMatchesFilter(report, filter)) setSelectedId(null)
