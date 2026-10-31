@@ -452,7 +452,14 @@ export function describeMessagingError(
     case 'business/rate-limited':
     case 'functions/resource-exhausted': {
       const retryAfterMs = typeof details.retryAfterMs === 'number' && details.retryAfterMs > 0 ? details.retryAfterMs : undefined
-      const what = details.limit === 'newThreads' ? 'You’ve started a lot of conversations today.' : 'You’re sending a lot of messages.'
+      const what =
+        details.limit === 'newThreads'
+          ? 'You’ve started a lot of conversations today.'
+          : details.limit === 'reports'
+            ? 'You’ve sent a lot of reports today.'
+            : details.limit === 'manage'
+              ? 'You’ve made a lot of changes.'
+              : 'You’re sending a lot of messages.'
       return {
         code,
         retryAfterMs,

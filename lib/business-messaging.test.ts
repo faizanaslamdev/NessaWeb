@@ -90,6 +90,9 @@ describe('errors for travelers', () => {
     assert.match(info.message, /started a lot of conversations/)
     assert.match(info.message, /30 minutes/)
     assert.match(describeMessagingError(err('business/rate-limited'), 'customer').message, /a little later/)
+    // Reports and archive / block limits aren't about messages.
+    assert.match(describeMessagingError(err('business/rate-limited', { limit: 'reports' }), 'business').message, /^You’ve sent a lot of reports today\./)
+    assert.match(describeMessagingError(err('business/rate-limited', { limit: 'manage' }), 'business').message, /^You’ve made a lot of changes\./)
     assert.equal(waitLabel(61 * 60_000), '2 hours')
     assert.equal(waitLabel(1), '1 minute')
   })
