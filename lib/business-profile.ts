@@ -124,6 +124,8 @@ export type PublicBusinessProfile = {
   socials?: BusinessSocials
   priceRange?: PriceRange
   paymentMethods?: string[]
+  /** Present (false) only when the business turned traveler messaging off. */
+  messagingEnabled?: false
 }
 
 /** The profile without its identity fields (share / SEO metadata). */
@@ -473,5 +475,6 @@ export function sanitizePublicBusiness(raw: unknown): PublicBusinessProfile | un
   set('socials', cleanSocials(data.socials))
   set('priceRange', isPriceRange(data.priceRange) ? data.priceRange : undefined)
   set('paymentMethods', cleanList(data.paymentMethods, L.PAYMENT_METHODS_MAX, L.PAYMENT_METHOD_MAX))
+  set('messagingEnabled', data.messagingEnabled === false ? false : undefined)
   return out
 }

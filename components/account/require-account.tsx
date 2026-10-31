@@ -19,7 +19,20 @@ import { accountRoutes } from '@/lib/account/constants'
  * This is UX only: every business / admin action is also enforced
  * server-side in Cloud Functions and Firestore rules.
  */
-export function RequireAccount({ children, inline = false }: { children: ReactNode; /** Inside a page layout (no full-screen frame). */ inline?: boolean }) {
+export function RequireAccount({
+  children,
+  inline = false,
+  requireVerifiedEmail = true,
+}: {
+  children: ReactNode
+  /** Inside a page layout (no full-screen frame). */
+  inline?: boolean
+  /**
+   * Business / admin areas need a verified email. Traveler pages (/messages)
+   * only need a real account — the messaging callables don't require one.
+   */
+  requireVerifiedEmail?: boolean
+}) {
   const { user, loading, emailVerified, resendVerification, refresh, signOut } = useAccountAuth()
   const router = useRouter()
   const pathname = usePathname()
@@ -36,7 +49,7 @@ export function RequireAccount({ children, inline = false }: { children: ReactNo
     return <FullPageLoading inline={inline} />
   }
 
-  if (!emailVerified) {
+  if (requireVerifiedEmail && !emailVerified) {
     return (
       <div className={`n-dash flex flex-col items-center justify-center bg-n-canvas px-4 py-12 text-n-ink ${inline ? 'min-h-[360px]' : 'min-h-dvh'}`}>
         <div className={`w-full max-w-[420px] ${accountCardClass} text-center`}>

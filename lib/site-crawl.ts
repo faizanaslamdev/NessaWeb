@@ -3,8 +3,8 @@
  * sitemap — kept together so the sitemap never lists a disallowed URL.
  */
 
-/** Live chat rooms, auth handlers and dashboards aren't content pages. */
-export const ROBOTS_DISALLOW = ['/chat', '/auth', '/__/', '/account', '/business', '/admin'] as const
+/** Live chat rooms, auth handlers, private messages and dashboards aren't content pages. */
+export const ROBOTS_DISALLOW = ['/chat', '/auth', '/__/', '/account', '/business', '/admin', '/messages'] as const
 
 /** Indexable public pages (Places are added from the slug index). */
 export const SITEMAP_STATIC_PATHS = [

@@ -1,6 +1,8 @@
+import { PlaceMessageButton } from '@/components/place/place-message-button'
 import { PlaceOpeningHours } from '@/components/place/place-opening-hours'
 import { siteButtonClass } from '@/components/site/ui'
 import { SOCIAL_LABELS, SOCIAL_NETWORKS, type SocialNetwork } from '@/lib/business-profile'
+import { canMessageBusiness } from '@/lib/customer-messages'
 import type { PublicBusinessProfile } from '@/lib/place-landing'
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -114,7 +116,7 @@ function SocialGlyph({ network }: { network: SocialNetwork }) {
  * Server-rendered → crawlable, Nessa-owned content. `business` is already
  * sanitized (lib/business-profile.ts), so its links are safe http(s) URLs.
  */
-export function PlaceOfficialSection({ business }: { business: PublicBusinessProfile }) {
+export function PlaceOfficialSection({ business, placeId }: { business: PublicBusinessProfile; placeId: string }) {
   const rows: React.ReactNode[] = []
   if (business.address) rows.push(<Row key="addr" label="Address">{business.address}</Row>)
   if (business.openingHours) {
@@ -161,7 +163,9 @@ export function PlaceOfficialSection({ business }: { business: PublicBusinessPro
   if (business.languages?.length) rows.push(<Row key="lang" label="Staff speak">{business.languages.map(l => l.toUpperCase()).join(', ')}</Row>)
 
   const socials = SOCIAL_NETWORKS.filter(n => business.socials?.[n])
-  const hasActions = Boolean(business.bookingUrl || business.menuUrl)
+  // Travelers can message a verified business unless it turned messaging off.
+  const canMessage = canMessageBusiness(business)
+  const hasActions = Boolean(canMessage || business.bookingUrl || business.menuUrl)
 
   return (
     <section aria-label={`About ${business.name}`} className="w-full rounded-2xl border border-n-line bg-n-surface p-5 text-left shadow-n-card sm:p-6">
@@ -185,6 +189,14 @@ export function PlaceOfficialSection({ business }: { business: PublicBusinessPro
       ) : null}
       {hasActions ? (
         <div className="mt-4 flex flex-wrap gap-2">
+          {canMessage ? (
+            <PlaceMessageButton
+              placeId={placeId}
+              business={business}
+              variant={business.bookingUrl ? 'secondary' : 'primary'}
+              className="max-[400px]:flex-1"
+            />
+          ) : null}
           {business.bookingUrl ? (
             <a href={business.bookingUrl} target="_blank" rel="noopener noreferrer" className={siteButtonClass('primary', 'md', 'max-[400px]:flex-1')}>
               Book now

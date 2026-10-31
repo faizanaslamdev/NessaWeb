@@ -15,4 +15,11 @@ describe('robots.txt vs sitemap', () => {
     assert.equal(isDisallowedByRobots('/business/x/details'), true)
     assert.equal(isDisallowedByRobots('/places/kitecabana-cumbuco'), false)
   })
+
+  it('keeps private business messages out', () => {
+    assert.equal(isDisallowedByRobots('/messages'), true)
+    assert.equal(isDisallowedByRobots('/messages/new?place=ChIJabc'), true)
+    assert.equal(isDisallowedByRobots('/messages?thread=b_ChIJ_u'), true)
+    assert.equal(SITEMAP_STATIC_PATHS.some(p => p.startsWith('/messages')), false)
+  })
 })
