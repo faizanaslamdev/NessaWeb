@@ -22,7 +22,6 @@ import {
   readReceipt,
   shortRelativeTime,
   shouldMarkRead,
-  threadMatchesFilter,
   toMillis,
   unreadBadgeLabel,
   type InboxMessage,
@@ -114,6 +113,7 @@ describe('buildInboxQuery', () => {
     ])
     assert.deepEqual(buildInboxQuery({ businessId: 'b', access: owner, filter: 'needs_reply', placeId: null })?.where, [
       ['businessId', '==', 'b'],
+      ['status', '==', 'open'],
       ['needsReply', '==', true],
     ])
     const spec = buildInboxQuery({ businessId: 'b', access: owner, filter: 'archived', placeId: 'p9', limit: 60 })
@@ -145,6 +145,34 @@ describe('buildInboxQuery', () => {
     ])
   })
 
+  it('needs reply: open threads only, managers still scoped to their Places', () => {
+    assert.deepEqual(buildInboxQuery({ businessId: 'b', access: manager, filter: 'needs_reply', placeId: null })?.where, [
+      ['businessId', '==', 'b'],
+      ['placeId', 'in', ['p1', 'p2']],
+      ['status', '==', 'open'],
+      ['needsReply', '==', true],
+    ])
+    assert.deepEqual(buildInboxQuery({ businessId: 'b', access: manager, filter: 'needs_reply', placeId: 'p1' })?.where, [
+      ['businessId', '==', 'b'],
+      ['placeId', '==', 'p1'],
+      ['status', '==', 'open'],
+      ['needsReply', '==', true],
+    ])
+    assert.deepEqual(buildInboxQuery({ businessId: 'b', access: owner, filter: 'needs_reply', placeId: 'p2' })?.where, [
+      ['businessId', '==', 'b'],
+      ['placeId', '==', 'p2'],
+      ['status', '==', 'open'],
+      ['needsReply', '==', true],
+    ])
+  })
+
+  it('all = every status (no status filter)', () => {
+    for (const access of [owner, manager]) {
+      const where = buildInboxQuery({ businessId: 'b', access, filter: 'all', placeId: null })!.where
+      assert.equal(where.some(([field]) => field === 'status' || field === 'needsReply'), false)
+    }
+  })
+
   it('manager: no Places or a foreign Place → no query', () => {
     assert.equal(buildInboxQuery({ businessId: 'b', access: { role: 'staff', placeIds: [] }, filter: 'all', placeId: null }), null)
     assert.equal(buildInboxQuery({ businessId: 'b', access: manager, filter: 'all', placeId: 'p3' }), null)
@@ -166,16 +194,6 @@ describe('buildInboxQuery', () => {
 })
 
 describe('filters and unread', () => {
-  it('needs reply hides archived / blocked threads', () => {
-    assert.equal(threadMatchesFilter(thread({ needsReply: true }), 'needs_reply'), true)
-    assert.equal(threadMatchesFilter(thread({ needsReply: true, status: 'archived' }), 'needs_reply'), false)
-    assert.equal(threadMatchesFilter(thread({ needsReply: true, status: 'blocked' }), 'needs_reply'), false)
-    assert.equal(threadMatchesFilter(thread({ needsReply: false }), 'needs_reply'), false)
-    assert.equal(threadMatchesFilter(thread({ status: 'blocked' }), 'all'), true)
-    assert.equal(threadMatchesFilter(thread({ status: 'archived' }), 'archived'), true)
-    assert.equal(threadMatchesFilter(thread({ status: 'open' }), 'blocked'), false)
-  })
-
   it('counts open threads with businessUnread > 0', () => {
     assert.equal(
       countUnreadThreads([

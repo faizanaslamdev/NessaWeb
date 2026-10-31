@@ -23,7 +23,6 @@ import {
   buildInboxQuery,
   isThreadUnread,
   shortRelativeTime,
-  threadMatchesFilter,
   type InboxFilter,
   type InboxThread,
 } from '@/lib/business-inbox'
@@ -85,8 +84,7 @@ export function BusinessInboxSection() {
   )
   const own = useThreadList(spec)
   const list = sharedView ? inbox.needsReply : own
-  const rawThreads = sharedView ? list.threads.slice(0, pageLimit) : list.threads
-  const threads = rawThreads.filter(t => threadMatchesFilter(t, filter))
+  const threads = sharedView ? list.threads.slice(0, pageLimit) : list.threads
   const hasMore = sharedView ? list.rawCount > pageLimit : list.rawCount >= pageLimit
   const fullSpec = sharedView
     ? buildInboxQuery({ businessId: business.businessId, access: inbox.access, filter, placeId: null })
@@ -194,13 +192,6 @@ export function BusinessInboxSection() {
             ) : !threads.length && !list.error ? (
               <EmptyState icon="inbox" title={EMPTY_COPY[filter].title}>
                 {EMPTY_COPY[filter].body}
-                {hasMore ? (
-                  <div className="mt-3">
-                    <Button size="sm" onClick={() => setPageLimit(n => n + INBOX_PAGE_SIZE)}>
-                      Look further back
-                    </Button>
-                  </div>
-                ) : null}
               </EmptyState>
             ) : (
               <ul className="divide-y divide-n-line-soft">

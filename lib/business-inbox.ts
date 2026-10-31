@@ -167,7 +167,9 @@ export type InboxQuerySpec = {
  * their access) — the rules would deny it.
  *
  * Every shape is backed by a composite index in firestore.indexes.json:
- * businessId (+ placeId) (+ needsReply | status) + updatedAt desc.
+ * businessId (+ placeId) (+ status (+ needsReply)) + updatedAt desc.
+ * "All" is every status; the query alone defines each list (no
+ * client-side filtering, so pages are always full).
  */
 export function buildInboxQuery(input: {
   businessId: string
@@ -193,7 +195,10 @@ export function buildInboxQuery(input: {
       where.push(['placeId', 'in', ids.slice(0, FIRESTORE_IN_MAX)])
     }
   }
-  if (filter === 'needs_reply') where.push(['needsReply', '==', true])
+  if (filter === 'needs_reply') {
+    // Open threads only: archived / blocked ones were put away by staff.
+    where.push(['status', '==', 'open'], ['needsReply', '==', true])
+  }
   else if (filter === 'archived') where.push(['status', '==', 'archived'])
   else if (filter === 'blocked') where.push(['status', '==', 'blocked'])
   return {
@@ -207,25 +212,6 @@ export function buildInboxQuery(input: {
 /** Stable key for a spec (listener dependency). */
 export function inboxQueryKey(spec: InboxQuerySpec | null): string {
   return spec ? JSON.stringify([spec.where, spec.orderBy, spec.limit]) : ''
-}
-
-/**
- * Client-side refinement on top of the query. "Needs reply" hides threads
- * staff put away (archived / blocked) — there is no index combining
- * needsReply with status, and a customer message reopens an archived thread
- * anyway.
- */
-export function threadMatchesFilter(thread: InboxThread, filter: InboxFilter): boolean {
-  switch (filter) {
-    case 'needs_reply':
-      return thread.needsReply && thread.status === 'open'
-    case 'archived':
-      return thread.status === 'archived'
-    case 'blocked':
-      return thread.status === 'blocked'
-    case 'all':
-      return true
-  }
 }
 
 export function isThreadUnread(thread: InboxThread): boolean {

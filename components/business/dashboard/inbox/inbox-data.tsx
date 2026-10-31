@@ -65,7 +65,7 @@ export function useThreadList(spec: InboxQuerySpec | null): ThreadListState {
 type InboxCtx = {
   access: InboxAccess
   businessId: string
-  /** Needs reply, every Place the member can see, newest first (≤ INBOX_BADGE_LIMIT). */
+  /** Open threads needing a reply (status == open, needsReply), every Place the member can see, newest first (≤ INBOX_BADGE_LIMIT). */
   needsReply: ThreadListState
   unreadCount: number
 }
