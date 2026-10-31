@@ -11,7 +11,7 @@ import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { useBusiness } from '@/components/business/dashboard/business-shell'
-import { useInbox, useThreadList } from '@/components/business/dashboard/inbox/inbox-data'
+import { useInbox, useThreadList, useViewerStaffId } from '@/components/business/dashboard/inbox/inbox-data'
 import { InboxThreadView } from '@/components/business/dashboard/inbox/inbox-thread'
 import { ShellTitle } from '@/components/dash/app-shell'
 import { Icon } from '@/components/dash/icons'
@@ -25,6 +25,7 @@ import {
   isThreadUnread,
   shortRelativeTime,
   staffRowLabel,
+  staffThreadPreview,
   visibleInboxThreads,
   type InboxFilter,
   type InboxThread,
@@ -104,6 +105,7 @@ export function BusinessInboxSection() {
     [pathname, search],
   )
 
+  const viewerStaffId = useViewerStaffId(business.businessId)
   const places = business.places
   const multiPlace = places.length > 1
   const showPlaceName = multiPlace && placeFilter === null
@@ -202,6 +204,7 @@ export function BusinessInboxSection() {
                   <li key={t.id}>
                     <ThreadRow
                       thread={t}
+                      viewerStaffId={viewerStaffId}
                       href={threadHref(t.id)}
                       active={t.id === selectedId}
                       showPlace={showPlaceName}
@@ -242,11 +245,13 @@ export function BusinessInboxSection() {
 
 function ThreadRow({
   thread,
+  viewerStaffId,
   href,
   active,
   showPlace,
 }: {
   thread: InboxThread
+  viewerStaffId: string | null
   href: string
   active: boolean
   showPlace: boolean
@@ -254,7 +259,7 @@ function ThreadRow({
   const unread = isThreadUnread(thread)
   const label = staffRowLabel(thread)
   const last = thread.lastMessage
-  const preview = last ? `${last.senderRole === 'business' ? 'You: ' : ''}${last.text}` : 'No messages yet'
+  const preview = staffThreadPreview(thread, viewerStaffId)
   const time = shortRelativeTime(last?.createdAtMs ?? thread.updatedAtMs)
   return (
     <Link

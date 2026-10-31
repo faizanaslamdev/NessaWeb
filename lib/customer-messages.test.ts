@@ -62,7 +62,7 @@ describe('customer list', () => {
   it('hides deleted threads (server flag, or locally until a newer message)', () => {
     const a = thread({ id: 'a' })
     const b = thread({ id: 'b', customerHidden: true })
-    const c = thread({ id: 'c', lastMessage: { text: 'new', senderRole: 'business', createdAtMs: 50 } })
+    const c = thread({ id: 'c', lastMessage: { text: 'new', senderRole: 'business', senderStaffId: 'staffA0000001', createdAtMs: 50 } })
     assert.deepEqual(visibleCustomerThreads([a, b, c]).map(t => t.id), ['a', 'c'])
     assert.deepEqual(visibleCustomerThreads([a, b, c], new Map([['a', 10], ['c', 20]])).map(t => t.id), ['c'])
   })
@@ -77,7 +77,7 @@ describe('customer list', () => {
 
   it('previews and labels', () => {
     assert.equal(customerThreadPreview(thread()), 'You: Oi')
-    assert.equal(customerThreadPreview(thread({ lastMessage: { text: 'Hi!', senderRole: 'business', createdAtMs: 1 } })), 'Hi!')
+    assert.equal(customerThreadPreview(thread({ lastMessage: { text: 'Hi!', senderRole: 'business', senderStaffId: 'staffA0000001', createdAtMs: 1 } })), 'Hi!')
     assert.equal(customerThreadPreview(thread({ lastMessage: null })), 'No messages yet')
     assert.equal(customerRowLabel(thread()), null)
     assert.equal(customerRowLabel(thread({ customerBlocked: true })), 'Blocked')

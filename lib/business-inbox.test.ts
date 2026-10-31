@@ -19,6 +19,8 @@ import {
   outboxReducer,
   parseMessage,
   parseThread,
+  staffSenderLabel,
+  staffThreadPreview,
   readReceipt,
   shortRelativeTime,
   shouldMarkRead,
@@ -50,7 +52,7 @@ function thread(over: Partial<InboxThread> = {}): InboxThread {
 }
 
 function msg(id: string, over: Partial<InboxMessage> = {}): InboxMessage {
-  return { ...parseMessage(id, { senderRole: 'customer', senderUid: 'u1', text: 'hi', createdAt: ts(1000) }), ...over }
+  return { ...parseMessage(id, { senderRole: 'customer', text: 'hi', createdAt: ts(1000) }), ...over }
 }
 
 describe('parsing', () => {
@@ -86,7 +88,7 @@ describe('parsing', () => {
     assert.equal(t.status, 'open')
     assert.equal(t.businessUnread, 2)
     assert.equal(t.customerLastReadAtMs, 4)
-    assert.deepEqual(t.lastMessage, { text: 'Oi', senderRole: 'customer', createdAtMs: 10 })
+    assert.deepEqual(t.lastMessage, { text: 'Oi', senderRole: 'customer', senderStaffId: null, createdAtMs: 10 })
     assert.equal(t.businessLastReadAtMs, null)
   })
 
@@ -103,6 +105,35 @@ describe('parsing', () => {
     assert.deepEqual(m.translations, { pt: 'Olá' })
     assert.equal(m.senderRole, 'business')
     assert.equal(m.clientId, 'abcdefgh')
+  })
+
+  it('staff senders are opaque staffIds; uid fields are never read', () => {
+    assert.equal(parseMessage('m', { senderRole: 'business', senderStaffId: 'staffA0000001', text: 'x' }).senderStaffId, 'staffA0000001')
+    assert.equal(parseMessage('m', { senderRole: 'business', senderUid: 'uid-1', text: 'x' }).senderStaffId, null)
+    assert.equal(parseMessage('m', { senderRole: 'customer', senderStaffId: 'x', text: 'x' }).senderStaffId, null)
+    assert.equal('senderUid' in parseMessage('m', { senderRole: 'business', senderUid: 'uid-1', text: 'x' }), false)
+    const t = parseThread('id', { lastMessage: { text: 'Yes', senderRole: 'business', senderStaffId: 'staffA0000001', senderUid: 'uid-1', createdAt: ts(1) } })
+    assert.deepEqual(t.lastMessage, { text: 'Yes', senderRole: 'business', senderStaffId: 'staffA0000001', createdAtMs: 1 })
+  })
+})
+
+describe('You / Team (staffIds from businessAccess)', () => {
+  const last = (senderRole: 'customer' | 'business', senderStaffId: string | null) => ({
+    lastMessage: { text: 'Yes', senderRole, senderStaffId, createdAtMs: 1 },
+  })
+
+  it('bubble labels', () => {
+    assert.equal(staffSenderLabel({ senderRole: 'business', senderStaffId: 'me0000000001' }, 'me0000000001'), 'You')
+    assert.equal(staffSenderLabel({ senderRole: 'business', senderStaffId: 'other0000001' }, 'me0000000001'), 'Team')
+    assert.equal(staffSenderLabel({ senderRole: 'business', senderStaffId: null }, null), 'Team', 'unknown viewer id: never "You"')
+    assert.equal(staffSenderLabel({ senderRole: 'customer', senderStaffId: null }, 'me0000000001'), null)
+  })
+
+  it('row previews', () => {
+    assert.equal(staffThreadPreview(last('business', 'me0000000001'), 'me0000000001'), 'You: Yes')
+    assert.equal(staffThreadPreview(last('business', 'other0000001'), 'me0000000001'), 'Team: Yes')
+    assert.equal(staffThreadPreview(last('customer', null), 'me0000000001'), 'Yes')
+    assert.equal(staffThreadPreview({ lastMessage: null }, 'me0000000001'), 'No messages yet')
   })
 })
 
@@ -260,7 +291,7 @@ describe('thread view', () => {
     const newer = incomingBatchKey('t', [...msgs, msg('c2')], null)
     assert.equal(shouldMarkRead({ thread: t, visible: true, batchKey: newer, lastMarkedKey: key }), true)
     assert.equal(
-      incomingBatchKey('t', [], { lastMessage: { text: 'x', senderRole: 'customer', createdAtMs: 5 } }),
+      incomingBatchKey('t', [], { lastMessage: { text: 'x', senderRole: 'customer', senderStaffId: null, createdAtMs: 5 } }),
       't:@5',
     )
     assert.equal(incomingBatchKey('t', [], { lastMessage: null }), null)

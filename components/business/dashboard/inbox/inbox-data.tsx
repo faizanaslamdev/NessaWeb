@@ -9,7 +9,9 @@
 
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 
+import { useBusinessAccess } from '@/components/messages/business-access-store'
 import { useThreadList as useRawThreadList } from '@/components/messaging/use-thread-list'
+import { useAccountAuth } from '@/hooks/use-account-auth'
 import {
   INBOX_BADGE_LIMIT,
   buildInboxQuery,
@@ -86,6 +88,16 @@ export function useInbox(): InboxCtx {
   const ctx = useContext(InboxContext)
   if (!ctx) throw new Error('useInbox outside InboxProvider')
   return ctx
+}
+
+/**
+ * The signed-in member's own opaque staffId in `businessId` (from
+ * users/{uid}/private/businessAccess) — business messages carry the sender's
+ * staffId, never a uid. Null while loading / not assigned yet ("Team").
+ */
+export function useViewerStaffId(businessId: string): string | null {
+  const { user } = useAccountAuth()
+  return useBusinessAccess(user?.uid).staffIds[businessId] ?? null
 }
 
 /** Unread badge count without throwing outside the provider. */

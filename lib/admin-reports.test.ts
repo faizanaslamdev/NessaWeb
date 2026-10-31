@@ -9,6 +9,7 @@ import {
   describeReportsError,
   describeResolution,
   mergeReportPages,
+  adminSenderLabel,
   parseAdminThread,
   parseReport,
   parseReportsPage,
@@ -111,8 +112,8 @@ describe('conversation and labels', () => {
       {
         thread: { businessId: 'biz', placeId: 'ChIJx', customerUid: 'u1', status: 'blocked', customerBlocked: true, updatedAt: 9 },
         messages: [
-          { id: 'm2', senderRole: 'business', text: 'b', createdAt: 2 },
-          { id: 'm1', senderRole: 'customer', text: 'a', createdAt: 1, translations: { en: 'A' } },
+          { id: 'm2', senderRole: 'business', senderStaffId: 'staffA0000001', senderUid: 'owner1', senderName: 'Maria', text: 'b', createdAt: 2 },
+          { id: 'm1', senderRole: 'customer', senderUid: 'u1', senderName: 'Lia', text: 'a', createdAt: 1, translations: { en: 'A' } },
           { text: 'no id' },
         ],
       },
@@ -123,6 +124,12 @@ describe('conversation and labels', () => {
     assert.equal(view.thread?.updatedAtMs, 9)
     assert.deepEqual(view.messages.map(m => m.id), ['m1', 'm2'])
     assert.deepEqual(view.messages[0].translations, { en: 'A' })
+    // Staff resolved server-side for moderators.
+    assert.equal(view.messages[1].senderStaffId, 'staffA0000001')
+    assert.equal(view.messages[1].senderUid, 'owner1')
+    assert.equal(adminSenderLabel(view.messages[1], { businessName: 'Casa', customerName: 'Lia' }), 'Casa · Maria')
+    assert.equal(adminSenderLabel({ ...view.messages[1], senderName: null }, { businessName: 'Casa', customerName: 'Lia' }), 'Casa')
+    assert.equal(adminSenderLabel(view.messages[0], { businessName: 'Casa', customerName: 'Lia' }), 'Lia')
     assert.deepEqual(parseAdminThread({}, 't'), { thread: null, messages: [] })
   })
 

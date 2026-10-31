@@ -12,6 +12,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { sendEmailVerification } from 'firebase/auth'
 
 import { useBusiness } from '@/components/business/dashboard/business-shell'
+import { useViewerStaffId } from '@/components/business/dashboard/inbox/inbox-data'
 import { Icon } from '@/components/dash/icons'
 import {
   Button,
@@ -39,6 +40,7 @@ import {
   describeInboxError,
   readReceipt,
   staffComposerState,
+  staffSenderLabel,
   type InboxMessage,
   type InboxThread,
 } from '@/lib/business-inbox'
@@ -48,6 +50,7 @@ import {
   subscribeThread,
   type StaffThreadAction,
 } from '@/lib/business-messaging-api'
+import type { TimelineItem } from '@/lib/business-messaging'
 import { AUTH_EMAIL_ACTION_CODE_SETTINGS } from '@/lib/account/constants'
 import { getFirebaseClient } from '@/lib/firebase'
 
@@ -138,6 +141,16 @@ export function InboxThreadView({ threadId, onBack }: { threadId: string; onBack
   )
   const businessLanguage = thread?.businessLanguage ?? 'en'
   const translate = useCallback((m: InboxMessage) => businessSideTranslation(m, businessLanguage), [businessLanguage])
+  // "Casa · You" / "Casa · Team" above each run of business messages (staffIds, never uids).
+  const viewerStaffId = useViewerStaffId(business.businessId)
+  const businessName = thread?.businessName ?? ''
+  const ownRunLabel = useCallback(
+    (item: TimelineItem) => {
+      const who = item.kind === 'pending' ? 'You' : staffSenderLabel(item.message, viewerStaffId)
+      return businessName ? `${businessName} · ${who}` : (who ?? undefined)
+    },
+    [businessName, viewerStaffId],
+  )
 
   if (threadState === 'loading') {
     return <LoadingBlock label="Loading conversation…" rows={5} />
@@ -204,7 +217,7 @@ export function InboxThreadView({ threadId, onBack }: { threadId: string; onBack
       <MessageTimeline
         conversation={conversation}
         viewer="business"
-        ownRunLabel={thread.businessName}
+        ownRunLabel={ownRunLabel}
         translate={translate}
         receipt={receipt}
       />

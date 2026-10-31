@@ -17,7 +17,7 @@ import {
 const ts = (ms: number) => ({ toMillis: () => ms })
 
 function msg(id: string, over: Partial<BusinessMessage> = {}): BusinessMessage {
-  return { ...parseMessage(id, { senderRole: 'customer', senderUid: 'u1', text: 'hi', createdAt: ts(1000) }), ...over }
+  return { ...parseMessage(id, { senderRole: 'customer', text: 'hi', createdAt: ts(1000) }), ...over }
 }
 
 describe('translations for either side', () => {
@@ -61,10 +61,10 @@ describe('Seen / mark read for the traveler', () => {
     assert.equal(shouldMarkReadFor({ unread: 0, visible: true, batchKey: key, lastMarkedKey: null }), false)
     assert.equal(shouldMarkReadFor({ unread: 1, visible: false, batchKey: key, lastMarkedKey: null }), false)
     assert.equal(
-      incomingBatchKeyFor('t', [], { text: 'x', senderRole: 'business', createdAtMs: 7 }, 'customer'),
+      incomingBatchKeyFor('t', [], { text: 'x', senderRole: 'business', senderStaffId: 'staffA0000001', createdAtMs: 7 }, 'customer'),
       't:@7',
     )
-    assert.equal(incomingBatchKeyFor('t', [], { text: 'x', senderRole: 'customer', createdAtMs: 7 }, 'customer'), null)
+    assert.equal(incomingBatchKeyFor('t', [], { text: 'x', senderRole: 'customer', senderStaffId: null, createdAtMs: 7 }, 'customer'), null)
   })
 })
 

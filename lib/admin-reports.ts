@@ -202,7 +202,14 @@ export function describeResolution(
 
 /* ───────────── Conversation (getThread) ───────────── */
 
-export type AdminThreadView = { thread: BusinessThread | null; messages: BusinessMessage[] }
+/**
+ * A message as moderators see it: the backend resolves business senders'
+ * opaque staffIds to the staff member's uid and name (admins only — the
+ * thread's customer never sees them).
+ */
+export type AdminThreadMessage = BusinessMessage & { senderUid: string | null; senderName: string | null }
+
+export type AdminThreadView = { thread: BusinessThread | null; messages: AdminThreadMessage[] }
 
 /** getThread response (timestamps in ms, messages oldest first). */
 export function parseAdminThread(raw: unknown, threadId: string): AdminThreadView {
@@ -212,10 +219,23 @@ export function parseAdminThread(raw: unknown, threadId: string): AdminThreadVie
   const messages = Array.isArray(data.messages)
     ? data.messages
         .filter((m): m is Record<string, unknown> => Boolean(m) && typeof m === 'object' && typeof (m as { id?: unknown }).id === 'string')
-        .map(m => parseMessage(m.id as string, m))
+        .map(m => ({
+          ...parseMessage(m.id as string, m),
+          senderUid: typeof m.senderUid === 'string' && m.senderUid ? m.senderUid : null,
+          senderName: typeof m.senderName === 'string' && m.senderName.trim() ? m.senderName.trim() : null,
+        }))
     : []
   messages.sort((a, b) => (a.createdAtMs ?? 0) - (b.createdAtMs ?? 0))
   return { thread, messages }
+}
+
+/** Who sent a message, for the moderation log ("Casa · Maria", "Lia"). */
+export function adminSenderLabel(
+  message: Pick<AdminThreadMessage, 'senderRole' | 'senderName'>,
+  names: { businessName: string; customerName: string },
+): string {
+  if (message.senderRole !== 'business') return names.customerName
+  return message.senderName ? `${names.businessName} · ${message.senderName}` : names.businessName
 }
 
 export function reporterLabel(report: Pick<AdminReport, 'reporterRole'>): string {

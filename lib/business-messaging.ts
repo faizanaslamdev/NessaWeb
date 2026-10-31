@@ -28,7 +28,11 @@ export type BusinessThread = {
   customerAvatar: string | null
   customerLanguage: string | null
   businessLanguage: string
-  lastMessage: { text: string; senderRole: SenderRole; createdAtMs: number | null } | null
+  /**
+   * `senderStaffId`: the opaque staffId of a business sender (staff "You" /
+   * "Team"); null for customer messages. Threads never carry staff uids.
+   */
+  lastMessage: { text: string; senderRole: SenderRole; senderStaffId: string | null; createdAtMs: number | null } | null
   customerUnread: number
   businessUnread: number
   needsReply: boolean
@@ -48,7 +52,12 @@ export type BusinessThread = {
 export type BusinessMessage = {
   id: string
   senderRole: SenderRole
-  senderUid: string
+  /**
+   * Business messages: the sender's opaque staffId (compare with the viewer's
+   * own, from businessAccess, for "You" / "Team"). Null for customer messages.
+   * Messages never carry uids.
+   */
+  senderStaffId: string | null
   text: string
   createdAtMs: number | null
   clientId: string | null
@@ -102,7 +111,12 @@ export function parseThread(id: string, data: Record<string, unknown>): Business
     businessLanguage: str(data.businessLanguage, 'en') || 'en',
     lastMessage:
       last && typeof last === 'object'
-        ? { text: str(last.text), senderRole: role(last.senderRole), createdAtMs: toMillis(last.createdAt) }
+        ? {
+            text: str(last.text),
+            senderRole: role(last.senderRole),
+            senderStaffId: role(last.senderRole) === 'business' ? strOrNull(last.senderStaffId) : null,
+            createdAtMs: toMillis(last.createdAt),
+          }
         : null,
     customerUnread: num(data.customerUnread),
     businessUnread: num(data.businessUnread),
@@ -129,7 +143,7 @@ export function parseMessage(id: string, data: Record<string, unknown>): Busines
   return {
     id,
     senderRole: role(data.senderRole),
-    senderUid: str(data.senderUid),
+    senderStaffId: role(data.senderRole) === 'business' ? strOrNull(data.senderStaffId) : null,
     text: str(data.text),
     createdAtMs: toMillis(data.createdAt),
     clientId: strOrNull(data.clientId),

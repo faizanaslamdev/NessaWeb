@@ -21,6 +21,7 @@ import {
   type BusinessMessage,
   type BusinessThread,
   type MessagingErrorInfo,
+  type SenderRole,
   type ThreadQuerySpec,
   type WhereClause,
 } from './business-messaging'
@@ -38,6 +39,32 @@ export type InboxThread = BusinessThread
 export type InboxMessage = BusinessMessage
 export type InboxQuerySpec = ThreadQuerySpec
 export type InboxErrorInfo = MessagingErrorInfo
+
+/* ───────────── Who sent it (staff side) ───────────── */
+
+/**
+ * Business messages: "You" when sent with the viewer's own staffId in this
+ * business (users/{uid}/private/businessAccess), "Team" for a teammate —
+ * also while the viewer's staffId isn't known. Null for traveler messages.
+ */
+export function staffSenderLabel(
+  message: { senderRole: SenderRole; senderStaffId: string | null },
+  viewerStaffId: string | null | undefined,
+): 'You' | 'Team' | null {
+  if (message.senderRole !== 'business') return null
+  return viewerStaffId && message.senderStaffId === viewerStaffId ? 'You' : 'Team'
+}
+
+/** Inbox row preview: "You: …" / "Team: …" for business replies, the traveler's text as is. */
+export function staffThreadPreview(
+  thread: Pick<InboxThread, 'lastMessage'>,
+  viewerStaffId: string | null | undefined,
+): string {
+  const last = thread.lastMessage
+  if (!last) return 'No messages yet'
+  const label = staffSenderLabel(last, viewerStaffId)
+  return label ? `${label}: ${last.text}` : last.text
+}
 
 /* ───────────── Queries per role ───────────── */
 

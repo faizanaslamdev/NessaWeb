@@ -3,23 +3,32 @@
 /**
  * The signed-in user's business memberships (users/{uid}/private/businessAccess),
  * one live listener shared by every consumer on the page (the Place page's
- * Message button, /messages/new) and torn down when the last one unmounts.
+ * Message button, /messages/new, the Business Inbox's "You" / "Team" labels)
+ * and torn down when the last one unmounts.
  * A missing doc (accounts from before it existed) is created once per
  * session with syncMyBusinessAccess; the listener then picks it up.
  */
 
 import { useCallback, useSyncExternalStore } from 'react'
 
-import { businessAccessSnapshotAction, parseBusinessAccess, teamBusinessIds } from '@/lib/business-access'
+import {
+  businessAccessSnapshotAction,
+  parseBusinessAccess,
+  staffIdsByBusiness,
+  teamBusinessIds,
+  type BusinessAccessMembership,
+} from '@/lib/business-access'
 import { subscribeBusinessAccess, syncMyBusinessAccess } from '@/lib/business-messaging-api'
 
 export type BusinessAccessSummary = {
   /** Business ids the user is on the team of. */
   teamBusinessIds: string[]
+  /** businessId → the user's own opaque staffId there ("You" vs "Team" on business messages). */
+  staffIds: Record<string, string>
   loaded: boolean
 }
 
-const EMPTY: BusinessAccessSummary = { teamBusinessIds: [], loaded: false }
+const EMPTY: BusinessAccessSummary = { teamBusinessIds: [], staffIds: {}, loaded: false }
 
 type Entry = {
   snapshot: BusinessAccessSummary
@@ -41,10 +50,15 @@ function entryFor(uid: string): Entry {
   return entry
 }
 
-function publish(entry: Entry, ids: string[]) {
-  const same = entry.snapshot.loaded && entry.snapshot.teamBusinessIds.join('|') === ids.join('|')
+function publish(entry: Entry, memberships: BusinessAccessMembership[]) {
+  const ids = teamBusinessIds(memberships)
+  const staffIds = staffIdsByBusiness(memberships)
+  const same =
+    entry.snapshot.loaded &&
+    entry.snapshot.teamBusinessIds.join('|') === ids.join('|') &&
+    JSON.stringify(entry.snapshot.staffIds) === JSON.stringify(staffIds)
   if (same) return
-  entry.snapshot = { teamBusinessIds: ids, loaded: true }
+  entry.snapshot = { teamBusinessIds: ids, staffIds, loaded: true }
   entry.listeners.forEach(l => l())
 }
 
@@ -62,7 +76,7 @@ function subscribe(uid: string, listener: () => void): () => void {
         const action = businessAccessSnapshotAction({ ...snap, syncRequested: syncRequested.has(uid) })
         if (action === 'wait') return
         if (action === 'use') {
-          publish(entry, teamBusinessIds(parseBusinessAccess(snap.data)))
+          publish(entry, parseBusinessAccess(snap.data))
           return
         }
         publish(entry, [])

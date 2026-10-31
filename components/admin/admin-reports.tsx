@@ -34,6 +34,7 @@ import {
   EMPTY_RESOLVE_DRAFT,
   REPORT_FILTERS,
   REPORT_NOTE_MAX,
+  adminSenderLabel,
   applyResolvedReport,
   describeResolution,
   mergeReportPages,
@@ -321,7 +322,10 @@ function ConversationLog({ view, businessName, customerName }: { view: AdminThre
               return (
                 <li key={m.id} className={cx('flex flex-col', fromBusiness ? 'items-end' : 'items-start')}>
                   <span className="mb-0.5 px-1 text-[11px] font-medium text-n-subtle">
-                    {fromBusiness ? businessName : customerName} · {messageTime(m.createdAtMs)}
+                    <span title={m.senderUid ? `uid ${m.senderUid}` : undefined}>
+                      {adminSenderLabel(m, { businessName, customerName })}
+                    </span>{' '}
+                    · {messageTime(m.createdAtMs)}
                   </span>
                   <div
                     className={cx(

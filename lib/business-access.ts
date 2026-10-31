@@ -11,6 +11,11 @@ export type BusinessAccessRole = 'owner' | 'staff'
 export type BusinessAccessMembership = {
   businessId: string
   role: BusinessAccessRole
+  /**
+   * The user's own opaque staffId in this business — business messages carry
+   * it (`senderStaffId`) instead of a uid. Null until the server assigns one.
+   */
+  staffId: string | null
   /** Owners: every Place of the business; managers: theirs. */
   placeIds: string[]
   businessName: string
@@ -34,6 +39,7 @@ export function parseBusinessAccess(data: unknown): BusinessAccessMembership[] {
     out.push({
       businessId,
       role,
+      staffId: typeof m.staffId === 'string' && m.staffId.trim() ? m.staffId.trim() : null,
       placeIds: stringList(m.placeIds),
       businessName: typeof m.businessName === 'string' && m.businessName.trim() ? m.businessName.trim() : 'Business',
     })
@@ -44,6 +50,13 @@ export function parseBusinessAccess(data: unknown): BusinessAccessMembership[] {
 /** Business ids the user is on the team of (any role, any Place — the server refuses all of them). */
 export function teamBusinessIds(memberships: readonly BusinessAccessMembership[]): string[] {
   return memberships.map(m => m.businessId)
+}
+
+/** businessId → the user's own staffId there (memberships without one left out). */
+export function staffIdsByBusiness(memberships: readonly BusinessAccessMembership[]): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const m of memberships) if (m.staffId) out[m.businessId] = m.staffId
+  return out
 }
 
 export function businessInboxHref(businessId: string): string {

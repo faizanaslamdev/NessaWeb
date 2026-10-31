@@ -5,6 +5,7 @@ import {
   businessAccessSnapshotAction,
   businessInboxHref,
   parseBusinessAccess,
+  staffIdsByBusiness,
   teamBusinessIds,
 } from './business-access'
 
@@ -12,7 +13,7 @@ describe('parseBusinessAccess', () => {
   it('keeps valid memberships and drops malformed ones', () => {
     const memberships = parseBusinessAccess({
       memberships: [
-        { businessId: 'biz1', role: 'owner', placeIds: ['ChIJa', 'ChIJb'], businessName: 'Casa', places: [] },
+        { businessId: 'biz1', role: 'owner', staffId: 'staffOwn00001', placeIds: ['ChIJa', 'ChIJb'], businessName: 'Casa', places: [] },
         { businessId: 'biz2', role: 'staff', placeIds: ['ChIJc', 3], businessName: ' ' },
         { businessId: 'biz3', role: 'admin', placeIds: [] },
         { role: 'owner' },
@@ -21,10 +22,12 @@ describe('parseBusinessAccess', () => {
       ],
     })
     assert.deepEqual(memberships, [
-      { businessId: 'biz1', role: 'owner', placeIds: ['ChIJa', 'ChIJb'], businessName: 'Casa' },
-      { businessId: 'biz2', role: 'staff', placeIds: ['ChIJc'], businessName: 'Business' },
+      { businessId: 'biz1', role: 'owner', staffId: 'staffOwn00001', placeIds: ['ChIJa', 'ChIJb'], businessName: 'Casa' },
+      { businessId: 'biz2', role: 'staff', staffId: null, placeIds: ['ChIJc'], businessName: 'Business' },
     ])
     assert.deepEqual(teamBusinessIds(memberships), ['biz1', 'biz2'])
+    // The viewer's own staffId per business ("You" vs "Team"); none yet → left out.
+    assert.deepEqual(staffIdsByBusiness(memberships), { biz1: 'staffOwn00001' })
   })
   it('handles a missing or empty doc', () => {
     assert.deepEqual(parseBusinessAccess(undefined), [])

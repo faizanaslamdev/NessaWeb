@@ -225,8 +225,11 @@ export function MessageTimeline({
 }: {
   conversation: Conversation
   viewer: SenderRole
-  /** Shown above a run of the viewer's own messages (e.g. the business name for staff). */
-  ownRunLabel?: string
+  /**
+   * Shown above a run of the viewer's side's messages — a string, or per item
+   * (staff: "You" / "Team"; a new run starts when the label changes).
+   */
+  ownRunLabel?: OwnRunLabel
   /** Shown above a run of the other side's messages. */
   otherRunLabel?: string
   translate: (message: BusinessMessage) => Translation | null
@@ -328,6 +331,12 @@ function isOwn(item: TimelineItem, viewer: SenderRole): boolean {
   return item.kind === 'pending' || item.message.senderRole === viewer
 }
 
+export type OwnRunLabel = string | ((item: TimelineItem) => string | undefined)
+
+function ownLabelOf(label: OwnRunLabel | undefined, item: TimelineItem): string | undefined {
+  return typeof label === 'function' ? label(item) : label
+}
+
 const ownBubble = 'max-w-[85%] rounded-2xl rounded-br-md px-3.5 py-2 text-sm leading-5 whitespace-pre-wrap break-words md:max-w-[70%]'
 const otherBubble =
   'max-w-[85%] rounded-2xl rounded-bl-md border border-n-line bg-n-surface px-3.5 py-2 text-sm leading-5 whitespace-pre-wrap break-words text-n-ink md:max-w-[70%]'
@@ -346,7 +355,7 @@ function TimelineEntry({
   item: TimelineItem
   previous: TimelineItem | null
   viewer: SenderRole
-  ownRunLabel?: string
+  ownRunLabel?: OwnRunLabel
   otherRunLabel?: string
   translate: (message: BusinessMessage) => Translation | null
   receipt: 'Seen' | 'Sent' | null
@@ -355,8 +364,12 @@ function TimelineEntry({
 }) {
   const [showOriginal, setShowOriginal] = useState(false)
   const own = isOwn(item, viewer)
-  const startsRun = previous === null || isOwn(previous, viewer) !== own
-  const runLabel = startsRun ? (own ? ownRunLabel : otherRunLabel) : undefined
+  const ownLabel = own ? ownLabelOf(ownRunLabel, item) : undefined
+  const startsRun =
+    previous === null ||
+    isOwn(previous, viewer) !== own ||
+    (own && ownLabelOf(ownRunLabel, previous) !== ownLabel)
+  const runLabel = startsRun ? (own ? ownLabel : otherRunLabel) : undefined
 
   if (item.kind === 'pending') {
     const p = item.item
