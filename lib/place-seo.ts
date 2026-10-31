@@ -328,20 +328,27 @@ export function buildPlaceJsonLd(
   return jsonLd
 }
 
-/** Home → Places → this Place, for the canonical `/places/{slug}` page. */
+/**
+ * Home → Places → [country → town destination pages] → this Place, for the
+ * canonical `/places/{slug}` page. `trail` holds the destination pages the
+ * Place belongs to (site-relative paths), when they exist.
+ */
 export function buildPlaceBreadcrumbJsonLd(
   input: { name: string },
   canonicalUrl: string,
+  trail: { name: string; path: string }[] = [],
 ): Record<string, unknown> {
   const origin = new URL(canonicalUrl).origin
+  const items = [
+    { name: 'Home', item: `${origin}/` },
+    { name: 'Places', item: `${origin}/places` },
+    ...trail.map(t => ({ name: clean(t.name), item: `${origin}${t.path}` })),
+    { name: clean(input.name) || 'Place', item: canonicalUrl },
+  ]
   return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: `${origin}/` },
-      { '@type': 'ListItem', position: 2, name: 'Places', item: `${origin}/places` },
-      { '@type': 'ListItem', position: 3, name: clean(input.name) || 'Place', item: canonicalUrl },
-    ],
+    itemListElement: items.map((it, i) => ({ '@type': 'ListItem', position: i + 1, ...it })),
   }
 }
 

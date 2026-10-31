@@ -4,7 +4,7 @@ import { RequireAccount } from '@/components/account/require-account'
 import { ClaimForm } from '@/components/business/claim-form'
 import { SiteShell } from '@/components/site/site-shell'
 import { Container } from '@/components/site/ui'
-import { isPublicPlaceIdValid } from '@/lib/place-landing'
+import { isPublicPlaceIdValid } from '@/lib/place-public-api'
 
 type PageProps = { params: Promise<{ placeId: string }> }
 

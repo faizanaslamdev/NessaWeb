@@ -16,6 +16,8 @@ const landing = {
   visitedCount: 0,
   coverSource: 'google',
   coverImageUrl: 'https://lh3.googleusercontent.com/p/x',
+  formattedAddress: 'Rua X, 123 - Cumbuco, CE, Brazil',
+  googlePhotoAttribution: { authors: [{ displayName: 'Ana', uri: 'https://maps.google.com/maps/contrib/1' }], googleMapsUri: 'https://maps.google.com/x' },
   wifi: { networkName: 'Kite', password: 'secret' },
   business: {
     businessId: 'biz_1',
@@ -34,7 +36,8 @@ const landing = {
 describe('place share meta — business fields', () => {
   it('SSR landing keeps only validated business fields and no Wi-Fi', () => {
     const safe = toSsrSafeLanding(landing)
-    assert.equal(safe.wifi, undefined)
+    assert.equal('wifi' in safe, false)
+    assert.equal(safe.hasWifi, true)
     assert.deepEqual(safe.business, {
       businessId: 'biz_1',
       verified: true,
@@ -54,10 +57,36 @@ describe('place share meta — business fields', () => {
     assert.equal(safe.business, undefined)
   })
 
-  it('share meta carries the sanitized business and the cover source', () => {
+  it('SSR landing carries no Google photo, attribution or address', () => {
+    const safe = toSsrSafeLanding(landing)
+    assert.equal(safe.coverImageUrl, undefined)
+    assert.equal(safe.coverSource, undefined)
+    assert.equal('googlePhotoAttribution' in safe, false)
+    assert.equal('formattedAddress' in safe, false)
+    assert.equal(/googleusercontent|maps\.google|Rua X/.test(JSON.stringify(safe)), false)
+  })
+
+  it('SSR landing keeps our own cover', () => {
+    const ours = 'https://firebasestorage.googleapis.com/v0/b/nessa/o/places%2Fx.jpg?alt=media&token=t'
+    const safe = toSsrSafeLanding({ ...landing, coverSource: 'nessa', coverImageUrl: ours, coverCredit: 'Ana' } as never)
+    assert.equal(safe.coverImageUrl, ours)
+    assert.equal(safe.coverCredit, 'Ana')
+  })
+
+  it('share meta never keeps a Google cover (even without an API key)', () => {
     const meta = mapCallableResult(landing)
     assert.ok(meta)
-    assert.equal(meta.coverSource, 'google')
+    assert.equal(meta.coverImageUrl, undefined)
+    assert.equal(meta.coverSource, undefined)
+    const ours = 'https://firebasestorage.googleapis.com/v0/b/nessa/o/places%2Fx.jpg?alt=media&token=t'
+    const nessa = mapCallableResult({ ...landing, coverSource: 'nessa', coverImageUrl: ours })
+    assert.equal(nessa?.coverImageUrl, ours)
+    assert.equal(nessa?.coverSource, 'nessa')
+  })
+
+  it('share meta carries the sanitized business', () => {
+    const meta = mapCallableResult(landing)
+    assert.ok(meta)
     assert.equal(meta.business?.name, 'KiteCabana')
     assert.equal(meta.business?.website, undefined)
     assert.equal(meta.business?.menuUrl, undefined)

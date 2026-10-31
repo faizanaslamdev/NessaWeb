@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import { notFound, permanentRedirect } from 'next/navigation'
 
-import { PlaceLandingClient } from '@/app/place/[placeId]/place-landing-client'
 import { PlaceVisitTracker } from '@/components/place/place-visit-tracker'
+import { PlaceView } from '@/components/place/place-view'
 import { SiteShell } from '@/components/site/site-shell'
+import { getPlaceSurroundings } from '@/lib/place-hubs-server'
 import { buildPlaceSeoMetadata } from '@/lib/place-page-metadata'
 import {
   PLACE_SHARE_BRAND,
@@ -14,17 +15,25 @@ import {
   toSsrSafeLanding,
 } from '@/lib/place-share-meta'
 import { buildPlaceBreadcrumbJsonLd, buildPlaceJsonLd, serializeJsonLd } from '@/lib/place-seo'
-import {
-  isValidPlaceSlug,
-  placeCanonicalPath,
-  placeCanonicalUrlForSlug,
-  searchParamsToQueryString,
-} from '@/lib/place-slug'
+import { isValidPlaceSlug, placeCanonicalPath, placeCanonicalUrlForSlug } from '@/lib/place-slug'
 import { resolvePlaceSlug, type PlaceSlugResolution } from '@/lib/place-slug-store'
+
+/**
+ * Static with revalidation (ISR): the CDN serves the page; it is rebuilt at
+ * most every 10 minutes per Place, from the same cached data as before (one
+ * getPublicPlaceLanding call and one place_slugs read per Place per window,
+ * plus the shared directory). Query strings (?ref=qr, utm_*) don't change
+ * the HTML: the visit tracker reads them in the browser.
+ */
+export const revalidate = 600
+
+/** No Place is prerendered at build; each renders on its first visit, then is cached. */
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  return []
+}
 
 type PageProps = {
   params: Promise<{ slug: string }>
-  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 function decodeSlug(raw: string | undefined): string {
@@ -79,39 +88,55 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 /**
- * Canonical public Place page: `/places/{slug}`. Server-rendered so search
- * engines and link previews get the real content; interactive parts hydrate
- * on the client. Retired/renamed slugs and non-lowercase variants
- * permanently redirect here; tracking params are preserved on redirect.
+ * Canonical public Place page: `/places/{slug}`. Rendered on the server
+ * (mostly Server Components) so search engines and link previews get the
+ * real content. Retired/renamed slugs and non-lowercase variants
+ * permanently redirect here. (Being static, those redirects can't carry the
+ * query string; QR codes and shared links use `/place/{id}?ref=…`, which
+ * still does — see app/place/[placeId].)
  */
-export default async function PlaceSlugPage({ params, searchParams }: PageProps) {
+export default async function PlaceSlugPage({ params }: PageProps) {
   const rawSlug = decodeSlug((await params).slug)
-  const query = searchParamsToQueryString(await searchParams)
 
   const lower = rawSlug.toLowerCase()
   if (lower !== rawSlug && isValidPlaceSlug(lower)) {
-    permanentRedirect(`${placeCanonicalPath(lower)}${query}`)
+    permanentRedirect(placeCanonicalPath(lower))
   }
   if (!isValidPlaceSlug(rawSlug)) {
     notFound()
   }
 
-  // Throws on a Firestore outage → error page (5xx) rather than a false 404.
+  // Throws on a Firestore outage → error (never cached) rather than a false 404.
   const resolution = await resolvePlaceSlug(rawSlug)
   if (!resolution) {
     notFound()
   }
   if (resolution.canonicalSlug && resolution.canonicalSlug !== rawSlug) {
-    permanentRedirect(`${placeCanonicalPath(resolution.canonicalSlug)}${query}`)
+    permanentRedirect(placeCanonicalPath(resolution.canonicalSlug))
   }
 
   const canonicalSlug = resolution.canonicalSlug ?? rawSlug
   const landing = await getCachedPublicPlaceLanding(resolution.placeId)
-  // Sanitized subset (no key-bearing URLs) for structured data.
+  if (!landing) {
+    // Don't cache an empty page: a failed regeneration keeps serving the
+    // last good one; a first visit gets an error and the next one retries.
+    throw new Error('place landing unavailable')
+  }
+  const place = toSsrSafeLanding(landing)
+  // Sanitized subset (no key-bearing URLs, no Google photo) for structured data.
   const share = await getCachedPublicPlaceShareMeta(resolution.placeId)
+  const surroundings = await getPlaceSurroundings({
+    placeId: resolution.placeId,
+    city: place.city,
+    country: place.country,
+  })
   const canonicalUrl = placeCanonicalUrlForSlug(canonicalSlug)
   const jsonLd = share ? buildPlaceJsonLd(share, canonicalUrl) : null
-  const breadcrumbLd = share ? buildPlaceBreadcrumbJsonLd(share, canonicalUrl) : null
+  const trail = [
+    ...(surroundings.country ? [{ name: surroundings.country.name, path: surroundings.country.path }] : []),
+    ...(surroundings.city ? [{ name: surroundings.city.cityName, path: surroundings.city.path }] : []),
+  ]
+  const breadcrumbLd = share ? buildPlaceBreadcrumbJsonLd(share, canonicalUrl, trail) : null
 
   return (
     <SiteShell bottomBar>
@@ -129,10 +154,12 @@ export default async function PlaceSlugPage({ params, searchParams }: PageProps)
         />
       ) : null}
       <PlaceVisitTracker placeId={resolution.placeId} />
-      <PlaceLandingClient
+      <PlaceView
+        place={place}
         placeId={resolution.placeId}
         slug={canonicalSlug}
-        initialPlace={landing ? toSsrSafeLanding(landing) : null}
+        hubs={{ country: surroundings.country, city: surroundings.city }}
+        moreInCity={surroundings.more}
       />
     </SiteShell>
   )

@@ -5,7 +5,7 @@
 
 import type { DirectoryPlace } from '@/lib/place-directory'
 import { getPlaceDirectory } from '@/lib/place-directory-server'
-import { buildPlaceHubs, type PlaceHubs } from '@/lib/place-geo'
+import { buildPlaceHubs, hubsForPlace, moreInCity, type PlaceHubs } from '@/lib/place-geo'
 
 /**
  * Hubs plus the directory they came from. Same failure rules as
@@ -25,5 +25,28 @@ export async function getPlaceHubsSafe(): Promise<{ hubs: PlaceHubs; places: Dir
     return await getPlaceHubs()
   } catch {
     return null
+  }
+}
+
+/**
+ * A Place's destination pages and "More in {town}" list, from the cached
+ * directory (best effort: empty when it can't be loaded).
+ */
+export async function getPlaceSurroundings(place: {
+  placeId: string
+  city?: string | null
+  country?: string | null
+}): Promise<{
+  country: { name: string; path: string } | null
+  city: { cityName: string; path: string } | null
+  more: DirectoryPlace[]
+}> {
+  const data = await getPlaceHubsSafe()
+  if (!data) return { country: null, city: null, more: [] }
+  const found = hubsForPlace(data.hubs, place)
+  return {
+    country: found.country ? { name: found.country.name, path: found.country.path } : null,
+    city: found.city ? { cityName: found.city.cityName, path: found.city.path } : null,
+    more: moreInCity(data.places, place, 6),
   }
 }

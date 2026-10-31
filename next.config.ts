@@ -16,7 +16,25 @@ const ADMIN_HOST_PATTERN = 'admin\\..+'
  */
 const ADMIN_ORIGIN = process.env.NEXT_PUBLIC_ADMIN_ORIGIN?.replace(/\/$/, '') || 'https://admin.nessachat.com'
 
+/**
+ * next/image optimizes only NessaChat's own photos (Firebase Storage
+ * download URLs of our bucket) — never Google's. Files there are immutable
+ * (a new photo gets a new path / token), so optimized copies are kept long.
+ */
+const STORAGE_BUCKET = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET?.trim()
+
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+        pathname: STORAGE_BUCKET ? `/v0/b/${STORAGE_BUCKET}/o/**` : '/v0/b/**',
+      },
+    ],
+    qualities: [75],
+    minimumCacheTTL: 2678400,
+  },
   async redirects() {
     return [
       /**

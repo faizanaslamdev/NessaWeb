@@ -1,5 +1,5 @@
 import { ThreadAvatar } from '@/components/messaging/thread-avatar'
-import { PlaceMessageButton } from '@/components/place/place-message-button'
+import { PlaceMessageSlot } from '@/components/place/place-message-slot'
 import { PlaceOpeningHours } from '@/components/place/place-opening-hours'
 import { siteButtonClass } from '@/components/site/ui'
 import { SOCIAL_LABELS, SOCIAL_NETWORKS, type SocialNetwork } from '@/lib/business-profile'
@@ -193,7 +193,7 @@ export function PlaceOfficialSection({ business, placeId }: { business: PublicBu
       {hasActions ? (
         <div className="mt-4 flex flex-wrap gap-2 empty:hidden">
           {messageSlot ? (
-            <PlaceMessageButton
+            <PlaceMessageSlot
               placeId={placeId}
               business={business}
               variant={business.bookingUrl ? 'secondary' : 'primary'}

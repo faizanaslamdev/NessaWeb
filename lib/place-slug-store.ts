@@ -11,11 +11,12 @@
 
 import { unstable_cache } from 'next/cache'
 
-import { isPublicPlaceIdValid } from '@/lib/place-landing'
+import { isPublicPlaceIdValid } from '@/lib/place-public-api'
 import { isValidPlaceSlug } from '@/lib/place-slug'
 
 const FIRESTORE_TIMEOUT_MS = 5000
-const SLUG_CACHE_SECONDS = 300
+// Same window as the Place page (ISR revalidate = 600).
+const SLUG_CACHE_SECONDS = 600
 const SITEMAP_PAGE_SIZE = 500
 const SITEMAP_MAX_PAGES = 20
 

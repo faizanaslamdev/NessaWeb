@@ -3,9 +3,8 @@
  *
  * - NessaChat photos (our Firebase Storage) are free to show anywhere: server
  *   HTML, cards, OG images.
- * - Google Places photos carry the public Maps key, are billed per request and
- *   must be shown with their attribution: Place page only, loaded in the
- *   browser. Display-only rewrite of maxWidthPx/maxHeightPx.
+ * - Google Places photos (key-bearing, billed per load, may not be cached)
+ *   are not shown on the website at all: see lib/place-public-view.ts.
  */
 
 /** True for images hosted by NessaChat (Firebase Storage, or its local emulator). */
@@ -18,50 +17,6 @@ export function isNessaPhotoUrl(url: string | null | undefined): boolean {
   } catch {
     return false
   }
-}
-
-export type WebPlacePhotoVariant = 'landing' | 'lightbox';
-
-/** Landing card is ~16:10 full-bleed; lightbox uses larger edge. */
-export const WEB_PLACE_PHOTO_MAX_PX: Record<WebPlacePhotoVariant, number> = {
-  landing: 480,
-  lightbox: 800,
-};
-
-export function sizedGooglePlacePhotoUrl(
-  uri: string,
-  maxPx: number,
-): string {
-  const trimmed = uri.trim();
-  if (!trimmed) {
-    return trimmed;
-  }
-  try {
-    const parsed = new URL(trimmed);
-    const hasSizeParams =
-      parsed.searchParams.has('maxWidthPx') ||
-      parsed.searchParams.has('maxHeightPx');
-    if (!hasSizeParams) {
-      return trimmed;
-    }
-    const next = String(Math.max(1, Math.round(maxPx)));
-    parsed.searchParams.set('maxWidthPx', next);
-    parsed.searchParams.set('maxHeightPx', next);
-    return parsed.toString();
-  } catch {
-    return trimmed;
-  }
-}
-
-export function placePhotoUrlForWebVariant(
-  uri: string | null | undefined,
-  variant: WebPlacePhotoVariant,
-): string | null {
-  const trimmed = uri?.trim();
-  if (!trimmed) {
-    return null;
-  }
-  return sizedGooglePlacePhotoUrl(trimmed, WEB_PLACE_PHOTO_MAX_PX[variant]);
 }
 
 /**

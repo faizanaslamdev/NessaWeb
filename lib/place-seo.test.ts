@@ -280,6 +280,24 @@ describe('place SEO — breadcrumbs, descriptions, robots', () => {
     })
   })
 
+  it('adds the destination pages the Place belongs to', () => {
+    const ld = buildPlaceBreadcrumbJsonLd({ name: 'KiteCabana' }, CANONICAL, [
+      { name: 'Brazil', path: '/destinations/brazil' },
+      { name: 'Caucaia', path: '/destinations/brazil/caucaia' },
+    ])
+    const items = ld.itemListElement as { position: number; name: string; item: string }[]
+    assert.deepEqual(
+      items.map(i => [i.position, i.name, i.item]),
+      [
+        [1, 'Home', 'https://www.nessachat.com/'],
+        [2, 'Places', 'https://www.nessachat.com/places'],
+        [3, 'Brazil', 'https://www.nessachat.com/destinations/brazil'],
+        [4, 'Caucaia', 'https://www.nessachat.com/destinations/brazil/caucaia'],
+        [5, 'KiteCabana', CANONICAL],
+      ],
+    )
+  })
+
   it('uses the business description, with the city, within ~155 chars', () => {
     const short = buildPlaceSeoDescription({
       name: 'KiteCabana',

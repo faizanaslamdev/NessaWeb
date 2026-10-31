@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 
-import { isPublicPlaceIdValid, recordPlaceLinkVisit } from '@/lib/place-landing'
+import { isPublicPlaceIdValid, recordPlaceLinkVisit } from '@/lib/place-public-api'
 import {
   classifyPlaceLinkSource,
   markPlaceSeen,
