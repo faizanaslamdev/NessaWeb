@@ -6,6 +6,7 @@ import { PlaceVisitTracker } from '@/components/place/place-visit-tracker'
 import { SiteShell } from '@/components/site/site-shell'
 import { isPublicPlaceIdValid } from '@/lib/place-landing'
 import { buildPlaceSeoMetadata, placeOgImages } from '@/lib/place-page-metadata'
+import { placeRobots } from '@/lib/place-seo'
 import {
   PLACE_SHARE_BRAND,
   buildGenericPlaceMetadata,
@@ -80,7 +81,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: generic.title,
       description: generic.description,
       alternates: { canonical: generic.canonical },
-      robots: { index: true, follow: true },
+      // No data to judge the Place by (unknown id, outage): don't index.
+      robots: placeRobots(null),
       openGraph: {
         title: generic.ogTitle,
         description: generic.ogDescription,
@@ -108,7 +110,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title,
     description,
     alternates: { canonical: generic.canonical },
-    robots: { index: true, follow: true },
+    // Same rule as the canonical page (Nessa content or a verified business).
+    robots: placeRobots(share),
     openGraph: {
       title,
       description,
