@@ -8,6 +8,7 @@
  * only listened to once it is known to exist (in the list, or just started).
  */
 
+import { businessInboxHref } from './business-access'
 import type { BusinessThread, ThreadQuerySpec } from './business-messaging'
 import type { PublicBusinessProfile } from './business-profile'
 
@@ -145,19 +146,34 @@ export type MessageButtonAction =
   | { kind: 'sign-in'; href: string }
   | { kind: 'new'; href: string }
   | { kind: 'thread'; href: string; threadId: string }
+  /** The viewer is on this business's team: no Message, a link to the Inbox instead. */
+  | { kind: 'own'; href: string }
+
+/** Whether `businessId` is one the signed-in user works for (users/{uid}/private/businessAccess). */
+function isTeamBusiness(businessId: string, teamBusinessIds: readonly string[] | undefined): boolean {
+  return Boolean(teamBusinessIds?.includes(businessId))
+}
 
 /**
  * The Place page's Message button. Signed out (incl. anonymous Place Chat
  * guests) → sign in, then the composer. Signed in → the existing thread when
  * the shared thread listener has it, else the composer (which checks again).
+ * Team members of the business (any role) get "This is your business"
+ * instead — the server refuses them with business/own-business — even when
+ * messaging is turned off.
  */
 export function messageButtonAction(input: {
   placeId: string
   business: Pick<PublicBusinessProfile, 'verified' | 'businessId' | 'messagingEnabled'> | null | undefined
   uid: string | null
   threads: readonly BusinessThread[]
+  /** Businesses the viewer is on the team of (empty / undefined while unknown). */
+  teamBusinessIds?: readonly string[]
 }): MessageButtonAction {
   const { business, placeId, uid } = input
+  if (business && business.verified === true && business.businessId && uid && isTeamBusiness(business.businessId, input.teamBusinessIds)) {
+    return { kind: 'own', href: businessInboxHref(business.businessId) }
+  }
   if (!business || !canMessageBusiness(business)) return { kind: 'hidden' }
   if (!uid) return { kind: 'sign-in', href: signInToMessageHref(placeId) }
   return messageStartTarget({ placeId, businessId: business.businessId, uid, threads: input.threads })
@@ -170,6 +186,7 @@ export type NewMessageDecision =
   | { kind: 'no-business' }
   | { kind: 'disabled'; businessName: string }
   | { kind: 'existing'; href: string }
+  | { kind: 'own'; businessName: string; href: string }
   | { kind: 'compose' }
 
 /**
@@ -183,12 +200,17 @@ export function newMessageDecision(input: {
   uid: string
   threads: readonly BusinessThread[]
   threadsLoaded: boolean
+  /** Businesses the viewer is on the team of (see messageButtonAction). */
+  teamBusinessIds?: readonly string[]
 }): NewMessageDecision {
   if (!input.placeValid) return { kind: 'invalid' }
   if (input.place.state === 'error') return { kind: 'error' }
   if (input.place.state === 'loading' || !input.threadsLoaded) return { kind: 'loading' }
   const business = input.place.business
   if (!business || business.verified !== true || !business.businessId) return { kind: 'no-business' }
+  if (isTeamBusiness(business.businessId, input.teamBusinessIds)) {
+    return { kind: 'own', businessName: business.name, href: businessInboxHref(business.businessId) }
+  }
   const target = messageStartTarget({ placeId: input.placeId, businessId: business.businessId, uid: input.uid, threads: input.threads })
   if (target.kind === 'thread') return { kind: 'existing', href: target.href }
   if (business.messagingEnabled === false) return { kind: 'disabled', businessName: business.name }

@@ -118,6 +118,18 @@ describe('Message button visibility', () => {
       href: newMessageHref('ChIJother'),
     })
   })
+
+  it('team members of the business → their Inbox, even with messaging off', () => {
+    const own = { kind: 'own', href: '/business/biz1/inbox' }
+    assert.deepEqual(messageButtonAction({ placeId: 'ChIJplace', business, uid: 'u1', threads: [], teamBusinessIds: ['biz1'] }), own)
+    assert.deepEqual(
+      messageButtonAction({ placeId: 'ChIJplace', business: { ...business, messagingEnabled: false }, uid: 'u1', threads: [], teamBusinessIds: ['biz1'] }),
+      own,
+    )
+    // Another business's team, or signed out: unchanged.
+    assert.equal(messageButtonAction({ placeId: 'ChIJplace', business, uid: 'u1', threads: [], teamBusinessIds: ['biz9'] }).kind, 'new')
+    assert.equal(messageButtonAction({ placeId: 'ChIJplace', business, uid: null, threads: [], teamBusinessIds: ['biz1'] }).kind, 'sign-in')
+  })
 })
 
 describe('start flow: existing vs new', () => {
@@ -144,6 +156,13 @@ describe('start flow: existing vs new', () => {
     assert.deepEqual(newMessageDecision({ ...base, place: { state: 'error' } }), { kind: 'error' })
     assert.deepEqual(newMessageDecision({ ...base, place: ready(null) }), { kind: 'no-business' })
     assert.deepEqual(newMessageDecision({ ...base, place: ready(business) }), { kind: 'compose' })
+    // A team member of the business (the server would refuse with own-business).
+    assert.deepEqual(newMessageDecision({ ...base, place: ready(business), teamBusinessIds: ['biz1'] }), {
+      kind: 'own',
+      businessName: 'Casa',
+      href: '/business/biz1/inbox',
+    })
+    assert.deepEqual(newMessageDecision({ ...base, place: ready(business), teamBusinessIds: ['other'] }), { kind: 'compose' })
     assert.deepEqual(newMessageDecision({ ...base, place: ready({ ...business, messagingEnabled: false }) }), {
       kind: 'disabled',
       businessName: 'Casa',

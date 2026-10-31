@@ -109,6 +109,32 @@ export async function readBusinessMessagingEnabled(businessId: string): Promise<
   }
 }
 
+/**
+ * The user's own `users/{uid}/private/businessAccess` doc (server-written,
+ * owner-readable). Reports `fromCache` so callers can wait for the server
+ * before deciding the doc is missing.
+ */
+export function subscribeBusinessAccess(
+  uid: string,
+  onData: (snap: { exists: boolean; fromCache: boolean; data: unknown }) => void,
+  onError: (err: unknown) => void,
+): () => void {
+  return deferredFirestoreSubscribe(() => {
+    const { firestore } = getFirebaseClient()
+    return onSnapshot(
+      doc(firestore, 'users', uid, 'private', 'businessAccess'),
+      { includeMetadataChanges: true },
+      snap => onData({ exists: snap.exists(), fromCache: snap.metadata.fromCache, data: snap.data() }),
+      onError,
+    )
+  })
+}
+
+/** Creates the caller's businessAccess doc when it doesn't exist yet (accounts from before it). */
+export async function syncMyBusinessAccess(): Promise<void> {
+  await callable<Record<string, never>, unknown>('syncMyBusinessAccess')({})
+}
+
 function callable<Req, Res>(name: string) {
   const { app } = getFirebaseClient()
   return httpsCallable<Req, Res>(getFunctions(app), name)

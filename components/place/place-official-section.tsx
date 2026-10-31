@@ -165,7 +165,10 @@ export function PlaceOfficialSection({ business, placeId }: { business: PublicBu
   const socials = SOCIAL_NETWORKS.filter(n => business.socials?.[n])
   // Travelers can message a verified business unless it turned messaging off.
   const canMessage = canMessageBusiness(business)
-  const hasActions = Boolean(canMessage || business.bookingUrl || business.menuUrl)
+  // The Message slot also shows team members "This is your business" (even
+  // with messaging off); the button hides itself otherwise (`empty:hidden`).
+  const messageSlot = canMessage || Boolean(business.verified === true && business.businessId)
+  const hasActions = Boolean(messageSlot || business.bookingUrl || business.menuUrl)
 
   return (
     <section aria-label={`About ${business.name}`} className="w-full rounded-2xl border border-n-line bg-n-surface p-5 text-left shadow-n-card sm:p-6">
@@ -188,8 +191,8 @@ export function PlaceOfficialSection({ business, placeId }: { business: PublicBu
         <p className="mt-4 whitespace-pre-line text-[15px] leading-7 text-n-ink-2">{business.description}</p>
       ) : null}
       {hasActions ? (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {canMessage ? (
+        <div className="mt-4 flex flex-wrap gap-2 empty:hidden">
+          {messageSlot ? (
             <PlaceMessageButton
               placeId={placeId}
               business={business}

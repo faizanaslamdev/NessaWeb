@@ -13,6 +13,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 
 import { Icon } from '@/components/dash/icons'
 import { EmptyState, LoadingBlock, cx } from '@/components/dash/ui'
+import { useBusinessAccess } from '@/components/messages/business-access-store'
 import { MessagesFrame } from '@/components/messages/customer-messages'
 import { Composer, ThreadAvatar } from '@/components/messaging/conversation'
 import { useThreadList } from '@/components/messaging/use-thread-list'
@@ -65,6 +66,7 @@ export function NewBusinessMessage() {
 
   const spec = useMemo(() => buildCustomerThreadsQuery(uid, CUSTOMER_THREADS_PAGE), [uid])
   const list = useThreadList(spec)
+  const access = useBusinessAccess(uid)
   const decision = newMessageDecision({
     placeId,
     placeValid,
@@ -72,7 +74,8 @@ export function NewBusinessMessage() {
     uid,
     threads: list.threads,
     // A list error shouldn't block writing: startBusinessThread continues an existing thread anyway.
-    threadsLoaded: !list.loading || Boolean(list.error),
+    threadsLoaded: (!list.loading || Boolean(list.error)) && access.loaded,
+    teamBusinessIds: access.teamBusinessIds,
   })
 
   // Already talking to this business about this Place: open that conversation.
@@ -131,6 +134,20 @@ export function NewBusinessMessage() {
             <LoadingBlock label="Loading…" rows={3} />
           ) : decision.kind === 'no-business' ? (
             <Centered title="No business to message here" body="This place doesn’t have a verified business on NessaChat yet." />
+          ) : decision.kind === 'own' ? (
+            <div className="flex flex-1 items-center justify-center">
+              <EmptyState
+                icon="inbox"
+                title="This is your business"
+                action={
+                  <Link href={decision.href} className="text-[13px] font-semibold text-n-accent-strong no-underline hover:underline">
+                    Open inbox
+                  </Link>
+                }
+              >
+                You’re on the {decision.businessName} team, so you can’t message it as a traveler. Reply to travelers from your Inbox.
+              </EmptyState>
+            </div>
           ) : decision.kind === 'disabled' ? (
             <Centered
               title={`${decision.businessName} isn’t taking messages`}
