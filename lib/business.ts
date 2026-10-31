@@ -94,7 +94,12 @@ export type BusinessPlaceStats = {
 export type MyBusiness = {
   businessId: string
   role: 'owner' | 'staff'
-  profile: BusinessProfileInput & { createdAt: string | null; updatedAt: string | null }
+  profile: BusinessProfileInput & {
+    createdAt: string | null
+    updatedAt: string | null
+    /** Customer messaging switch; absent = on (setBusinessMessaging, owners). */
+    messagingEnabled?: boolean
+  }
   places: MyBusinessPlace[]
 }
 
@@ -273,6 +278,20 @@ export async function adminAssignOwner(input: {
     >(fns(), 'runBusinessAdminOps')
     const res = await callable({ action: 'assignOwner', ...input })
     return res.data.result
+  } catch (e) {
+    throw mapError(e)
+  }
+}
+
+/** Owners turn customer messaging on / off (`messagingEnabled`; absent = on). */
+export async function setBusinessMessaging(businessId: string, enabled: boolean): Promise<{ messagingEnabled: boolean }> {
+  try {
+    const callable = httpsCallable<{ businessId: string; enabled: boolean }, { ok: true; messagingEnabled: boolean }>(
+      fns(),
+      'setBusinessMessaging',
+    )
+    const res = await callable({ businessId, enabled })
+    return { messagingEnabled: res.data.messagingEnabled }
   } catch (e) {
     throw mapError(e)
   }

@@ -40,6 +40,7 @@ import {
   BUSINESS_CATEGORY_LABELS,
   BusinessActionError,
   listQrPlacements,
+  setBusinessMessaging,
   setPlaceChatPinnedInfo,
   updateBusinessProfile,
   type BusinessCategory,
@@ -461,7 +462,8 @@ export function BusinessDetailsSection() {
           <ExternalLink href={placeOutboundUrl({ placeId: place.placeId, slug: place.slug })}>See your public page</ExternalLink>
         }
       />
-      <form onSubmit={e => void onSubmit(e)} noValidate className="space-y-6">
+      <MessagingPanel />
+      <form onSubmit={e => void onSubmit(e)} noValidate className="mt-6 space-y-6">
         <Panel>
           <PanelHeader title="About" />
           <div className="grid gap-4 px-5 pb-5 sm:grid-cols-2 max-sm:px-4">
@@ -657,5 +659,109 @@ export function BusinessDetailsSection() {
         </div>
       </form>
     </>
+  )
+}
+
+/* ───────────── Messaging switch ───────────── */
+
+/**
+ * "Let travelers message you" (businesses/{id}.messagingEnabled; absent =
+ * on). Owners only — setBusinessMessaging refuses managers, who see it
+ * read-only.
+ */
+function MessagingPanel() {
+  const { business, isOwner, reload, href } = useBusiness()
+  const serverValue = business.profile.messagingEnabled !== false
+  const [enabled, setEnabled] = useState(serverValue)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState<string | null>(null)
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- follow the server value after a reload
+    setEnabled(serverValue)
+  }, [serverValue])
+
+  const toggle = async () => {
+    if (!isOwner || busy) return
+    const next = !enabled
+    setBusy(true)
+    setError(null)
+    setSaved(null)
+    setEnabled(next)
+    try {
+      const result = await setBusinessMessaging(business.businessId, next)
+      setEnabled(result.messagingEnabled)
+      setSaved(result.messagingEnabled ? 'Travelers can message you again.' : 'Messaging is off. Existing conversations stay in your inbox.')
+      void reload()
+    } catch (e) {
+      setEnabled(!next)
+      setError(e instanceof BusinessActionError ? e.message : 'Could not change messaging. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Panel>
+      <PanelHeader
+        icon="inbox"
+        title="Messages"
+        description={
+          <>
+            Private conversations between travelers and {business.profile.name || 'your business'}.
+            Replies are in your <Link href={href('inbox')} className="font-medium text-n-accent-strong">Inbox</Link>, translated both ways.
+          </>
+        }
+      />
+      <div className="px-5 pb-5 max-sm:px-4">
+        <div className="flex items-start justify-between gap-4 rounded-[10px] border border-n-line-soft bg-n-surface-2 px-4 py-3">
+          <div className="min-w-0">
+            <p id="messaging-switch-label" className="text-sm font-medium text-n-ink">
+              Let travelers message you
+            </p>
+            <p className="mt-0.5 text-[13px] leading-5 text-n-muted">
+              {enabled
+                ? 'On — travelers can message you from your Place in the NessaChat app.'
+                : 'Off — travelers can’t start or continue conversations. Your team can still reply to existing ones.'}
+            </p>
+            {!isOwner ? (
+              <p className="mt-1 text-xs text-n-subtle">Only the business owner can change this.</p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={enabled}
+            aria-labelledby="messaging-switch-label"
+            disabled={!isOwner || busy}
+            onClick={() => void toggle()}
+            className={cx(
+              'relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed',
+              enabled ? 'bg-n-accent' : 'bg-n-line-strong',
+              !isOwner ? 'opacity-60' : '',
+            )}
+          >
+            <span
+              aria-hidden
+              className={cx(
+                'inline-block h-5 w-5 rounded-full bg-white shadow transition-transform',
+                enabled ? 'translate-x-[22px]' : 'translate-x-0.5',
+              )}
+            />
+          </button>
+        </div>
+        {error ? (
+          <p role="alert" className="mt-2 text-sm text-n-danger">
+            {error}
+          </p>
+        ) : null}
+        {saved ? (
+          <p role="status" className="mt-2 inline-flex items-center gap-1.5 text-sm text-n-ok">
+            <Icon name="check" size={16} /> {saved}
+          </p>
+        ) : null}
+      </div>
+    </Panel>
   )
 }
