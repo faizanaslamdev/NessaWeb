@@ -53,6 +53,10 @@ export type IconName =
   | 'share'
   | 'phone'
   | 'arrow-up-right'
+  | 'archive'
+  | 'ban'
+  | 'flag'
+  | 'more'
 
 const PATHS: Record<IconName, React.ReactNode> = {
   home: (
@@ -285,6 +289,32 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <path d="M7 17 17 7" />
       <path d="M8 7h9v9" />
+    </>
+  ),
+  archive: (
+    <>
+      <rect x="3" y="4" width="18" height="4.5" rx="1.25" />
+      <path d="M5 8.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5" />
+      <path d="M10 12.5h4" />
+    </>
+  ),
+  ban: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="m6 6 12 12" />
+    </>
+  ),
+  flag: (
+    <>
+      <path d="M5 21V4" />
+      <path d="M5 4h11l-2 4 2 4H5" />
+    </>
+  ),
+  more: (
+    <>
+      <circle cx="5.5" cy="12" r="1.1" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.1" fill="currentColor" />
+      <circle cx="18.5" cy="12" r="1.1" fill="currentColor" />
     </>
   ),
 }
