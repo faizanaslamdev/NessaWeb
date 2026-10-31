@@ -3,7 +3,7 @@ import { PlaceMessageButton } from '@/components/place/place-message-button'
 import { PlaceOpeningHours } from '@/components/place/place-opening-hours'
 import { siteButtonClass } from '@/components/site/ui'
 import { SOCIAL_LABELS, SOCIAL_NETWORKS, type SocialNetwork } from '@/lib/business-profile'
-import { canMessageBusiness } from '@/lib/customer-messages'
+import { hasMessageSlot } from '@/lib/customer-messages'
 import type { PublicBusinessProfile } from '@/lib/place-landing'
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -164,11 +164,10 @@ export function PlaceOfficialSection({ business, placeId }: { business: PublicBu
   if (business.languages?.length) rows.push(<Row key="lang" label="Staff speak">{business.languages.map(l => l.toUpperCase()).join(', ')}</Row>)
 
   const socials = SOCIAL_NETWORKS.filter(n => business.socials?.[n])
-  // Travelers can message a verified business unless it turned messaging off.
-  const canMessage = canMessageBusiness(business)
-  // The Message slot also shows team members "This is your business" (even
-  // with messaging off); the button hides itself otherwise (`empty:hidden`).
-  const messageSlot = canMessage || Boolean(business.verified === true && business.businessId)
+  // Travelers can message a verified business unless it turned messaging off;
+  // the slot also shows team members "This is your business" (even with
+  // messaging off). The button hides itself otherwise (`empty:hidden`).
+  const messageSlot = hasMessageSlot(business)
   const hasActions = Boolean(messageSlot || business.bookingUrl || business.menuUrl)
 
   return (

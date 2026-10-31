@@ -27,6 +27,8 @@ import { PlaceCoverShareQr } from '@/components/place/place-share-qr'
 import { PlacePrearrivalCopy } from '@/components/place/place-prearrival-copy'
 import { PlaceOfficialSection, VerifiedBadge } from '@/components/place/place-official-section'
 import { PlaceWifiCard } from '@/components/place/place-wifi-card'
+import { PlaceMessageButton } from '@/components/place/place-message-button'
+import { hasMessageSlot } from '@/lib/customer-messages'
 import { Container, StoreBadges, siteButtonClass } from '@/components/site/ui'
 import { accountRoutes } from '@/lib/account/constants'
 import { placeTypeLabel } from '@/lib/place-directory'
@@ -531,9 +533,21 @@ export function PlaceLandingClient({
         </div>
       </Container>
 
-      {/* Phone: the main action stays in reach. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-n-line bg-n-surface/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:hidden">
-        <a href={chatHref} className={siteButtonClass('primary', 'lg', 'w-full')}>
+      {/* Phone: the main actions stay in reach. Message follows the same
+          rules as the business section's button (hidden when messaging is
+          off; the business's own team gets "Open inbox"). */}
+      <div className="fixed inset-x-0 bottom-0 z-30 flex gap-2 border-t border-n-line bg-n-surface/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:hidden">
+        {place.business && hasMessageSlot(place.business) ? (
+          <PlaceMessageButton
+            placeId={realPlaceId}
+            business={place.business}
+            variant="secondary"
+            size="lg"
+            compact
+            className="min-w-0 flex-1 px-3!"
+          />
+        ) : null}
+        <a href={chatHref} className={siteButtonClass('primary', 'lg', 'min-w-0 flex-[1.4] px-3!')}>
           <Icon name="chat" size={18} />
           Join live chat
         </a>

@@ -22,11 +22,20 @@ export function PlaceMessageButton({
   business,
   className,
   variant = 'primary',
+  size = 'md',
+  compact = false,
 }: {
   placeId: string
-  business: PublicBusinessProfile
+  /** Only the fields the visibility rules read (keeps the client props small). */
+  business: Pick<PublicBusinessProfile, 'verified' | 'businessId' | 'messagingEnabled' | 'name'>
   className?: string
   variant?: 'primary' | 'secondary'
+  size?: 'md' | 'lg'
+  /**
+   * Phone bottom bar: a full-height button beside "Join live chat"; team
+   * members get a short "Open inbox" button instead of the inline link.
+   */
+  compact?: boolean
 }) {
   const { user, loading } = useAccountAuth()
   const summary = useCustomerThreadsSummary(user?.uid)
@@ -40,6 +49,19 @@ export function PlaceMessageButton({
   })
   if (action.kind === 'hidden') return null
   if (action.kind === 'own') {
+    if (compact) {
+      return (
+        <Link
+          href={action.href}
+          aria-label={`This is your business. Open the ${business.name} inbox`}
+          className={siteButtonClass('secondary', size, className)}
+          data-testid="place-own-business-link"
+        >
+          <Icon name="inbox" size={17} />
+          Open inbox
+        </Link>
+      )
+    }
     return (
       <Link
         href={action.href}
@@ -55,9 +77,9 @@ export function PlaceMessageButton({
   // While auth loads, point at the composer: it gates sign-in itself.
   const href = loading ? newMessageHref(placeId) : action.href
   return (
-    <Link href={href} className={siteButtonClass(variant, 'md', className)} data-testid="place-message-button">
-      <Icon name="chat" size={17} />
-      {action.kind === 'thread' && !loading ? 'Open conversation' : 'Message'}
+    <Link href={href} className={siteButtonClass(variant, size, className)} data-testid="place-message-button">
+      <Icon name={compact ? 'mail' : 'chat'} size={17} />
+      {action.kind === 'thread' && !loading ? (compact ? 'Conversation' : 'Open conversation') : 'Message'}
     </Link>
   )
 }

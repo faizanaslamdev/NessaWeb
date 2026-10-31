@@ -141,6 +141,16 @@ export function canMessageBusiness(business: Pick<PublicBusinessProfile, 'verifi
   return Boolean(business && business.verified === true && business.businessId && business.messagingEnabled !== false)
 }
 
+/**
+ * Whether a Place page shows a Message slot for this business: travelers can
+ * message it (messaging on), or a team member may be viewing — they see
+ * "This is your business · Open inbox" even with messaging off. The button
+ * itself (messageButtonAction) hides when neither applies to the viewer.
+ */
+export function hasMessageSlot(business: Pick<PublicBusinessProfile, 'verified' | 'businessId' | 'messagingEnabled'> | null | undefined): boolean {
+  return canMessageBusiness(business) || Boolean(business && business.verified === true && business.businessId)
+}
+
 export type MessageButtonAction =
   | { kind: 'hidden' }
   | { kind: 'sign-in'; href: string }
