@@ -489,12 +489,13 @@ export function BusinessDetailsSection() {
                 className={cx(fieldClass, 'resize-y')}
               />
             </Field>
-            <Field label="Street address" className="sm:col-span-2" hint="Street and number, so guests can find you. City and country come from your place.">
+            <Field label="Street address" className="sm:col-span-2" hint="Shown publicly. Street and number, so guests can find you. City and country come from your place.">
               <input
                 value={draft.address}
                 onChange={e => set('address', e.target.value.replace(/[\r\n]+/g, ' '))}
                 maxLength={BUSINESS_PROFILE_LIMITS.ADDRESS_MAX}
-                autoComplete="street-address"
+                // Public business data: never let the browser fill in the owner's own address.
+                autoComplete="off"
                 placeholder="Rua das Dunas, 120"
                 className={fieldClass}
               />
@@ -509,21 +510,23 @@ export function BusinessDetailsSection() {
           <PanelHeader title="Contact" />
           <div className="grid gap-4 px-5 pb-5 sm:grid-cols-2 lg:grid-cols-3 max-sm:px-4">
             <Field label="Website">
-              <input value={draft.website} onChange={e => set('website', e.target.value)} inputMode="url" maxLength={300} placeholder="yourplace.com" className={fieldClass} />
+              <input value={draft.website} onChange={e => set('website', e.target.value)} inputMode="url" maxLength={300} autoComplete="off" placeholder="yourplace.com" className={fieldClass} />
             </Field>
-            <Field label="Phone">
-              <input value={draft.phone} onChange={e => set('phone', e.target.value)} inputMode="tel" maxLength={32} className={fieldClass} />
+            {/* Contact fields are published on the Place page: autofill is off so the
+                browser never fills in the owner's personal phone or email. */}
+            <Field label="Phone" hint="Shown publicly on your Place page.">
+              <input value={draft.phone} onChange={e => set('phone', e.target.value)} inputMode="tel" maxLength={32} autoComplete="off" className={fieldClass} />
             </Field>
-            <Field label="WhatsApp">
-              <input value={draft.whatsapp} onChange={e => set('whatsapp', e.target.value)} inputMode="tel" maxLength={32} className={fieldClass} />
+            <Field label="WhatsApp" hint="Shown publicly on your Place page.">
+              <input value={draft.whatsapp} onChange={e => set('whatsapp', e.target.value)} inputMode="tel" maxLength={32} autoComplete="off" className={fieldClass} />
             </Field>
-            <Field label="Public email" className="sm:col-span-2 lg:col-span-1">
+            <Field label="Public email" className="sm:col-span-2 lg:col-span-1" hint="Shown publicly on your Place page — use a business address.">
               <input
                 type="email"
                 value={draft.email}
                 onChange={e => set('email', e.target.value)}
                 maxLength={BUSINESS_PROFILE_LIMITS.EMAIL_MAX}
-                autoComplete="email"
+                autoComplete="off"
                 placeholder="hello@yourplace.com"
                 className={fieldClass}
               />

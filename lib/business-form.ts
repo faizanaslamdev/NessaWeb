@@ -8,7 +8,9 @@
  * cleared), so `buildBusinessProfilePayload` always sends every field: text
  * as '' when blank and lists as [] when empty, like before; object / enum
  * fields (`openingHours`, `socials`, `priceRange`) are omitted when empty,
- * which clears them.
+ * which clears them. The call carries `profileSchema: 2`
+ * (BUSINESS_PROFILE_SCHEMA in business.ts): only then does the backend
+ * replace the extended fields, so older dashboard tabs can't wipe them.
  */
 
 import {

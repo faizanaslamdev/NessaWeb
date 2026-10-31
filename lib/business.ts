@@ -220,13 +220,21 @@ export async function getMyBusinesses(): Promise<{ businesses: MyBusiness[]; cla
   }
 }
 
+/**
+ * The profile form version this dashboard sends. The backend replaces the
+ * extended fields (address, email, links, hours, socials, price, payments)
+ * only for `profileSchema >= 2`, so a tab opened before they existed can't
+ * clear them on save.
+ */
+export const BUSINESS_PROFILE_SCHEMA = 2
+
 export async function updateBusinessProfile(businessId: string, profile: BusinessProfileInput): Promise<void> {
   try {
-    const callable = httpsCallable<{ businessId: string; profile: BusinessProfileInput }, { ok: true }>(
-      fns(),
-      'updateBusinessProfile',
-    )
-    await callable({ businessId, profile })
+    const callable = httpsCallable<
+      { businessId: string; profile: BusinessProfileInput; profileSchema: number },
+      { ok: true }
+    >(fns(), 'updateBusinessProfile')
+    await callable({ businessId, profile, profileSchema: BUSINESS_PROFILE_SCHEMA })
   } catch (e) {
     throw mapError(e)
   }
