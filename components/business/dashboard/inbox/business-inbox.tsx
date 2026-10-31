@@ -12,10 +12,11 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { useBusiness } from '@/components/business/dashboard/business-shell'
 import { useInbox, useThreadList } from '@/components/business/dashboard/inbox/inbox-data'
-import { InboxThreadView, ThreadAvatar } from '@/components/business/dashboard/inbox/inbox-thread'
+import { InboxThreadView } from '@/components/business/dashboard/inbox/inbox-thread'
 import { ShellTitle } from '@/components/dash/app-shell'
 import { Icon } from '@/components/dash/icons'
 import { Button, EmptyState, Notice, Skeleton, cx } from '@/components/dash/ui'
+import { ThreadAvatar } from '@/components/messaging/conversation'
 import {
   INBOX_BADGE_LIMIT,
   INBOX_FILTERS,
@@ -23,6 +24,7 @@ import {
   buildInboxQuery,
   isThreadUnread,
   shortRelativeTime,
+  staffRowLabel,
   type InboxFilter,
   type InboxThread,
 } from '@/lib/business-inbox'
@@ -249,6 +251,7 @@ function ThreadRow({
   showPlace: boolean
 }) {
   const unread = isThreadUnread(thread)
+  const label = staffRowLabel(thread)
   const last = thread.lastMessage
   const preview = last ? `${last.senderRole === 'business' ? 'You: ' : ''}${last.text}` : 'No messages yet'
   const time = shortRelativeTime(last?.createdAtMs ?? thread.updatedAtMs)
@@ -272,7 +275,7 @@ function ThreadRow({
             {time}
           </span>
         </span>
-        {showPlace || thread.status !== 'open' ? (
+        {showPlace || label ? (
           <span className="mt-0.5 flex items-center gap-1.5 text-xs text-n-subtle">
             {showPlace ? (
               <>
@@ -280,9 +283,9 @@ function ThreadRow({
                 <span className="truncate">{thread.placeName}</span>
               </>
             ) : null}
-            {thread.status !== 'open' ? (
+            {label ? (
               <span className="shrink-0 rounded-full bg-n-sunken px-1.5 text-[11px] leading-[18px] text-n-ink-2">
-                {thread.status === 'blocked' ? 'Blocked' : 'Archived'}
+                {label}
               </span>
             ) : null}
           </span>

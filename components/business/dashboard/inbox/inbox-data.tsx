@@ -7,59 +7,35 @@
  * their Places (buildInboxQuery).
  */
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useMemo, type ReactNode } from 'react'
 
+import { useThreadList as useRawThreadList } from '@/components/messaging/use-thread-list'
 import {
   INBOX_BADGE_LIMIT,
   buildInboxQuery,
   countUnreadThreads,
   describeListenError,
-  inboxQueryKey,
   type InboxAccess,
   type InboxQuerySpec,
   type InboxThread,
 } from '@/lib/business-inbox'
-import { subscribeInboxThreads } from '@/lib/business-inbox-api'
 
 export type ThreadListState = {
   threads: InboxThread[]
-  /** Documents the query returned (before client-side filtering). */
+  /** Documents the query returned. */
   rawCount: number
   loading: boolean
   error: string | null
 }
 
-const EMPTY: ThreadListState = { threads: [], rawCount: 0, loading: true, error: null }
-
-/**
- * Live thread list for `spec` (null = nothing to load). Growing only the
- * limit ("Load more") keeps the current rows on screen while it reloads.
- */
+/** Live staff thread list for `spec` (null = nothing to load), errors in staff copy. */
 export function useThreadList(spec: InboxQuerySpec | null): ThreadListState {
-  const key = inboxQueryKey(spec)
-  const baseKey = spec ? JSON.stringify([spec.where, spec.orderBy]) : ''
-  const [state, setState] = useState<ThreadListState & { baseKey: string }>({ ...EMPTY, baseKey })
-
-  useEffect(() => {
-    if (!key) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset when there is nothing to listen to
-      setState({ threads: [], rawCount: 0, loading: false, error: null, baseKey: '' })
-      return
-    }
-    const parsed = JSON.parse(key) as [InboxQuerySpec['where'], InboxQuerySpec['orderBy'], number]
-    const current: InboxQuerySpec = { where: parsed[0], orderBy: parsed[1], limit: parsed[2], truncated: false }
-    const nextBase = JSON.stringify([parsed[0], parsed[1]])
-    setState(s => (s.baseKey === nextBase ? { ...s, loading: true, error: null } : { ...EMPTY, baseKey: nextBase }))
-    return subscribeInboxThreads(
-      current,
-      (threads, rawCount) => setState({ threads, rawCount, loading: false, error: null, baseKey: nextBase }),
-      err => setState(s => ({ ...s, loading: false, error: describeListenError(err) })),
-    )
-  }, [key])
-
-  // While a new filter's first snapshot is on its way, don't show the old rows.
-  if (state.baseKey !== baseKey) return key ? EMPTY : { ...EMPTY, loading: false }
-  return state
+  const raw = useRawThreadList(spec)
+  const error = raw.error ? describeListenError(raw.error) : null
+  return useMemo(
+    () => ({ threads: raw.threads, rawCount: raw.rawCount, loading: raw.loading, error }),
+    [raw.threads, raw.rawCount, raw.loading, error],
+  )
 }
 
 type InboxCtx = {

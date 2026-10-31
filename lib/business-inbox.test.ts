@@ -22,6 +22,8 @@ import {
   readReceipt,
   shortRelativeTime,
   shouldMarkRead,
+  staffComposerState,
+  staffRowLabel,
   toMillis,
   unreadBadgeLabel,
   type InboxMessage,
@@ -349,5 +351,36 @@ describe('errors', () => {
     assert.equal(describeInboxError(new Error('boom'), 'Fallback').message, 'Fallback')
     assert.match(describeListenError({ code: 'permission-denied' }), /access/)
     assert.match(describeListenError({ code: 'failed-precondition' }), /being set up/)
+  })
+})
+
+describe('traveler-blocked state (staff side)', () => {
+  it('parses customerBlocked (absent = false)', () => {
+    assert.equal(thread().customerBlocked, false)
+    const t = parseThread('b1_ChIJabc_u1', { customerBlocked: true, customerBlockedAt: ts(42), status: 'open' })
+    assert.equal(t.customerBlocked, true)
+    assert.equal(t.customerBlockedAtMs, 42)
+  })
+
+  it('row label: staff block first, then the traveler’s block, then archived', () => {
+    assert.equal(staffRowLabel(thread()), null)
+    assert.equal(staffRowLabel(thread({ status: 'archived' })), 'Archived')
+    assert.equal(staffRowLabel(thread({ customerBlocked: true })), 'Traveler blocked messages')
+    assert.equal(staffRowLabel(thread({ customerBlocked: true, status: 'archived' })), 'Traveler blocked messages')
+    assert.equal(staffRowLabel(thread({ customerBlocked: true, status: 'blocked' })), 'Blocked')
+  })
+
+  it('composer: blocked by staff > blocked by traveler (doc or refused send) > open', () => {
+    assert.equal(staffComposerState(thread()), 'open')
+    assert.equal(staffComposerState(thread({ status: 'archived' })), 'open')
+    assert.equal(staffComposerState(thread({ customerBlocked: true })), 'customer-blocked')
+    assert.equal(staffComposerState(thread(), true), 'customer-blocked')
+    assert.equal(staffComposerState(thread({ status: 'blocked', customerBlocked: true })), 'blocked')
+  })
+
+  it('explains business/blocked-by-customer', () => {
+    const info = describeInboxError({ code: 'functions/failed-precondition', details: { businessCode: 'business/blocked-by-customer' } })
+    assert.equal(info.code, 'business/blocked-by-customer')
+    assert.match(info.message, /blocked messages from your business/)
   })
 })

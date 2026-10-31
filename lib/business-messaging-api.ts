@@ -1,14 +1,16 @@
 'use client'
 
 /**
- * Business Inbox — Firestore listeners (reads under firestore.rules) and the
- * business-messaging callables (every write). Errors from callables are
- * rethrown as-is; describeInboxError() turns them into plain language.
+ * Business messaging — Firestore listeners (reads under firestore.rules) and
+ * the business-messaging callables (every write), for both sides: the staff
+ * Inbox and the traveler's /messages. Errors from callables are rethrown
+ * as-is; describeMessagingError() turns them into plain language.
  */
 
 import {
   collection,
   doc,
+  getDoc,
   limit as limitTo,
   onSnapshot,
   orderBy,
@@ -19,22 +21,24 @@ import {
 import { getFunctions, httpsCallable } from 'firebase/functions'
 
 import {
-  INBOX_MESSAGES_PAGE,
+  MESSAGES_PAGE,
   parseMessage,
   parseThread,
-  type InboxMessage,
-  type InboxQuerySpec,
-  type InboxThread,
-} from '@/lib/business-inbox'
+  type BusinessMessage,
+  type BusinessThread,
+  type SenderRole,
+  type ThreadQuerySpec,
+  type ThreadStatus,
+} from '@/lib/business-messaging'
 import { deferredFirestoreSubscribe } from '@/lib/deferred-firestore-subscribe'
 import { getFirebaseClient } from '@/lib/firebase'
 
 const THREADS = 'business_threads'
 const MESSAGES = 'messages'
 
-export function subscribeInboxThreads(
-  spec: InboxQuerySpec,
-  onData: (threads: InboxThread[], rawCount: number) => void,
+export function subscribeThreads(
+  spec: ThreadQuerySpec,
+  onData: (threads: BusinessThread[], rawCount: number) => void,
   onError: (err: unknown) => void,
 ): () => void {
   return deferredFirestoreSubscribe(() => {
@@ -49,9 +53,13 @@ export function subscribeInboxThreads(
   })
 }
 
-export function subscribeInboxThread(
+/**
+ * One thread doc. Rules deny reading a thread that doesn't exist yet, so
+ * only call this for a thread known to exist (listed, or just started).
+ */
+export function subscribeThread(
   threadId: string,
-  onData: (thread: InboxThread | null) => void,
+  onData: (thread: BusinessThread | null) => void,
   onError: (err: unknown) => void,
 ): () => void {
   return deferredFirestoreSubscribe(() => {
@@ -65,13 +73,13 @@ export function subscribeInboxThread(
 }
 
 /** Newest `count` messages, delivered oldest first. */
-export function subscribeInboxMessages(
+export function subscribeThreadMessages(
   threadId: string,
   count: number,
-  onData: (messages: InboxMessage[], hasMore: boolean) => void,
+  onData: (messages: BusinessMessage[], hasMore: boolean) => void,
   onError: (err: unknown) => void,
 ): () => void {
-  const size = Math.max(1, count || INBOX_MESSAGES_PAGE)
+  const size = Math.max(1, count || MESSAGES_PAGE)
   return deferredFirestoreSubscribe(() => {
     const { firestore } = getFirebaseClient()
     return onSnapshot(
@@ -86,16 +94,41 @@ export function subscribeInboxMessages(
   })
 }
 
+/**
+ * Whether a business accepts new traveler messages (`messagingEnabled`,
+ * absent = on). businesses/{id} is readable by any signed-in user.
+ * Resolves true when it can't be read — the callables enforce it anyway.
+ */
+export async function readBusinessMessagingEnabled(businessId: string): Promise<boolean> {
+  try {
+    const { firestore } = getFirebaseClient()
+    const snap = await getDoc(doc(firestore, 'businesses', businessId))
+    return snap.data()?.messagingEnabled !== false
+  } catch {
+    return true
+  }
+}
+
 function callable<Req, Res>(name: string) {
   const { app } = getFirebaseClient()
   return httpsCallable<Req, Res>(getFunctions(app), name)
+}
+
+/** Traveler: first message to the business behind a Place (creates or continues their thread). */
+export async function startBusinessThread(input: {
+  placeId: string
+  text: string
+  clientId: string
+}): Promise<{ ok: true; threadId: string; messageId: string; created: boolean; duplicate: boolean }> {
+  const res = await callable<typeof input, Awaited<ReturnType<typeof startBusinessThread>>>('startBusinessThread')(input)
+  return res.data
 }
 
 export async function sendBusinessMessage(input: {
   threadId: string
   text: string
   clientId: string
-}): Promise<{ ok: true; threadId: string; messageId: string; senderRole: 'customer' | 'business'; duplicate: boolean }> {
+}): Promise<{ ok: true; threadId: string; messageId: string; senderRole: SenderRole; duplicate: boolean }> {
   const res = await callable<typeof input, Awaited<ReturnType<typeof sendBusinessMessage>>>('sendBusinessMessage')(input)
   return res.data
 }
@@ -106,15 +139,16 @@ export async function markBusinessThreadRead(threadId: string): Promise<{ change
 }
 
 export type StaffThreadAction = 'archive' | 'unarchive' | 'block' | 'unblock' | 'report'
+export type CustomerThreadAction = 'hide' | 'report' | 'block' | 'unblock'
 
 export async function manageBusinessThread(input: {
   threadId: string
-  action: StaffThreadAction
+  action: StaffThreadAction | CustomerThreadAction
   reason?: string
-}): Promise<{ status: 'open' | 'archived' | 'blocked'; changed: boolean; reportId?: string }> {
+}): Promise<{ status: ThreadStatus; changed: boolean; reportId?: string }> {
   const res = await callable<
     typeof input,
-    { ok: true; status: 'open' | 'archived' | 'blocked'; changed: boolean; reportId?: string }
+    { ok: true; status: ThreadStatus; changed: boolean; reportId?: string }
   >('manageBusinessThread')(input)
   return { status: res.data.status, changed: res.data.changed, reportId: res.data.reportId }
 }
