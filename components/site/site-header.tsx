@@ -6,21 +6,26 @@
  * links, a "Claim your place" card for owners, and account actions.
  */
 
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 
-import { AccountMenu } from '@/components/account/account-menu'
 import { Icon } from '@/components/dash/icons'
 import { Container, StoreBadges, cx, siteButtonClass } from '@/components/site/ui'
-import { useAccountAuth } from '@/hooks/use-account-auth'
-import { accountRoutes, adminConsoleHref } from '@/lib/account/constants'
-import { useCustomerThreadsSummary } from '@/components/messages/customer-threads-store'
-import { readMyAdminRole } from '@/lib/admin'
 import { siteRoutes } from '@/lib/constants'
-import { MESSAGES_PATH, customerUnreadLabel } from '@/lib/customer-messages'
+
+/*
+ * The signed-in parts (account menu, unread dot, the phone menu's account
+ * block) need Firebase Auth / Firestore. They load after the page, so the
+ * Firebase SDK isn't part of every public page's first JavaScript.
+ */
+const AccountMenu = lazy(() => import('@/components/account/account-menu').then(m => ({ default: m.AccountMenu })))
+const MenuUnreadDot = lazy(() => import('@/components/site/site-header-account').then(m => ({ default: m.MenuUnreadDot })))
+const MobileMenuAccount = lazy(() =>
+  import('@/components/site/site-header-account').then(m => ({ default: m.MobileMenuAccount })),
+)
 
 export const SITE_NAV = [
   { href: '/places', label: 'Explore places', match: ['/places', '/place'] },
@@ -111,7 +116,9 @@ export function SiteHeader() {
             <Icon name="search" size={20} />
           </Link>
           <div className="hidden items-center gap-3 lg:flex">
-            <AccountMenu tone="light" />
+            <Suspense fallback={<span aria-hidden className="inline-block h-9 w-16" />}>
+              <AccountMenu tone="light" />
+            </Suspense>
             <a href="#get-the-app" className={siteButtonClass('dark', 'md')}>
               Get the app
             </a>
@@ -125,7 +132,11 @@ export function SiteHeader() {
             onClick={() => setOpen(v => !v)}
           >
             <Icon name={open ? 'x' : 'menu'} size={22} />
-            {open ? null : <MenuUnreadDot />}
+            {open ? null : (
+              <Suspense fallback={null}>
+                <MenuUnreadDot />
+              </Suspense>
+            )}
           </button>
         </div>
       </Container>
@@ -135,18 +146,6 @@ export function SiteHeader() {
 }
 
 function MobileMenu({ pathname, onClose }: { pathname: string; onClose: () => void }) {
-  const { user, loading, signOut } = useAccountAuth()
-  const router = useRouter()
-  const [isAdmin, setIsAdmin] = useState(false)
-  useEffect(() => {
-    if (!user) return
-    let cancelled = false
-    void readMyAdminRole(user.uid).then(r => !cancelled && setIsAdmin(Boolean(r)))
-    return () => {
-      cancelled = true
-    }
-  }, [user])
-
   return (
     <div
       id="site-menu"
@@ -188,56 +187,9 @@ function MobileMenu({ pathname, onClose }: { pathname: string; onClose: () => vo
           </span>
         </Link>
 
-        <div className="space-y-2">
-          {loading ? null : user ? (
-            <>
-              <p className="truncate text-[13px] text-n-muted">Signed in as {user.email}</p>
-              <MobileMessagesLink uid={user.uid} onClose={onClose} />
-              <div className="grid grid-cols-2 gap-2">
-                <Link href={accountRoutes.business} onClick={onClose} className={siteButtonClass('secondary', 'md')}>
-                  Your business
-                </Link>
-                {isAdmin ? (
-                  <a href={adminConsoleHref()} className={siteButtonClass('secondary', 'md')}>
-                    Admin console
-                  </a>
-                ) : (
-                  <button
-                    type="button"
-                    className={siteButtonClass('ghost', 'md')}
-                    onClick={() => {
-                      onClose()
-                      void signOut().then(() => router.refresh())
-                    }}
-                  >
-                    Sign out
-                  </button>
-                )}
-              </div>
-              {isAdmin ? (
-                <button
-                  type="button"
-                  className={siteButtonClass('ghost', 'md', 'w-full')}
-                  onClick={() => {
-                    onClose()
-                    void signOut().then(() => router.refresh())
-                  }}
-                >
-                  Sign out
-                </button>
-              ) : null}
-            </>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              <Link href={accountRoutes.signIn} onClick={onClose} className={siteButtonClass('secondary', 'md')}>
-                Sign in
-              </Link>
-              <Link href={accountRoutes.signUp} onClick={onClose} className={siteButtonClass('primary', 'md')}>
-                Create account
-              </Link>
-            </div>
-          )}
-        </div>
+        <Suspense fallback={null}>
+          <MobileMenuAccount onClose={onClose} />
+        </Suspense>
 
         <div className="mt-auto border-t border-n-line pt-5">
           <p className="mb-3 text-[13px] font-medium text-n-muted">Get the NessaChat app</p>
@@ -245,35 +197,5 @@ function MobileMenu({ pathname, onClose }: { pathname: string; onClose: () => vo
         </div>
       </Container>
     </div>
-  )
-}
-
-function MobileMessagesLink({ uid, onClose }: { uid: string; onClose: () => void }) {
-  const unread = customerUnreadLabel(useCustomerThreadsSummary(uid).unread)
-  return (
-    <Link href={MESSAGES_PATH} onClick={onClose} className={siteButtonClass('secondary', 'md', 'w-full justify-between')}>
-      <span className="inline-flex items-center gap-2">
-        <Icon name="chat" size={18} />
-        Messages
-      </span>
-      {unread ? (
-        <span className="rounded-full bg-n-accent px-2 text-[12px] leading-5 font-semibold text-white tabular-nums">
-          {unread}
-          <span className="sr-only"> unread</span>
-        </span>
-      ) : null}
-    </Link>
-  )
-}
-
-/** Unread business messages, on the phone menu button. */
-function MenuUnreadDot() {
-  const { user } = useAccountAuth()
-  const unread = useCustomerThreadsSummary(user?.uid).unread
-  if (!unread) return null
-  return (
-    <span className="absolute top-1.5 right-1.5 size-2.5 rounded-full border-2 border-n-canvas bg-n-danger">
-      <span className="sr-only">Unread messages</span>
-    </span>
   )
 }

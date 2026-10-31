@@ -7,10 +7,9 @@
  */
 
 import { useEffect, useState } from 'react'
-import { getFunctions, httpsCallable } from 'firebase/functions'
-
-import { getFirebaseClient } from '@/lib/firebase'
 import { parseDirectoryPlace, stripKeyedPhoto, type DirectoryPlace } from '@/lib/place-directory'
+// Plain fetch of the callable: keeps the Firebase SDK out of the home page and /places.
+import { callPublicFunction } from '@/lib/place-public-api'
 
 type Loaded = { places: DirectoryPlace[] }
 let inflight: Promise<Loaded> | null = null
@@ -22,11 +21,9 @@ function loadDirectory(): Promise<Loaded> {
   if (inflight) return inflight
   inflight = (async () => {
     try {
-      const { app } = getFirebaseClient()
-      const call = httpsCallable<Record<string, never>, { places?: unknown[] }>(getFunctions(app), 'getPublicPlaceDirectory')
-      const res = await call({})
+      const res = await callPublicFunction<{ places?: unknown[] }>('getPublicPlaceDirectory', {})
       const places: DirectoryPlace[] = []
-      for (const raw of res.data?.places ?? []) {
+      for (const raw of res?.places ?? []) {
         const place = parseDirectoryPlace(raw)
         if (place) places.push(stripKeyedPhoto(place))
       }
