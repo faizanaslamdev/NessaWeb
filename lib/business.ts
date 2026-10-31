@@ -8,18 +8,15 @@
 import { httpsCallable } from 'firebase/functions'
 import { getFunctions } from 'firebase/functions'
 
+import type {
+  BusinessCategory,
+  BusinessSocials,
+  OpeningHours,
+  PriceRange,
+} from '@/lib/business-profile'
 import { getFirebaseClient } from '@/lib/firebase'
 
-export type BusinessCategory =
-  | 'hostel'
-  | 'hotel'
-  | 'restaurant'
-  | 'bar'
-  | 'cafe'
-  | 'kite_school'
-  | 'tour'
-  | 'shop'
-  | 'other'
+export type { BusinessCategory }
 
 export const BUSINESS_CATEGORY_LABELS: Record<BusinessCategory, string> = {
   hostel: 'Hostel',
@@ -47,6 +44,16 @@ export type BusinessProfileInput = {
   languages?: string[]
   logoUrl?: string
   coverUrl?: string
+  /** Weekly timetable; omitted = hours unknown (clears it on save). */
+  openingHours?: OpeningHours
+  address?: string
+  email?: string
+  bookingUrl?: string
+  menuUrl?: string
+  /** URL or @handle as typed (the backend normalizes to a URL). */
+  socials?: BusinessSocials
+  priceRange?: PriceRange
+  paymentMethods?: string[]
 }
 
 export type MyBusinessPlace = {
@@ -444,14 +451,4 @@ export async function respondToInvite(inviteId: string, accept: boolean): Promis
   return callTeam<{ businessId: string }>({ action: accept ? 'acceptInvite' : 'declineInvite', inviteId })
 }
 
-/** "a, b, c" → ['a','b','c'] (trimmed, deduped). */
-export function splitList(raw: string): string[] {
-  const out: string[] = []
-  for (const part of raw.split(/[,\n]/)) {
-    const item = part.trim()
-    if (item && !out.includes(item)) {
-      out.push(item)
-    }
-  }
-  return out
-}
+export { splitList } from '@/lib/business-form'

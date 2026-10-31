@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { ExternalLink, useBusiness } from '@/components/business/dashboard/business-shell'
+import { OpeningHoursEditor } from '@/components/business/dashboard/opening-hours-editor'
 import { PlaceStatsPanel } from '@/components/business/place-stats-panel'
 import { TeamPanel } from '@/components/business/team-panel'
 import { ShellTitle } from '@/components/dash/app-shell'
@@ -25,8 +26,11 @@ import {
   Panel,
   PanelFooter,
   PanelHeader,
+  Segmented,
   cx,
   fieldClass,
+  hintClass,
+  labelClass,
 } from '@/components/dash/ui'
 import { QrStudio } from '@/components/manage/qr-studio'
 import { PlacePhotosManager } from '@/components/manage/photos-panel'
@@ -37,11 +41,24 @@ import {
   BusinessActionError,
   listQrPlacements,
   setPlaceChatPinnedInfo,
-  splitList,
   updateBusinessProfile,
   type BusinessCategory,
   type QrPlacement,
 } from '@/lib/business'
+import {
+  buildBusinessProfilePayload,
+  draftFromProfile,
+  splitList,
+  type BusinessDetailsDraft,
+} from '@/lib/business-form'
+import {
+  BUSINESS_PROFILE_LIMITS,
+  PRICE_RANGES,
+  SOCIAL_LABELS,
+  SOCIAL_NETWORKS,
+  type PriceRange,
+  type SocialNetwork,
+} from '@/lib/business-profile'
 import { placeChatRetentionLabel } from '@/lib/place-chat/retention'
 import {
   fetchPublicPlaceLanding,
@@ -377,43 +394,54 @@ export function BusinessTeamSection() {
 
 /* ───────────── Business details ───────────── */
 
+const PRICE_OPTIONS: { value: PriceRange | ''; label: string }[] = [
+  { value: '', label: 'Not set' },
+  ...PRICE_RANGES.map(p => ({ value: p, label: p })),
+]
+
+const SOCIAL_PLACEHOLDERS: Record<SocialNetwork, string> = {
+  instagram: '@yourplace or instagram.com/yourplace',
+  facebook: 'facebook.com/yourplace',
+  tiktok: '@yourplace or tiktok.com/@yourplace',
+  youtube: 'youtube.com/@yourplace',
+  x: '@yourplace or x.com/yourplace',
+}
+
+const PAYMENT_SUGGESTIONS = ['Cash', 'Card', 'Pix', 'Apple Pay', 'Google Pay']
+
 export function BusinessDetailsSection() {
   const { business, reload, place, href } = useBusiness()
-  const p = business.profile
-  const [name, setName] = useState(p.name ?? '')
-  const [category, setCategory] = useState<BusinessCategory | ''>(p.category ?? '')
-  const [description, setDescription] = useState(p.description ?? '')
-  const [website, setWebsite] = useState(p.website ?? '')
-  const [phone, setPhone] = useState(p.phone ?? '')
-  const [whatsapp, setWhatsapp] = useState(p.whatsapp ?? '')
-  const [hours, setHours] = useState(p.hours ?? '')
-  const [checkIn, setCheckIn] = useState(p.checkIn ?? '')
-  const [checkOut, setCheckOut] = useState(p.checkOut ?? '')
-  const [amenities, setAmenities] = useState((p.amenities ?? []).join(', '))
-  const [languages, setLanguages] = useState((p.languages ?? []).join(', '))
+  const [draft, setDraft] = useState<BusinessDetailsDraft>(() => draftFromProfile(business.profile))
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
 
+  const set = <K extends keyof BusinessDetailsDraft>(key: K, value: BusinessDetailsDraft[K]) => {
+    setDraft(d => ({ ...d, [key]: value }))
+    setSaved(false)
+  }
+  const paymentList = splitList(draft.paymentMethods)
+  const togglePayment = (method: string) => {
+    const has = paymentList.some(p => p.toLowerCase() === method.toLowerCase())
+    set(
+      'paymentMethods',
+      (has ? paymentList.filter(p => p.toLowerCase() !== method.toLowerCase()) : [...paymentList, method]).join(', '),
+    )
+  }
+
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault()
-    setBusy(true)
     setError(null)
     setSaved(false)
+    // Every field is sent: the callable replaces the whole editable set.
+    const result = buildBusinessProfilePayload(draft)
+    if (result.error !== undefined) {
+      setError(result.error)
+      return
+    }
+    setBusy(true)
     try {
-      await updateBusinessProfile(business.businessId, {
-        name: name.trim(),
-        category,
-        description: description.trim(),
-        website: website.trim(),
-        phone: phone.trim(),
-        whatsapp: whatsapp.trim(),
-        hours: hours.trim(),
-        checkIn: checkIn.trim(),
-        checkOut: checkOut.trim(),
-        amenities: splitList(amenities),
-        languages: splitList(languages),
-      })
+      await updateBusinessProfile(business.businessId, result.profile)
       setSaved(true)
       void reload()
     } catch (e) {
@@ -438,10 +466,10 @@ export function BusinessDetailsSection() {
           <PanelHeader title="About" />
           <div className="grid gap-4 px-5 pb-5 sm:grid-cols-2 max-sm:px-4">
             <Field label="Business name">
-              <input value={name} onChange={e => setName(e.target.value)} maxLength={80} required className={fieldClass} />
+              <input value={draft.name} onChange={e => set('name', e.target.value)} maxLength={80} required className={fieldClass} />
             </Field>
             <Field label="Category">
-              <select value={category} onChange={e => setCategory(e.target.value as BusinessCategory | '')} className={fieldClass}>
+              <select value={draft.category} onChange={e => set('category', e.target.value as BusinessCategory | '')} className={fieldClass}>
                 <option value="">—</option>
                 {(Object.keys(BUSINESS_CATEGORY_LABELS) as BusinessCategory[]).map(c => (
                   <option key={c} value={c}>
@@ -450,13 +478,23 @@ export function BusinessDetailsSection() {
                 ))}
               </select>
             </Field>
-            <Field label="Short description" className="sm:col-span-2" hint={`${description.length}/600`}>
+            <Field label="Short description" className="sm:col-span-2" hint={`${draft.description.length}/600 · The first ~150 characters show up in search results.`}>
               <textarea
-                value={description}
-                onChange={e => setDescription(e.target.value)}
+                value={draft.description}
+                onChange={e => set('description', e.target.value)}
                 maxLength={600}
                 rows={4}
                 className={cx(fieldClass, 'resize-y')}
+              />
+            </Field>
+            <Field label="Street address" className="sm:col-span-2" hint="Street and number, so guests can find you. City and country come from your place.">
+              <input
+                value={draft.address}
+                onChange={e => set('address', e.target.value.replace(/[\r\n]+/g, ' '))}
+                maxLength={BUSINESS_PROFILE_LIMITS.ADDRESS_MAX}
+                autoComplete="street-address"
+                placeholder="Rua das Dunas, 120"
+                className={fieldClass}
               />
             </Field>
             <p className="text-[13px] text-n-muted sm:col-span-2">
@@ -467,15 +505,74 @@ export function BusinessDetailsSection() {
 
         <Panel>
           <PanelHeader title="Contact" />
-          <div className="grid gap-4 px-5 pb-5 sm:grid-cols-3 max-sm:px-4">
+          <div className="grid gap-4 px-5 pb-5 sm:grid-cols-2 lg:grid-cols-3 max-sm:px-4">
             <Field label="Website">
-              <input value={website} onChange={e => setWebsite(e.target.value)} inputMode="url" maxLength={300} className={fieldClass} />
+              <input value={draft.website} onChange={e => set('website', e.target.value)} inputMode="url" maxLength={300} placeholder="yourplace.com" className={fieldClass} />
             </Field>
             <Field label="Phone">
-              <input value={phone} onChange={e => setPhone(e.target.value)} inputMode="tel" maxLength={32} className={fieldClass} />
+              <input value={draft.phone} onChange={e => set('phone', e.target.value)} inputMode="tel" maxLength={32} className={fieldClass} />
             </Field>
             <Field label="WhatsApp">
-              <input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} inputMode="tel" maxLength={32} className={fieldClass} />
+              <input value={draft.whatsapp} onChange={e => set('whatsapp', e.target.value)} inputMode="tel" maxLength={32} className={fieldClass} />
+            </Field>
+            <Field label="Public email" className="sm:col-span-2 lg:col-span-1">
+              <input
+                type="email"
+                value={draft.email}
+                onChange={e => set('email', e.target.value)}
+                maxLength={BUSINESS_PROFILE_LIMITS.EMAIL_MAX}
+                autoComplete="email"
+                placeholder="hello@yourplace.com"
+                className={fieldClass}
+              />
+            </Field>
+            <Field label="Booking link" hint="Shown as a “Book now” button.">
+              <input value={draft.bookingUrl} onChange={e => set('bookingUrl', e.target.value)} inputMode="url" maxLength={300} placeholder="https://" className={fieldClass} />
+            </Field>
+            <Field label="Menu link" hint="Shown as a “See menu” button.">
+              <input value={draft.menuUrl} onChange={e => set('menuUrl', e.target.value)} inputMode="url" maxLength={300} placeholder="https://" className={fieldClass} />
+            </Field>
+          </div>
+        </Panel>
+
+        <Panel>
+          <PanelHeader title="Social media" description="Paste a link, or an @handle for Instagram, TikTok and X." />
+          <div className="grid gap-4 px-5 pb-5 sm:grid-cols-2 lg:grid-cols-3 max-sm:px-4">
+            {SOCIAL_NETWORKS.map(network => (
+              <Field key={network} label={SOCIAL_LABELS[network]}>
+                <input
+                  value={draft.socials[network]}
+                  onChange={e => set('socials', { ...draft.socials, [network]: e.target.value })}
+                  inputMode="url"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  maxLength={300}
+                  placeholder={SOCIAL_PLACEHOLDERS[network]}
+                  className={fieldClass}
+                />
+              </Field>
+            ))}
+          </div>
+        </Panel>
+
+        <Panel>
+          <PanelHeader
+            icon="clock"
+            title="Opening hours"
+            description="Shown as a weekly timetable on your page and to search engines. A closing time earlier than the opening time means after midnight."
+          />
+          <div className="space-y-4 px-5 pb-5 max-sm:px-4">
+            <OpeningHoursEditor value={draft.week} onChange={week => set('week', week)} />
+            <Field label="Hours note" hint="Anything the timetable doesn’t cover — holidays, kitchen hours, seasons.">
+              <textarea
+                value={draft.hours}
+                onChange={e => set('hours', e.target.value)}
+                maxLength={200}
+                rows={2}
+                placeholder="Kitchen closes at 21:00. Closed on 25 Dec."
+                className={cx(fieldClass, 'resize-y')}
+              />
             </Field>
           </div>
         </Panel>
@@ -483,32 +580,64 @@ export function BusinessDetailsSection() {
         <Panel>
           <PanelHeader title="Stay & services" />
           <div className="grid gap-4 px-5 pb-5 sm:grid-cols-2 max-sm:px-4">
-            <Field label="Opening hours" className="sm:col-span-2">
-              <textarea
-                value={hours}
-                onChange={e => setHours(e.target.value)}
-                maxLength={200}
-                rows={2}
-                placeholder="Mon–Sun 8:00–22:00"
-                className={cx(fieldClass, 'resize-y')}
-              />
-            </Field>
             <Field label="Check-in from">
-              <input value={checkIn} onChange={e => setCheckIn(e.target.value)} maxLength={20} placeholder="14:00" className={fieldClass} />
+              <input value={draft.checkIn} onChange={e => set('checkIn', e.target.value)} maxLength={20} placeholder="14:00" className={fieldClass} />
             </Field>
             <Field label="Check-out by">
-              <input value={checkOut} onChange={e => setCheckOut(e.target.value)} maxLength={20} placeholder="11:00" className={fieldClass} />
+              <input value={draft.checkOut} onChange={e => set('checkOut', e.target.value)} maxLength={20} placeholder="11:00" className={fieldClass} />
             </Field>
+            <div className="sm:col-span-2">
+              <span className={labelClass}>
+                Price range
+              </span>
+              <div className="mt-1.5">
+                <Segmented
+                  label="Price range"
+                  value={draft.priceRange}
+                  options={PRICE_OPTIONS}
+                  onChange={v => set('priceRange', v)}
+                />
+              </div>
+              <span className={hintClass}>From $ (budget) to $$$$ (high end), compared with places nearby.</span>
+            </div>
+            <Field label="Payment methods" hint="Separate with commas. Up to 10." className="sm:col-span-2">
+              <input
+                value={draft.paymentMethods}
+                onChange={e => set('paymentMethods', e.target.value)}
+                placeholder="Cash, Card, Pix"
+                className={fieldClass}
+              />
+            </Field>
+            <div className="-mt-2 flex flex-wrap gap-1.5 sm:col-span-2" role="group" aria-label="Common payment methods">
+              {PAYMENT_SUGGESTIONS.map(method => {
+                const active = paymentList.some(p => p.toLowerCase() === method.toLowerCase())
+                return (
+                  <button
+                    key={method}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => togglePayment(method)}
+                    className={cx(
+                      'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[13px] font-medium transition-colors max-md:py-1.5',
+                      active ? 'bg-n-accent-soft text-n-accent-strong' : 'bg-n-sunken text-n-ink-2 hover:bg-n-hover',
+                    )}
+                  >
+                    <Icon name={active ? 'check' : 'plus'} size={13} />
+                    {method}
+                  </button>
+                )
+              })}
+            </div>
             <Field label="Amenities" hint="Separate with commas." className="sm:col-span-2">
               <input
-                value={amenities}
-                onChange={e => setAmenities(e.target.value)}
+                value={draft.amenities}
+                onChange={e => set('amenities', e.target.value)}
                 placeholder="Wi-Fi, Pool, Kite storage"
                 className={fieldClass}
               />
             </Field>
             <Field label="Languages your staff speak" hint="Language codes, separated with commas." className="sm:col-span-2">
-              <input value={languages} onChange={e => setLanguages(e.target.value)} placeholder="pt, en, es" className={fieldClass} />
+              <input value={draft.languages} onChange={e => set('languages', e.target.value)} placeholder="pt, en, es" className={fieldClass} />
             </Field>
           </div>
         </Panel>
