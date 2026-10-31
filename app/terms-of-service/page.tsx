@@ -2,10 +2,13 @@ import type { Metadata } from 'next'
 
 import { MarketingPageShell } from '@/components/landing/marketing-page-shell'
 import { siteConfig } from '@/lib/constants'
+import { PLACE_PUBLIC_ORIGIN } from '@/lib/place-slug'
 
 export const metadata: Metadata = {
   title: `Terms of Service | ${siteConfig.name}`,
   description: `Terms governing your use of ${siteConfig.name} services.`,
+  // Absolute canonical: the short aliases (/privacy, /terms) redirect here.
+  alternates: { canonical: `${PLACE_PUBLIC_ORIGIN}/terms-of-service` },
 }
 
 export default function TermsOfServicePage() {

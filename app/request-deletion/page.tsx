@@ -3,10 +3,12 @@ import Link from 'next/link'
 
 import { MarketingPageShell } from '@/components/landing/marketing-page-shell'
 import { siteConfig, siteRoutes } from '@/lib/constants'
+import { PLACE_PUBLIC_ORIGIN } from '@/lib/place-slug'
 
 export const metadata: Metadata = {
   title: `Request account & data deletion | ${siteConfig.name}`,
   description: `How to delete your ${siteConfig.name} account and associated data.`,
+  alternates: { canonical: `${PLACE_PUBLIC_ORIGIN}/request-deletion` },
 }
 
 export default function RequestDeletionPage() {

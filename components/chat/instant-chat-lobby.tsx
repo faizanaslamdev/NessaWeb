@@ -2,7 +2,9 @@
 
 /**
  * Instant chat: start a temporary room (anonymous guest session) or join one
- * by its code. Same behaviour as before; restyled for the site.
+ * by its code. The anonymous session starts only on "Create room" (joining a
+ * room signs in on the room page), so viewing /chat — by people or crawlers —
+ * never creates an account.
  */
 
 import { useState } from 'react'
@@ -10,7 +12,7 @@ import { useRouter } from 'next/navigation'
 
 import { Icon } from '@/components/dash/icons'
 import { siteButtonClass } from '@/components/site/ui'
-import { useInstantAuth } from '@/hooks/use-instant-auth'
+import { ensureInstantUser } from '@/hooks/use-instant-auth'
 import { createChatSession } from '@/lib/chat/session'
 import { APP_CHAT_LANGUAGES, DEFAULT_CHAT_LANGUAGE_CODE } from '@/lib/chat/languages'
 import { getFirebaseClient } from '@/lib/firebase'
@@ -20,7 +22,6 @@ const field =
 
 export function InstantChatLobby() {
   const router = useRouter()
-  const { user, loading: authLoading, error: authError } = useInstantAuth()
   const [roomId, setRoomId] = useState('')
   const [createName, setCreateName] = useState('')
   const [createLang, setCreateLang] = useState(DEFAULT_CHAT_LANGUAGE_CODE)
@@ -29,15 +30,16 @@ export function InstantChatLobby() {
 
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!createName.trim() || !user) return
+    if (!createName.trim()) return
     setBusy(true)
     setErr(null)
     try {
+      const user = await ensureInstantUser()
       const { firestore } = getFirebaseClient()
       const id = await createChatSession(firestore, user.uid, createName.trim(), createLang)
       router.push(`/chat/${id}?share=1`)
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not create the room')
+      setErr(e instanceof Error ? e.message.split(/\n\n+/)[0] : 'Could not create the room')
     } finally {
       setBusy(false)
     }
@@ -47,15 +49,6 @@ export function InstantChatLobby() {
     e.preventDefault()
     const id = roomId.trim()
     if (id) router.push(`/chat/${encodeURIComponent(id)}`)
-  }
-
-  if (authError) {
-    return (
-      <div role="alert" className="rounded-2xl border border-n-danger/30 bg-n-danger-soft p-6 text-[15px] text-n-danger">
-        <p className="font-semibold">Instant chat isn’t available right now.</p>
-        <p className="mt-1 text-n-ink-2">{authError.message.split(/\n\n+/)[0]}</p>
-      </div>
-    )
   }
 
   return (
@@ -73,7 +66,7 @@ export function InstantChatLobby() {
               placeholder="Your name"
               value={createName}
               onChange={e => setCreateName(e.target.value)}
-              disabled={authLoading || busy}
+              disabled={busy}
               maxLength={40}
               autoComplete="nickname"
             />
@@ -83,7 +76,7 @@ export function InstantChatLobby() {
             <select
               value={createLang}
               onChange={e => setCreateLang(e.target.value)}
-              disabled={authLoading || busy}
+              disabled={busy}
               className={`${field} cursor-pointer appearance-none pr-9`}
             >
               {APP_CHAT_LANGUAGES.map(lang => (
@@ -97,10 +90,10 @@ export function InstantChatLobby() {
         </div>
         <button
           type="submit"
-          disabled={authLoading || busy || !createName.trim() || !user}
+          disabled={busy || !createName.trim()}
           className={siteButtonClass('primary', 'lg', 'mt-3 w-full')}
         >
-          {authLoading ? 'Getting ready…' : busy ? 'Creating…' : 'Create room'}
+          {busy ? 'Creating…' : 'Create room'}
         </button>
       </form>
 
@@ -118,13 +111,12 @@ export function InstantChatLobby() {
             placeholder="Room code"
             value={roomId}
             onChange={e => setRoomId(e.target.value)}
-            disabled={authLoading}
             autoCapitalize="off"
             autoCorrect="off"
             spellCheck={false}
           />
         </label>
-        <button type="submit" disabled={!roomId.trim() || authLoading} className={siteButtonClass('secondary', 'lg', 'h-12')}>
+        <button type="submit" disabled={!roomId.trim()} className={siteButtonClass('secondary', 'lg', 'h-12')}>
           Join
         </button>
       </form>

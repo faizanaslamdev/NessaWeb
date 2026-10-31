@@ -11,6 +11,14 @@ export const metadata: Metadata = {
   description:
     'Start a temporary chat room, share the link or QR code and talk right away — every message is translated. No sign-up needed.',
   alternates: { canonical: `${PLACE_PUBLIC_ORIGIN}/chat` },
+  openGraph: {
+    title: 'Instant chat — talk in any language',
+    description: 'Start a temporary chat room and share the link. Every message is translated. No sign-up needed.',
+    url: `${PLACE_PUBLIC_ORIGIN}/chat`,
+    siteName: 'NessaChat',
+    type: 'website',
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'NessaChat' }],
+  },
 }
 
 const POINTS: { icon: IconName; text: string }[] = [

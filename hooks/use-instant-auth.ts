@@ -65,3 +65,23 @@ export function useInstantAuth() {
 
   return { user, loading, error }
 }
+
+/**
+ * The signed-in user, or a new anonymous one — only when the visitor acts
+ * (e.g. "Create room"). Pages crawlers may render (the /chat lobby) use this
+ * instead of `useInstantAuth`, so a page view never creates an anonymous
+ * account. Throws an Error with readable copy on failure.
+ */
+export async function ensureInstantUser(): Promise<User> {
+  try {
+    const { auth } = getFirebaseClient()
+    await auth.authStateReady()
+    const user = auth.currentUser ?? (await signInAnonymously(auth)).user
+    // Mint a credential before Firestore writes so rules see `request.auth`.
+    await user.getIdToken()
+    return user
+  } catch (e) {
+    const { headline, detail } = describeChatAuthFailure(e)
+    throw new Error(`${headline}\n\n${detail}`)
+  }
+}
