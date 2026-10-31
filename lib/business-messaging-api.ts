@@ -10,7 +10,6 @@
 import {
   collection,
   doc,
-  getDoc,
   limit as limitTo,
   onSnapshot,
   orderBy,
@@ -96,17 +95,19 @@ export function subscribeThreadMessages(
 
 /**
  * Whether a business accepts new traveler messages (`messagingEnabled`,
- * absent = on). businesses/{id} is readable by any signed-in user.
- * Resolves true when it can't be read — the callables enforce it anyway.
+ * absent = on), live — so the traveler's composer follows the owner's
+ * switch both ways. businesses/{id} is readable by any signed-in user.
+ * Reports true when it can't be read — the callables enforce it anyway.
  */
-export async function readBusinessMessagingEnabled(businessId: string): Promise<boolean> {
-  try {
+export function subscribeBusinessMessagingEnabled(businessId: string, onData: (enabled: boolean) => void): () => void {
+  return deferredFirestoreSubscribe(() => {
     const { firestore } = getFirebaseClient()
-    const snap = await getDoc(doc(firestore, 'businesses', businessId))
-    return snap.data()?.messagingEnabled !== false
-  } catch {
-    return true
-  }
+    return onSnapshot(
+      doc(firestore, 'businesses', businessId),
+      snap => onData(snap.data()?.messagingEnabled !== false),
+      () => onData(true),
+    )
+  })
 }
 
 /**

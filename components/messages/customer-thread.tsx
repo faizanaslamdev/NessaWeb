@@ -40,8 +40,8 @@ import {
 } from '@/lib/business-messaging'
 import {
   manageBusinessThread,
-  readBusinessMessagingEnabled,
   sendBusinessMessage,
+  subscribeBusinessMessagingEnabled,
   subscribeThread,
   type CustomerThreadAction,
 } from '@/lib/business-messaging-api'
@@ -96,17 +96,11 @@ export function CustomerThreadView({
     if (!threadBlocked) setRefusedAsBlocked(false)
   }, [threadBlocked])
 
-  // Whether the business still accepts messages (businesses/{id} is readable when signed in).
+  // Whether the business still accepts messages (live: the owner's switch can flip either way).
   const businessId = thread?.businessId ?? ''
   useEffect(() => {
     if (!businessId) return
-    let cancelled = false
-    void readBusinessMessagingEnabled(businessId).then(enabled => {
-      if (!cancelled) setMessagingEnabled(enabled)
-    })
-    return () => {
-      cancelled = true
-    }
+    return subscribeBusinessMessagingEnabled(businessId, setMessagingEnabled)
   }, [businessId])
 
   const deliver = useCallback(
