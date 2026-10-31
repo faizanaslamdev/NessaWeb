@@ -5,6 +5,7 @@
 
 import { unstable_cache } from 'next/cache'
 
+import { sanitizePublicBusiness, type PublicBusinessFields } from '@/lib/business-profile'
 import { placeShareUrl, siteConfig } from '@/lib/constants'
 import {
   isPublicPlaceIdValid,
@@ -28,16 +29,13 @@ export type PublicPlaceShareMeta = {
   country?: string
   placeType?: string
   coverImageUrl?: string
+  /** `google` covers never go into JSON-LD. */
+  coverSource?: 'nessa' | 'google'
   slug?: string
   recommenderCount?: number
   storyCount?: number
-  business?: {
-    name: string
-    website?: string
-    phone?: string
-    description?: string
-    logoUrl?: string
-  }
+  /** Sanitized verified-business profile (everything SEO / JSON-LD needs). */
+  business?: PublicBusinessFields
 }
 
 function callableUrl(): string | null {
@@ -93,7 +91,8 @@ function safeHttpsUrl(value: unknown): string | undefined {
   }
 }
 
-function mapCallableResult(raw: unknown): PublicPlaceShareMeta | null {
+/** Sanitized share / SEO subset of a landing payload (exported for tests). */
+export function mapCallableResult(raw: unknown): PublicPlaceShareMeta | null {
   if (!raw || typeof raw !== 'object') {
     return null
   }
@@ -130,18 +129,15 @@ function mapCallableResult(raw: unknown): PublicPlaceShareMeta | null {
   if (typeof data.storyCount === 'number' && data.storyCount >= 0) {
     meta.storyCount = Math.floor(data.storyCount)
   }
-  const biz = data.business as Record<string, unknown> | undefined
-  const bizName = biz ? sanitizePlainText(biz.name, 80) : undefined
-  if (biz && bizName && biz.verified === true) {
-    meta.business = {name: bizName}
-    const website = safeHttpsUrl(biz.website)
-    if (website) meta.business.website = website
-    const phone = sanitizePlainText(biz.phone, 32)
-    if (phone) meta.business.phone = phone
-    const description = sanitizePlainText(biz.description, 300)
-    if (description) meta.business.description = description
-    const logoUrl = safeHttpsUrl(biz.logoUrl)
-    if (logoUrl) meta.business.logoUrl = logoUrl
+  if (data.coverSource === 'nessa' || data.coverSource === 'google') {
+    meta.coverSource = data.coverSource
+  }
+  const business = sanitizePublicBusiness(data.business)
+  if (business) {
+    const profile: PublicBusinessFields & { businessId?: string; verified?: true } = { ...business }
+    delete profile.businessId
+    delete profile.verified
+    meta.business = profile
   }
   return meta
 }
@@ -228,18 +224,22 @@ export async function getCachedPublicPlaceLanding(
  * - drops a cover URL that carries a Google API key;
  * - drops public Wi-Fi (network + password) so crawlers never index or cache
  *   passwords. The client fetches its own full copy after hydration, exactly
- *   as before SSR existed, so visitors still see the Wi-Fi card.
+ *   as before SSR existed, so visitors still see the Wi-Fi card;
+ * - re-validates the verified business (malformed / non-https links dropped).
  */
 export function toSsrSafeLanding(landing: PublicPlaceLanding): PublicPlaceLanding {
-  const keepCover = !landing.coverImageUrl || Boolean(safeHttpsUrl(landing.coverImageUrl))
-  if (keepCover && !landing.wifi) {
-    return landing
-  }
   const copy = { ...landing }
-  if (!keepCover) {
+  if (copy.coverImageUrl && !safeHttpsUrl(copy.coverImageUrl)) {
     delete copy.coverImageUrl
   }
   delete copy.wifi
+  // Business links are rendered into hrefs: only validated fields.
+  const business = sanitizePublicBusiness(landing.business)
+  if (business) {
+    copy.business = business
+  } else {
+    delete copy.business
+  }
   return copy
 }
 

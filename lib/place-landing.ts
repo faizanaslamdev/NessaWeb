@@ -4,6 +4,7 @@
 
 import { getFunctions, httpsCallable } from 'firebase/functions'
 
+import { sanitizePublicBusiness, type PublicBusinessProfile } from '@/lib/business-profile'
 import { getFirebaseClient } from '@/lib/firebase'
 
 export type PublicPlaceRecommender = {
@@ -94,23 +95,14 @@ export type PublicPlacePhoto = {
   caption?: string
 }
 
-export type PublicBusinessProfile = {
-  businessId: string
-  verified: true
-  name: string
-  category?: string
-  description?: string
-  website?: string
-  phone?: string
-  whatsapp?: string
-  hours?: string
-  checkIn?: string
-  checkOut?: string
-  amenities?: string[]
-  languages?: string[]
-  logoUrl?: string
-  coverUrl?: string
-}
+export type {
+  BusinessSocials,
+  OpeningHours,
+  OpeningInterval,
+  PriceRange,
+  PublicBusinessProfile,
+  WeekDay,
+} from '@/lib/business-profile'
 
 export type PublicPlaceWifi = {
   networkName: string
@@ -304,9 +296,12 @@ export async function fetchPublicPlaceLanding(
       PublicPlaceLanding
     >(getCallableFunctions(), 'getPublicPlaceLanding')
     const result = await callable({ placeId: trimmed })
-    const data = result.data
+    const { business: rawBusiness, ...data } = result.data
+    // Business fields end up in hrefs / mailto links: validate them here.
+    const business = sanitizePublicBusiness(rawBusiness)
     return {
       ...data,
+      ...(business ? { business } : {}),
       recommenders: Array.isArray(data.recommenders) ? data.recommenders : [],
       stories: Array.isArray(data.stories)
         ? data.stories.map(story => ({
