@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 
 import {
@@ -1064,29 +1064,44 @@ function PersonAvatar({
   avatarUrl?: string
   size?: 'sm' | 'md'
 }) {
-  const [failed, setFailed] = useState(false)
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null)
   const dim = size === 'sm' ? 'h-7 w-7 text-[10px]' : 'h-9 w-9 text-xs'
-  const showImage = Boolean(avatarUrl) && !failed
+  const showImage = Boolean(avatarUrl) && failedUrl !== avatarUrl
+  const imgRef = useRef<HTMLImageElement | null>(null)
+  // Server-rendered images can finish loading before hydration attaches
+  // onLoad / onError — read the element's state once mounted.
+  useEffect(() => {
+    const img = imgRef.current
+    if (!img || !img.complete || !avatarUrl) return
+    if (img.naturalWidth > 0) setLoadedUrl(avatarUrl)
+    else setFailedUrl(avatarUrl)
+  }, [avatarUrl])
 
+  // Initials sit under the photo: a slow load never shows an empty circle,
+  // and a failed photo (old avatar link) leaves the initials.
   return (
     <div
       className={`relative shrink-0 overflow-hidden rounded-full bg-n-accent-soft ${dim}`}
     >
+      <span className="flex h-full w-full items-center justify-center font-semibold text-n-accent-strong">
+        {initialLetter(name)}
+      </span>
       {showImage ? (
         // eslint-disable-next-line @next/next/no-img-element -- Firebase download URLs
         <img
+          ref={imgRef}
           src={avatarUrl}
           alt=""
           loading="lazy"
           decoding="async"
-          className="h-full w-full object-cover"
-          onError={() => setFailed(true)}
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-150 ${
+            loadedUrl === avatarUrl ? 'opacity-100' : 'opacity-0'
+          }`}
+          onLoad={() => setLoadedUrl(avatarUrl ?? null)}
+          onError={() => setFailedUrl(avatarUrl ?? null)}
         />
-      ) : (
-        <span className="flex h-full w-full items-center justify-center font-semibold text-n-accent-strong">
-          {initialLetter(name)}
-        </span>
-      )}
+      ) : null}
     </div>
   )
 }
