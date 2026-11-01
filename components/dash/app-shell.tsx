@@ -36,6 +36,8 @@ export type NavItem = {
   active?: boolean
   /** Count or short text shown on the item (a dot on the rail). */
   badge?: string | number | null
+  /** Screen-reader word after the count, e.g. "open" → "Reports, 3 open". */
+  badgeLabel?: string
   external?: boolean
 }
 
@@ -383,6 +385,7 @@ function NavLink({
       {hasBadge ? (
         <span className="rounded-full bg-n-warn-soft px-2 text-xs leading-5 font-medium text-n-warn tabular-nums">
           {item.badge}
+          {item.badgeLabel ? <span className="sr-only"> {item.badgeLabel}</span> : null}
         </span>
       ) : null}
       {item.external ? <Icon name="external" size={14} className="text-n-faint" /> : null}

@@ -68,7 +68,12 @@ export function AdminOverview() {
           <span suppressHydrationWarning>
             {today}
             {today ? ' · ' : ''}
-            <span className="text-n-ok">Production</span>
+            {/* Same build-time check as the header badge. */}
+            {process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST ? (
+              <span className="text-n-warn">Local emulators</span>
+            ) : (
+              <span className="text-n-ok">Production</span>
+            )}
           </span>
         }
         title={`${greeting()}${name ? `, ${name}` : ''}`}

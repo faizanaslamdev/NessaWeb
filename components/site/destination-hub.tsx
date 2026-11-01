@@ -99,7 +99,7 @@ export function DestinationHub({
             <div>
               <h2 className="text-[20px] font-semibold tracking-[-0.015em]">Own or manage one of these places?</h2>
               <p className="mt-1 text-[15px] text-n-ink-2">
-                Claim it for free to add official details, Wi-Fi and a welcome message to its live chat.
+                Claim it for free to add official details, <span className="whitespace-nowrap">Wi-Fi</span> and a welcome message to its live chat.
               </p>
             </div>
             <SiteButton href={`${siteRoutes.forBusinesses}#find`} size="lg" iconRight="arrow-right">

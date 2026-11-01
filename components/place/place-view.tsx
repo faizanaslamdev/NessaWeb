@@ -257,7 +257,7 @@ export function PlaceView({
                       Is this your business?
                     </h2>
                     <p className="mt-1 text-[14px] leading-6 text-n-ink-2">
-                      Claim {place.name} for free to add official details and guest Wi-Fi, and to welcome guests in the
+                      Claim {place.name} for free to add official details and guest <span className="whitespace-nowrap">Wi-Fi</span>, and to welcome guests in the
                       live chat.
                     </p>
                   </div>

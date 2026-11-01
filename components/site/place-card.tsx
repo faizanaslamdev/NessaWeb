@@ -83,8 +83,8 @@ export function PlaceStatsLine({ place, className }: { place: DirectoryPlace; cl
   if (place.storyCount > 0) bits.push(`${compactCount(place.storyCount)} ${place.storyCount === 1 ? 'story' : 'stories'}`)
   if (bits.length === 0) return null
   return (
-    <p className={cx('flex items-center gap-1.5 text-[13px] text-n-subtle', className)}>
-      <Icon name="star" size={13} className="text-n-accent" strokeWidth={2} />
+    <p className={cx('flex items-start gap-1.5 text-[13px] leading-5 text-n-subtle', className)}>
+      <Icon name="star" size={13} className="mt-[3.5px] shrink-0 text-n-accent" strokeWidth={2} />
       <span>{bits.join(' · ')}</span>
     </p>
   )

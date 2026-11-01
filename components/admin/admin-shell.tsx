@@ -199,8 +199,8 @@ function AdminFrame({ children, onSignOut }: { children: ReactNode; onSignOut: (
       items: [
         { href: href(''), label: 'Overview', icon: 'home', active: top === '' },
         { href: href('places'), label: 'Places', icon: 'pin', active: top === 'places' || top === 'chats' },
-        { href: href('business'), label: 'Business claims', icon: 'briefcase', active: top === 'business', badge: pending || null },
-        { href: href('reports'), label: 'Reports', icon: 'flag', active: top === 'reports', badge: openReportsBadge(openReports) },
+        { href: href('business'), label: 'Business claims', icon: 'briefcase', active: top === 'business', badge: pending || null, badgeLabel: 'pending' },
+        { href: href('reports'), label: 'Reports', icon: 'flag', active: top === 'reports', badge: openReportsBadge(openReports), badgeLabel: 'open' },
         { href: href('audit'), label: 'Audit log', icon: 'log', active: top === 'audit' },
       ],
     },
