@@ -30,7 +30,7 @@ import {
   useConversation,
   useMarkThreadRead,
 } from '@/components/messaging/conversation'
-import { VerifiedBadge } from '@/components/place/place-official-section'
+import { VerifiedBadge } from '@/components/site/verified-badge'
 import {
   describeMessagingError,
   readReceiptFor,
@@ -188,6 +188,7 @@ export function CustomerThreadView({
           <p className="flex min-w-0 items-center gap-2">
             <span className="truncate text-[15px] font-semibold text-n-ink">{name}</span>
             <VerifiedBadge className="shrink-0 max-sm:hidden" />
+            <VerifiedBadge variant="icon" sealClassName="size-4 text-n-accent" className="shrink-0 sm:hidden" />
           </p>
           <Link
             href={`/place/${encodeURIComponent(thread.placeId)}`}

@@ -33,6 +33,7 @@ import { nessaCoverUrl } from '@/lib/place-photo'
 import { fetchPublicPlaceLanding, type PublicPlaceLanding } from '@/lib/place-landing'
 import { placeOutboundUrl, placePublicUrl } from '@/lib/place-slug'
 import { ThreadAvatar } from '@/components/messaging/thread-avatar'
+import { VerifiedSeal } from '@/components/site/verified-seal'
 
 type Step = { key: string; title: string; hint: string; href: string; done: boolean; icon: IconName }
 
@@ -367,7 +368,8 @@ export function BusinessHomeDashboard() {
                 <div className="space-y-1 p-3">
                   <p className="flex items-center gap-1.5 text-sm font-semibold">
                     {place.name}
-                    <Icon name="shield" size={14} className="text-n-ok" aria-label="Verified" />
+                    <VerifiedSeal className="size-4 text-n-accent" />
+                    <span className="sr-only">Verified business</span>
                   </p>
                   {p.description ? <p className="line-clamp-2 text-[13px] text-n-muted">{p.description}</p> : null}
                   <p className="text-xs text-n-subtle">

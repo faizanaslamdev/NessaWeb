@@ -15,13 +15,14 @@ import { RecommendedBySection, StoriesSection } from '@/components/place/place-c
 import { GoogleMapsMark } from '@/components/place/place-credits'
 import { PlaceHero } from '@/components/place/place-hero'
 import { PlaceMessageSlot } from '@/components/place/place-message-slot'
-import { PlaceOfficialSection, VerifiedBadge } from '@/components/place/place-official-section'
+import { PlaceOfficialSection } from '@/components/place/place-official-section'
 import { PlaceGallerySection } from '@/components/place/place-photos'
 import { PlacePrearrivalCopy } from '@/components/place/place-prearrival-copy'
 import { PlaceCoverShareQr } from '@/components/place/place-share-qr'
 import { PlaceWifiSlot } from '@/components/place/place-wifi-slot'
 import { PlaceCard } from '@/components/site/place-card'
 import { Container, StoreBadges, siteButtonClass } from '@/components/site/ui'
+import { VerifiedBadge } from '@/components/site/verified-badge'
 import { accountRoutes } from '@/lib/account/constants'
 import { placeAppDeepLink, siteConfig } from '@/lib/constants'
 import { hasMessageSlot } from '@/lib/customer-messages'
@@ -44,6 +45,26 @@ function StatPill({ icon, value, label }: { icon: IconName; value: number; label
       <Icon name={icon} size={14} className="text-n-accent" />
       <span className="font-semibold text-n-ink tabular-nums">{formatCount(value)}</span> {label}
     </li>
+  )
+}
+
+/**
+ * The name with the verified seal in the text flow: the seal follows the last
+ * word (never alone on a new line) and is sized in `em`, so it stays centred
+ * on the capitals at 32 and 44 px. Very long last words may still break.
+ */
+function TitleWithBadge({ name }: { name: string }) {
+  const cut = name.lastIndexOf(' ')
+  const head = cut >= 0 ? name.slice(0, cut + 1) : ''
+  const last = cut >= 0 ? name.slice(cut + 1) : name
+  return (
+    <>
+      {head}
+      <span className={last.length <= 14 ? 'whitespace-nowrap' : undefined}>
+        {last}
+        <VerifiedBadge variant="icon" className="ml-[0.2em]" />
+      </span>
+    </>
   )
 }
 
@@ -117,9 +138,8 @@ export function PlaceView({
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
             <p className="text-[14px] font-medium text-n-accent-strong">{placeTypeLabel(place.placeType)}</p>
-            <h1 className="n-display mt-1 flex flex-wrap items-center gap-x-3 gap-y-2 text-[32px] leading-[1.1] sm:text-[44px]">
-              <span className="[overflow-wrap:anywhere]">{place.name}</span>
-              {business ? <VerifiedBadge className="translate-y-0.5" /> : null}
+            <h1 className="n-display mt-1 text-[32px] leading-[1.1] [overflow-wrap:anywhere] sm:text-[44px]">
+              {business ? <TitleWithBadge name={place.name} /> : place.name}
             </h1>
             {address ? (
               <p className="mt-2 flex items-start gap-1.5 text-[15px] text-n-muted">

@@ -2,6 +2,7 @@ import { ThreadAvatar } from '@/components/messaging/thread-avatar'
 import { PlaceMessageSlot } from '@/components/place/place-message-slot'
 import { PlaceOpeningHours } from '@/components/place/place-opening-hours'
 import { siteButtonClass } from '@/components/site/ui'
+import { VerifiedBadge } from '@/components/site/verified-badge'
 import { SOCIAL_LABELS, SOCIAL_NETWORKS, type SocialNetwork } from '@/lib/business-profile'
 import { hasMessageSlot } from '@/lib/customer-messages'
 import type { PublicBusinessProfile } from '@/lib/place-landing'
@@ -16,20 +17,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   tour: 'Tours & activities',
   shop: 'Shop',
   other: 'Business',
-}
-
-export function VerifiedBadge({ className = '' }: { className?: string }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full bg-n-accent-soft px-2 py-0.5 text-[12px] font-semibold text-n-accent-strong ${className}`}
-      title="Verified business"
-    >
-      <svg viewBox="0 0 20 20" aria-hidden className="size-3.5 fill-current">
-        <path d="M10 1.5l2.3 1.6 2.8-.3 1 2.6 2.4 1.5-.6 2.8.6 2.8-2.4 1.5-1 2.6-2.8-.3L10 18.5l-2.3-1.6-2.8.3-1-2.6-2.4-1.5.6-2.8-.6-2.8 2.4-1.5 1-2.6 2.8.3L10 1.5zm-1.2 11.2l5-5-1.4-1.4-3.6 3.6-1.6-1.6-1.4 1.4 3 3z" />
-      </svg>
-      Verified
-    </span>
-  )
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {

@@ -7,6 +7,7 @@ import Link from 'next/link'
 import type { ComponentProps, ReactNode } from 'react'
 
 import { Icon, type IconName } from '@/components/dash/icons'
+import { VERIFIED_TITLE, VerifiedSeal } from '@/components/site/verified-seal'
 import { appStores } from '@/lib/constants'
 
 export function cx(...parts: Array<string | false | null | undefined>): string {
@@ -165,11 +166,16 @@ export function StoreBadges({ tone = 'dark', className }: { tone?: 'dark' | 'lig
   )
 }
 
-/** Small verified mark used on cards and Place pages. */
+/**
+ * Non-interactive verified mark for Place cards and rows. Cards are links, so
+ * a button with a popover can't go inside them (invalid nesting, and it would
+ * steal the card's tap): the mark has an accessible label instead, and the
+ * Place page's badge explains it (VerifiedBadge).
+ */
 export function VerifiedMark({ className, label = 'Verified business' }: { className?: string; label?: string }) {
   return (
-    <span className={cx('inline-flex items-center text-n-accent', className)} title={label}>
-      <Icon name="badge-check" size={18} strokeWidth={2} />
+    <span className={cx('inline-flex items-center', className)} title={VERIFIED_TITLE}>
+      <VerifiedSeal className="size-[18px] text-n-accent" />
       <span className="sr-only">{label}</span>
     </span>
   )
