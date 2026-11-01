@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Icon } from '@/components/dash/icons'
 import { useBusinessAccess } from '@/components/messages/business-access-store'
 import { useCustomerThreadsSummary } from '@/components/messages/customer-threads-store'
+import { MessagePanel } from '@/components/place/place-message-panel'
 import { siteButtonClass } from '@/components/site/ui'
 import { useAccountAuth } from '@/hooks/use-account-auth'
 import type { PublicBusinessProfile } from '@/lib/business-profile'
@@ -15,7 +16,9 @@ import { messageButtonAction, newMessageHref } from '@/lib/customer-messages'
  * Chat guests included) → sign in, then the first-message composer. Signed
  * in → the traveler's existing thread when the shared thread listener has
  * it, else the composer (which checks the full list again). Team members of
- * the business see "This is your business · Open inbox" instead.
+ * the business get "Open inbox" instead. In the business section
+ * (`layout="panel"`) the button comes with copy saying the message is
+ * private and where the reply arrives.
  */
 export function PlaceMessageButton({
   placeId,
@@ -24,6 +27,7 @@ export function PlaceMessageButton({
   variant = 'primary',
   size = 'md',
   compact = false,
+  layout = 'button',
 }: {
   placeId: string
   /** Only the fields the visibility rules read (keeps the client props small). */
@@ -31,11 +35,10 @@ export function PlaceMessageButton({
   className?: string
   variant?: 'primary' | 'secondary'
   size?: 'md' | 'lg'
-  /**
-   * Phone bottom bar: a full-height button beside "Join live chat"; team
-   * members get a short "Open inbox" button instead of the inline link.
-   */
+  /** Phone bottom bar: shorter labels ("Conversation"). */
   compact?: boolean
+  /** `panel`: the business section's private-message box (copy + button). */
+  layout?: 'button' | 'panel'
 }) {
   const { user, loading } = useAccountAuth()
   const summary = useCustomerThreadsSummary(user?.uid)
@@ -48,37 +51,33 @@ export function PlaceMessageButton({
     teamBusinessIds: access.teamBusinessIds,
   })
   if (action.kind === 'hidden') return null
+  // While auth loads, point at the composer: it gates sign-in itself.
+  const href = loading ? newMessageHref(placeId) : action.href
+  if (layout === 'panel') {
+    const kind = action.kind === 'own' ? 'own' : action.kind === 'thread' && !loading ? 'thread' : 'new'
+    return <MessagePanel kind={kind} href={href} businessName={business.name} variant={variant} className={className} />
+  }
   if (action.kind === 'own') {
-    if (compact) {
-      return (
-        <Link
-          href={action.href}
-          aria-label={`This is your business. Open the ${business.name} inbox`}
-          className={siteButtonClass('secondary', size, className)}
-          data-testid="place-own-business-link"
-        >
-          <Icon name="inbox" size={17} />
-          Open inbox
-        </Link>
-      )
-    }
     return (
       <Link
         href={action.href}
-        aria-label={`This is your business. Open the ${business.name} inbox`}
-        className="inline-flex min-h-10 items-center gap-1.5 self-center text-[14px] font-semibold text-n-accent-strong no-underline hover:underline max-[400px]:basis-full"
+        aria-label={`Open inbox for ${business.name} (your business)`}
+        className={siteButtonClass('secondary', size, className)}
         data-testid="place-own-business-link"
       >
-        <Icon name="inbox" size={16} />
-        This is your business · Open inbox
+        <Icon name="inbox" size={17} />
+        Open inbox
       </Link>
     )
   }
-  // While auth loads, point at the composer: it gates sign-in itself.
-  const href = loading ? newMessageHref(placeId) : action.href
   return (
-    <Link href={href} className={siteButtonClass(variant, size, className)} data-testid="place-message-button">
-      <Icon name={compact ? 'mail' : 'chat'} size={17} />
+    <Link
+      href={href}
+      aria-label={action.kind === 'thread' && !loading ? undefined : `Message ${business.name} privately`}
+      className={siteButtonClass(variant, size, className)}
+      data-testid="place-message-button"
+    >
+      <Icon name="mail" size={17} />
       {action.kind === 'thread' && !loading ? (compact ? 'Conversation' : 'Open conversation') : 'Message'}
     </Link>
   )

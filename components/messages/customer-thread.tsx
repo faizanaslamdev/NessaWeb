@@ -190,12 +190,15 @@ export function CustomerThreadView({
             <VerifiedBadge className="shrink-0 max-sm:hidden" />
             <VerifiedBadge variant="icon" sealClassName="size-4 text-n-accent" className="shrink-0 sm:hidden" />
           </p>
-          <Link
-            href={`/place/${encodeURIComponent(thread.placeId)}`}
-            className="block truncate text-xs text-n-subtle no-underline hover:text-n-ink hover:underline"
-          >
-            {thread.placeName}
-          </Link>
+          <p className="truncate text-xs text-n-subtle">
+            Private chat ·{' '}
+            <Link
+              href={`/place/${encodeURIComponent(thread.placeId)}`}
+              className="text-n-subtle no-underline hover:text-n-ink hover:underline"
+            >
+              {thread.placeName && thread.placeName !== name ? thread.placeName : 'View place'}
+            </Link>
+          </p>
         </div>
         <ThreadMenu
           blocked={thread.customerBlocked}

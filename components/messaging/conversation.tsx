@@ -468,7 +468,9 @@ export function Composer({
     const el = area.current
     if (!el) return
     el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`
+    // border-box: add the borders so one line matches the Send button's height.
+    const borders = el.offsetHeight - el.clientHeight
+    el.style.height = `${Math.min(el.scrollHeight + borders, 160)}px`
   }, [draft])
 
   const submit = () => {
@@ -504,7 +506,7 @@ export function Composer({
             autoFocus={autoFocus}
             placeholder={placeholder}
             aria-invalid={over || undefined}
-            className={cx(composerFieldClass, 'max-h-40 resize-none leading-5', over ? 'border-n-danger focus:border-n-danger' : '')}
+            className={cx(composerFieldClass, 'max-h-40 resize-none py-[9px] leading-5 max-md:py-[11px]', over ? 'border-n-danger focus:border-n-danger' : '')}
           />
         </label>
         <Button type="submit" variant="primary" icon="send" disabled={!canSend} aria-label={sendLabel} className="max-md:h-11">

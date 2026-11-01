@@ -189,8 +189,17 @@ function ThreadRow({ thread, href, active }: { thread: BusinessThread; href: str
           <span className={cx('shrink-0 text-xs tabular-nums', unread ? 'font-medium text-n-accent-strong' : 'text-n-subtle')}>{time}</span>
         </span>
         <span className="mt-0.5 flex items-center gap-1.5 text-xs text-n-subtle">
-          <Icon name="pin" size={12} className="shrink-0" />
-          <span className="truncate">{thread.placeName}</span>
+          {thread.placeName && thread.placeName !== thread.businessName ? (
+            <>
+              <Icon name="pin" size={12} className="shrink-0" />
+              <span className="truncate">{thread.placeName}</span>
+            </>
+          ) : (
+            <>
+              <Icon name="lock" size={12} className="shrink-0" />
+              <span className="truncate">Private chat</span>
+            </>
+          )}
           {label ? (
             <span className="shrink-0 rounded-full bg-n-sunken px-1.5 text-[11px] leading-[18px] text-n-ink-2">{label}</span>
           ) : null}
