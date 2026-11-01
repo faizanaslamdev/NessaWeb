@@ -231,17 +231,14 @@ export async function getCachedPublicPlaceLanding(
 /**
  * Copy of a landing that is safe to embed in server-rendered HTML and the
  * page's RSC payload:
- * - no Google-sourced content (Google's photo and its attribution, Google's
- *   formatted address — see lib/place-public-view.ts);
+ * - no Google photo URL or photo attribution (only a `googlePhoto` flag; the
+ *   browser loads and credits the photo — see lib/place-public-view.ts);
  * - public Wi-Fi reduced to `hasWifi`, so crawlers and caches never see
  *   passwords. The browser fetches the Wi-Fi card itself;
  * - the verified business re-validated (malformed / non-https links dropped).
  */
 export function toSsrSafeLanding(landing: PublicPlaceLanding): PublicPlaceView {
   const copy = { ...landing }
-  if (copy.coverImageUrl && !safeHttpsUrl(copy.coverImageUrl) && !hasNessaCover(copy)) {
-    delete copy.coverImageUrl
-  }
   // Business links are rendered into hrefs: only validated fields.
   const business = sanitizePublicBusiness(landing.business)
   if (business) {

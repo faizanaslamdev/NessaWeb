@@ -57,13 +57,22 @@ describe('place share meta — business fields', () => {
     assert.equal(safe.business, undefined)
   })
 
-  it('SSR landing carries no Google photo, attribution or address', () => {
+  it('SSR landing carries no Google photo URL or attribution, only flags', () => {
     const safe = toSsrSafeLanding(landing)
     assert.equal(safe.coverImageUrl, undefined)
     assert.equal(safe.coverSource, undefined)
+    assert.equal(safe.googlePhoto, true)
     assert.equal('googlePhotoAttribution' in safe, false)
-    assert.equal('formattedAddress' in safe, false)
-    assert.equal(/googleusercontent|maps\.google|Rua X/.test(JSON.stringify(safe)), false)
+    assert.equal(/googleusercontent|maps\.google/.test(JSON.stringify(safe)), false)
+    // The stored address is shown as before (with a Google Maps credit).
+    assert.equal(safe.formattedAddress, 'Rua X, 123 - Cumbuco, CE, Brazil')
+  })
+
+  it('SSR landing keeps a key-bearing Google cover out but still flags it', () => {
+    const keyed = 'https://places.googleapis.com/v1/places/ChIJabc/photos/AU/media?maxWidthPx=800&key=AIzaSECRET'
+    const safe = toSsrSafeLanding({ ...landing, coverImageUrl: keyed } as never)
+    assert.equal(safe.googlePhoto, true)
+    assert.equal(JSON.stringify(safe).includes('AIza'), false)
   })
 
   it('SSR landing keeps our own cover', () => {

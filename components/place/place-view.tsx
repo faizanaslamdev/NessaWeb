@@ -4,8 +4,9 @@
  * sheets, Message button), so the page ships little JavaScript and the
  * Place data isn't embedded a second time as one big client prop.
  *
- * Takes the Google-free view (lib/place-public-view.ts): no Google photo,
- * attribution or street address reaches the HTML or the RSC payload.
+ * Takes the server-safe view (lib/place-public-view.ts): no Google photo URL
+ * or photo attribution reaches the HTML or the RSC payload; the hero loads
+ * and credits Google's photo in the browser when we have no image.
  */
 
 import Link from 'next/link'
@@ -90,8 +91,13 @@ export function PlaceView({
 }) {
   const deepLink = placeAppDeepLink(placeId)
   const location = [place.city, place.country].filter(Boolean).join(', ')
-  // Our own address for a verified business (never Google's formatted address).
-  const address = place.business?.address?.trim() || location
+  // The verified business's own address first, else the stored Google
+  // formatted address (credited below), else the town.
+  const businessAddress = place.business?.address?.trim() || ''
+  const googleAddress = !businessAddress && place.formattedAddress?.trim() && place.formattedAddress.trim() !== location
+    ? place.formattedAddress.trim()
+    : ''
+  const address = businessAddress || googleAddress || location
   const recommenders = place.recommenders ?? []
   const stories = place.stories ?? []
   const moreStories = Math.max(0, place.storyCount - stories.length)
@@ -112,8 +118,8 @@ export function PlaceView({
     crumbs.push({ name: place.city, href: hubs?.city?.path ?? `/places?town=${encodeURIComponent(place.city)}` })
   }
   const business = place.business ?? null
-  // Name and type (and the town) come from Google Maps for every Place.
-  const showsGoogleData = Boolean(place.placeType || place.name)
+  // Name and type (and the town / address) come from Google Maps for every Place.
+  const showsGoogleData = Boolean(place.formattedAddress || place.placeType || place.name)
   const messageBusiness = business
     ? { verified: business.verified, businessId: business.businessId, messagingEnabled: business.messagingEnabled, name: business.name }
     : null
@@ -166,7 +172,11 @@ export function PlaceView({
           </div>
         </div>
 
-        <PlaceHero image={placeHeroImage(place)} placeName={place.name} />
+        <PlaceHero
+          image={placeHeroImage(place)}
+          placeName={place.name}
+          googlePhotoPlaceId={place.googlePhoto ? realPlaceId : null}
+        />
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-12">
           <div className="min-w-0 space-y-10">
@@ -200,7 +210,8 @@ export function PlaceView({
             ) : null}
             {showsGoogleData ? (
               <p className="text-[12px] text-n-subtle">
-                Place name and type from <GoogleMapsMark className="text-n-muted" />.
+                {googleAddress ? 'Place name, address and type from' : 'Place name and type from'}{' '}
+                <GoogleMapsMark className="text-n-muted" />.
               </p>
             ) : null}
           </div>

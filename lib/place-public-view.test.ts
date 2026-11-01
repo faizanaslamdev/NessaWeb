@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import type { PublicPlaceLanding } from './place-landing'
-import { hasNessaCover, placeHeroImage, placeShareImageUrl, toPublicPlaceView } from './place-public-view'
+import { browserGooglePhotoUrl, hasNessaCover, placeHeroImage, placeShareImageUrl, toPublicPlaceView } from './place-public-view'
 
 const OURS = 'https://firebasestorage.googleapis.com/v0/b/nessa/o/places%2Fx.jpg?alt=media&token=t'
 const GOOGLE = 'https://places.googleapis.com/v1/places/ChIJx/photos/AU/media?maxWidthPx=800&key=AIza'
@@ -27,7 +27,7 @@ describe('public Place view', () => {
     assert.equal(hasNessaCover({}), false)
   })
 
-  it('drops Google media, attribution, address and Wi-Fi details', () => {
+  it('drops Google photo URL, attribution and Wi-Fi details; flags both for the browser', () => {
     const view = toPublicPlaceView({
       ...base,
       coverImageUrl: GOOGLE,
@@ -36,7 +36,9 @@ describe('public Place view', () => {
       formattedAddress: 'Rua X',
       wifi: { networkName: 'n', password: 'p' },
     })
-    assert.deepEqual(view, { ...base, hasWifi: true })
+    // The stored address stays (shown with a Google Maps credit); the keyed photo URL never does.
+    assert.deepEqual(view, { ...base, formattedAddress: 'Rua X', hasWifi: true, googlePhoto: true })
+    assert.equal(JSON.stringify(view).includes('AIza'), false)
   })
 
   it('keeps our cover and its credit', () => {
@@ -45,6 +47,18 @@ describe('public Place view', () => {
     assert.equal(view.coverCredit, 'Ana')
     assert.equal(view.coverFeedUrl, OURS)
     assert.equal(view.hasWifi, undefined)
+    assert.equal(view.googlePhoto, undefined)
+  })
+
+  it('no Google photo flag without a cover', () => {
+    assert.equal(toPublicPlaceView(base).googlePhoto, undefined)
+  })
+
+  it('lets the browser use Google photo URLs only, never ours', () => {
+    assert.equal(browserGooglePhotoUrl({ coverImageUrl: GOOGLE, coverSource: 'google' }), GOOGLE)
+    assert.equal(browserGooglePhotoUrl({ coverImageUrl: OURS, coverSource: 'nessa' }), null)
+    assert.equal(browserGooglePhotoUrl({ coverImageUrl: 'http://x/y.jpg', coverSource: 'google' }), null)
+    assert.equal(browserGooglePhotoUrl(null), null)
   })
 })
 

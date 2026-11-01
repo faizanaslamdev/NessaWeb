@@ -9,11 +9,13 @@
  */
 
 import type {
+  GooglePhotoAttribution,
   PublicPlaceComment,
   PublicPlaceLanding,
   PublicPlaceRecommender,
   PublicPlaceWifi,
 } from '@/lib/place-landing'
+import { browserGooglePhotoUrl } from '@/lib/place-public-view'
 
 const CALL_TIMEOUT_MS = 15000
 
@@ -244,16 +246,67 @@ export async function recordPlaceLinkVisit(input: {
   })
 }
 
-/** The Place's public Wi-Fi, if any (getPublicPlaceLanding; only the Wi-Fi is used). */
-export async function fetchPublicPlaceWifi(placeId: string): Promise<PublicPlaceWifi | null> {
-  const trimmed = placeId.trim()
-  if (!isPublicPlaceIdValid(trimmed)) return null
-  const landing = await callPublicFunction<Pick<PublicPlaceLanding, 'wifi'>>('getPublicPlaceLanding', { placeId: trimmed })
-  const wifi = landing?.wifi
+/** What the Place page loads in the browser (never in server HTML). */
+export type PlaceBrowserExtras = {
+  wifi: PublicPlaceWifi | null
+  /** Google's photo (key-bearing URL) and its required credits, when the Place has no cover of ours. */
+  googlePhoto: { url: string; attribution?: GooglePhotoAttribution } | null
+}
+
+function parseWifi(wifi: PublicPlaceWifi | undefined): PublicPlaceWifi | null {
   if (!wifi || typeof wifi.networkName !== 'string' || typeof wifi.password !== 'string') return null
   return {
     networkName: wifi.networkName,
     password: wifi.password,
     ...(typeof wifi.note === 'string' && wifi.note.trim() ? { note: wifi.note.trim() } : {}),
   }
+}
+
+function parseAttribution(raw: unknown): GooglePhotoAttribution | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const r = raw as { authors?: unknown; googleMapsUri?: unknown }
+  const https = (v: unknown) => (typeof v === 'string' && v.startsWith('https://') ? v : undefined)
+  const authors = Array.isArray(r.authors)
+    ? r.authors
+        .map(a => (a && typeof a === 'object' ? (a as { displayName?: unknown; uri?: unknown }) : null))
+        .filter((a): a is { displayName: string; uri?: unknown } => Boolean(a && typeof a.displayName === 'string' && a.displayName.trim()))
+        .slice(0, 5)
+        .map(a => ({ displayName: a.displayName.trim(), ...(https(a.uri) ? { uri: https(a.uri) } : {}) }))
+    : []
+  const googleMapsUri = https(r.googleMapsUri)
+  return { authors, ...(googleMapsUri ? { googleMapsUri } : {}) }
+}
+
+const extrasRequests = new Map<string, Promise<PlaceBrowserExtras>>()
+
+/**
+ * One getPublicPlaceLanding call per Place per page view, shared by the hero
+ * (Google photo) and both Wi-Fi placements. Callers only ask for Places that
+ * have public Wi-Fi or a Google photo. Failures resolve to nothing (retried
+ * on the next mount).
+ */
+export function loadPlaceBrowserExtras(placeId: string): Promise<PlaceBrowserExtras> {
+  const trimmed = placeId.trim()
+  const empty: PlaceBrowserExtras = { wifi: null, googlePhoto: null }
+  if (!isPublicPlaceIdValid(trimmed)) return Promise.resolve(empty)
+  let pending = extrasRequests.get(trimmed)
+  if (!pending) {
+    pending = callPublicFunction<Pick<PublicPlaceLanding, 'wifi' | 'coverImageUrl' | 'coverSource' | 'googlePhotoAttribution'>>(
+      'getPublicPlaceLanding',
+      { placeId: trimmed },
+    )
+      .then(landing => {
+        const url = browserGooglePhotoUrl(landing)
+        return {
+          wifi: parseWifi(landing?.wifi),
+          googlePhoto: url ? { url, attribution: parseAttribution(landing?.googlePhotoAttribution) } : null,
+        }
+      })
+      .catch(() => {
+        extrasRequests.delete(trimmed)
+        return empty
+      })
+    extrasRequests.set(trimmed, pending)
+  }
+  return pending
 }

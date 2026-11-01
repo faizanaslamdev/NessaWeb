@@ -1,18 +1,22 @@
 'use client'
 
 /**
- * Place page hero image. Never Google's photo (see lib/place-public-view):
- * our own cover (optimized with next/image, zoomable), else the verified
- * business's cover or logo, else a neutral placeholder. A broken image falls
- * back to the placeholder.
+ * Place page hero image: our own cover (optimized with next/image,
+ * zoomable), else the verified business's cover or logo, else Google's photo
+ * — loaded in the browser after hydration only (key-bearing, billed per load:
+ * never in server HTML, never through next/image, never enlarged), shown with
+ * its author + Google Maps credits — else a neutral placeholder. A broken
+ * image falls back to the next option.
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 
 import { Icon } from '@/components/dash/icons'
-import { NessaPhotoCredit } from '@/components/place/place-credits'
+import { GooglePhotoCredit, NessaPhotoCredit } from '@/components/place/place-credits'
+import { placePhotoUrlForWebVariant } from '@/lib/place-photo'
+import { loadPlaceBrowserExtras, type PlaceBrowserExtras } from '@/lib/place-public-api'
 import type { PlaceHeroImage } from '@/lib/place-public-view'
 
 // The viewer only loads when someone opens the photo.
@@ -28,7 +32,8 @@ function isOptimizable(url: string): boolean {
   return url.startsWith(STORAGE_PREFIX)
 }
 
-function Placeholder() {
+function Placeholder({ waiting = false }: { waiting?: boolean }) {
+  if (waiting) return <div className="n-skeleton h-full w-full" aria-hidden />
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 text-n-faint">
       <Icon name="image" size={36} strokeWidth={1.4} />
@@ -37,16 +42,47 @@ function Placeholder() {
   )
 }
 
-export function PlaceHero({ image, placeName }: { image: PlaceHeroImage; placeName: string }) {
+type GoogleState = PlaceBrowserExtras['googlePhoto'] | 'loading' | 'none'
+
+export function PlaceHero({
+  image,
+  placeName,
+  googlePhotoPlaceId,
+}: {
+  image: PlaceHeroImage
+  placeName: string
+  /** Set when Google has a photo of this Place (fallback after our own images). */
+  googlePhotoPlaceId?: string | null
+}) {
   const [broken, setBroken] = useState(false)
   const [open, setOpen] = useState(false)
+  const [google, setGoogle] = useState<GoogleState>(googlePhotoPlaceId ? 'loading' : 'none')
+  const [googleBroken, setGoogleBroken] = useState(false)
   // A server-rendered image can fail before hydration attaches onError:
   // check its state once it's in the DOM.
   const checkLoaded = useCallback((img: HTMLImageElement | null) => {
     if (img && img.complete && img.naturalWidth === 0) setBroken(true)
   }, [])
-  const kind = broken ? 'none' : image.kind
-  const wide = kind === 'photo' || kind === 'business-cover'
+  const ownKind = broken ? 'none' : image.kind
+  const wantsGoogle = ownKind === 'none' && Boolean(googlePhotoPlaceId)
+
+  // One shared request per view (also feeds the Wi-Fi card), after hydration.
+  useEffect(() => {
+    if (!wantsGoogle || !googlePhotoPlaceId) return
+    let cancelled = false
+    void loadPlaceBrowserExtras(googlePhotoPlaceId).then(extras => {
+      if (!cancelled) setGoogle(extras.googlePhoto ?? 'none')
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [wantsGoogle, googlePhotoPlaceId])
+
+  const googlePhoto = wantsGoogle && !googleBroken && google && typeof google === 'object' ? google : null
+  const waitingForGoogle = wantsGoogle && google === 'loading'
+  const kind = googlePhoto ? 'google' : ownKind
+  // Reserve the photo's space while Google's loads (no layout shift).
+  const wide = kind === 'photo' || kind === 'business-cover' || kind === 'google' || waitingForGoogle
 
   return (
     <div className="relative mt-6 overflow-hidden rounded-3xl bg-n-sunken">
@@ -92,13 +128,29 @@ export function PlaceHero({ image, placeName }: { image: PlaceHeroImage; placeNa
               onError={() => setBroken(true)}
             />
           </div>
+        ) : kind === 'google' && googlePhoto ? (
+          // Google's photo: browser-loaded only (key-bearing, billed per
+          // load), never optimized or enlarged, always credited.
+          // eslint-disable-next-line @next/next/no-img-element -- remote Google Places media URL
+          <img
+            src={placePhotoUrlForWebVariant(googlePhoto.url, 'lightbox') ?? googlePhoto.url}
+            alt=""
+            className="h-full w-full object-cover"
+            fetchPriority="high"
+            onError={() => setGoogleBroken(true)}
+          />
         ) : (
-          <Placeholder />
+          <Placeholder waiting={waitingForGoogle} />
         )}
       </div>
       {kind === 'photo' && image.kind === 'photo' && image.credit ? (
         <div className="pointer-events-none absolute right-3 bottom-3 left-3 flex justify-end">
           <NessaPhotoCredit name={image.credit} />
+        </div>
+      ) : null}
+      {kind === 'google' && googlePhoto ? (
+        <div className="pointer-events-none absolute right-3 bottom-3 left-3 flex justify-end [&_a]:pointer-events-auto">
+          <GooglePhotoCredit attribution={googlePhoto.attribution} />
         </div>
       ) : null}
       {open && image.kind === 'photo' && !broken ? (
