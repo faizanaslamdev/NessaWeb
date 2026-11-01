@@ -16,6 +16,9 @@ import {
   reportMatchesFilter,
   reportThreadStateLabel,
   type AdminReport,
+  decrementOpenReports,
+  openReportsBadge,
+  openReportsFromOverview,
 } from './admin-reports'
 
 const raw = {
@@ -145,5 +148,28 @@ describe('conversation and labels', () => {
   it('describes callable errors', () => {
     assert.match(describeReportsError({ code: 'functions/permission-denied', details: { adminCode: 'admin/permission-denied' } }).message, /admins/)
     assert.equal(describeReportsError(new Error('x'), 'Fallback').message, 'Fallback')
+  })
+})
+
+describe('open reports badge', () => {
+  it('reads the overview count() and ignores a missing / bad value', () => {
+    assert.deepEqual(openReportsFromOverview({ openReports: 3 }), { count: 3, more: false })
+    assert.equal(openReportsFromOverview({}), null)
+    assert.equal(openReportsFromOverview({ openReports: 'x' }), null)
+    assert.equal(openReportsFromOverview(null), null)
+  })
+
+  it('shows nothing at 0 and "n+" for a full fallback page', () => {
+    assert.equal(openReportsBadge(null), null)
+    assert.equal(openReportsBadge({ count: 0, more: false }), null)
+    assert.equal(openReportsBadge({ count: 4, more: false }), 4)
+    assert.equal(openReportsBadge({ count: 9, more: true }), '9+')
+  })
+
+  it('counts down when a report is resolved', () => {
+    assert.deepEqual(decrementOpenReports({ count: 2, more: false }), { count: 1, more: false })
+    assert.deepEqual(decrementOpenReports({ count: 0, more: false }), { count: 0, more: false })
+    assert.deepEqual(decrementOpenReports({ count: 9, more: true }), { count: 9, more: true })
+    assert.equal(decrementOpenReports(null), null)
   })
 })

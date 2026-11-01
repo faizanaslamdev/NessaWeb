@@ -47,6 +47,12 @@ export type ConsoleOverview = {
     openInvites: number
     businesses: number
     admins: number
+    /**
+     * Open business-messaging reports: a count() aggregation in the
+     * overview. Optional — older backends don't send it (the console then
+     * falls back to one small listReports page, see AdminShell).
+     */
+    openReports?: number
   }
   audit: ConsoleAuditItem[]
 }

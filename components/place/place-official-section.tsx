@@ -1,9 +1,10 @@
 import { ThreadAvatar } from '@/components/messaging/thread-avatar'
-import { PlaceMessageButton } from '@/components/place/place-message-button'
+import { PlaceMessageSlot } from '@/components/place/place-message-slot'
 import { PlaceOpeningHours } from '@/components/place/place-opening-hours'
 import { siteButtonClass } from '@/components/site/ui'
+import { VerifiedBadge } from '@/components/site/verified-badge'
 import { SOCIAL_LABELS, SOCIAL_NETWORKS, type SocialNetwork } from '@/lib/business-profile'
-import { canMessageBusiness } from '@/lib/customer-messages'
+import { hasMessageSlot } from '@/lib/customer-messages'
 import type { PublicBusinessProfile } from '@/lib/place-landing'
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -16,20 +17,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   tour: 'Tours & activities',
   shop: 'Shop',
   other: 'Business',
-}
-
-export function VerifiedBadge({ className = '' }: { className?: string }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full bg-n-accent-soft px-2 py-0.5 text-[12px] font-semibold text-n-accent-strong ${className}`}
-      title="Verified business"
-    >
-      <svg viewBox="0 0 20 20" aria-hidden className="size-3.5 fill-current">
-        <path d="M10 1.5l2.3 1.6 2.8-.3 1 2.6 2.4 1.5-.6 2.8.6 2.8-2.4 1.5-1 2.6-2.8-.3L10 18.5l-2.3-1.6-2.8.3-1-2.6-2.4-1.5.6-2.8-.6-2.8 2.4-1.5 1-2.6 2.8.3L10 1.5zm-1.2 11.2l5-5-1.4-1.4-3.6 3.6-1.6-1.6-1.4 1.4 3 3z" />
-      </svg>
-      Verified
-    </span>
-  )
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -164,12 +151,10 @@ export function PlaceOfficialSection({ business, placeId }: { business: PublicBu
   if (business.languages?.length) rows.push(<Row key="lang" label="Staff speak">{business.languages.map(l => l.toUpperCase()).join(', ')}</Row>)
 
   const socials = SOCIAL_NETWORKS.filter(n => business.socials?.[n])
-  // Travelers can message a verified business unless it turned messaging off.
-  const canMessage = canMessageBusiness(business)
-  // The Message slot also shows team members "This is your business" (even
-  // with messaging off); the button hides itself otherwise (`empty:hidden`).
-  const messageSlot = canMessage || Boolean(business.verified === true && business.businessId)
-  const hasActions = Boolean(messageSlot || business.bookingUrl || business.menuUrl)
+  // Travelers can message a verified business unless it turned messaging off;
+  // the slot also shows team members "This is your business" (even with
+  // messaging off). The box hides itself otherwise (`empty:hidden`).
+  const messageSlot = hasMessageSlot(business)
 
   return (
     <section aria-label={`About ${business.name}`} className="w-full rounded-2xl border border-n-line bg-n-surface p-5 text-left shadow-n-card sm:p-6">
@@ -184,33 +169,36 @@ export function PlaceOfficialSection({ business, placeId }: { business: PublicBu
             <VerifiedBadge />
           </div>
           <p className="text-[13px] text-n-muted">
-            Official information from the {CATEGORY_LABELS[business.category ?? ''] ?? 'business'}
+            {CATEGORY_LABELS[business.category ?? ''] ?? 'Business'} · Official details from the owner
           </p>
         </div>
       </div>
       {business.description ? (
         <p className="mt-4 whitespace-pre-line text-[15px] leading-7 text-n-ink-2">{business.description}</p>
       ) : null}
-      {hasActions ? (
-        <div className="mt-4 flex flex-wrap gap-2 empty:hidden">
-          {messageSlot ? (
-            <PlaceMessageButton
-              placeId={placeId}
-              business={business}
-              variant={business.bookingUrl ? 'secondary' : 'primary'}
-              className="max-[400px]:flex-1"
-            />
-          ) : null}
+      {business.bookingUrl || business.menuUrl ? (
+        <div className="mt-4 flex flex-wrap gap-2">
           {business.bookingUrl ? (
-            <a href={business.bookingUrl} target="_blank" rel="noopener noreferrer" className={siteButtonClass('primary', 'md', 'max-[400px]:flex-1')}>
+            <a href={business.bookingUrl} target="_blank" rel="noopener noreferrer" className={siteButtonClass('primary', 'md', 'max-sm:h-11 max-[400px]:flex-1')}>
               Book now
             </a>
           ) : null}
           {business.menuUrl ? (
-            <a href={business.menuUrl} target="_blank" rel="noopener noreferrer" className={siteButtonClass('secondary', 'md', 'max-[400px]:flex-1')}>
+            <a href={business.menuUrl} target="_blank" rel="noopener noreferrer" className={siteButtonClass('secondary', 'md', 'max-sm:h-11 max-[400px]:flex-1')}>
               See menu
             </a>
           ) : null}
+        </div>
+      ) : null}
+      {messageSlot ? (
+        // Hides itself (empty:hidden) when this viewer can't message the business.
+        <div className="mt-4 empty:hidden">
+          <PlaceMessageSlot
+            placeId={placeId}
+            business={business}
+            layout="panel"
+            variant={business.bookingUrl ? 'secondary' : 'primary'}
+          />
         </div>
       ) : null}
       {rows.length ? <dl className="mt-4">{rows}</dl> : null}
@@ -226,7 +214,7 @@ export function PlaceOfficialSection({ business, placeId }: { business: PublicBu
                   rel="noopener noreferrer"
                   aria-label={`${business.name} on ${SOCIAL_LABELS[network]}`}
                   title={SOCIAL_LABELS[network]}
-                  className="inline-flex size-10 items-center justify-center rounded-full border border-n-line text-n-ink-2 transition-colors hover:border-n-line-strong hover:bg-n-hover hover:text-n-ink"
+                  className="inline-flex size-10 items-center justify-center rounded-full border max-sm:size-11 border-n-line text-n-ink-2 transition-colors hover:border-n-line-strong hover:bg-n-hover hover:text-n-ink"
                 >
                   <SocialGlyph network={network} />
                 </a>

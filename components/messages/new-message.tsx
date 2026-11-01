@@ -17,7 +17,7 @@ import { useBusinessAccess } from '@/components/messages/business-access-store'
 import { MessagesFrame } from '@/components/messages/customer-messages'
 import { Composer, ThreadAvatar } from '@/components/messaging/conversation'
 import { useThreadList } from '@/components/messaging/use-thread-list'
-import { VerifiedBadge } from '@/components/place/place-official-section'
+import { VerifiedBadge } from '@/components/site/verified-badge'
 import { useAccountAuth } from '@/hooks/use-account-auth'
 import { describeMessagingError, newClientId } from '@/lib/business-messaging'
 import { startBusinessThread } from '@/lib/business-messaging-api'
@@ -105,7 +105,7 @@ export function NewBusinessMessage() {
           <Link
             href={placeValid ? `/place/${encodeURIComponent(placeId)}` : MESSAGES_PATH}
             aria-label="Back"
-            className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-n-muted no-underline hover:bg-n-hover hover:text-n-ink"
+            className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-n-muted no-underline hover:bg-n-hover hover:text-n-ink max-md:size-11"
           >
             <Icon name="chevron-left" size={20} />
           </Link>
@@ -117,7 +117,9 @@ export function NewBusinessMessage() {
                   <span className="truncate text-[15px] font-semibold text-n-ink">{business.name}</span>
                   <VerifiedBadge className="shrink-0" />
                 </p>
-                <p className="truncate text-xs text-n-subtle">{placeName}</p>
+                <p className="truncate text-xs text-n-subtle">
+                  Private message{placeName && placeName !== business.name ? ` · ${placeName}` : ''}
+                </p>
               </div>
             </>
           ) : (
@@ -157,8 +159,15 @@ export function NewBusinessMessage() {
             <div className="mt-auto space-y-3">
               {!pending ? (
                 <div className="mx-auto max-w-md rounded-2xl border border-n-line bg-n-surface p-4 text-center text-[13px] leading-5 text-n-muted">
-                  Ask {business?.name ?? 'the business'} anything about {placeName || 'this place'} — rooms, prices, opening
-                  hours. Messages are translated automatically, and the team usually replies here.
+                  <p className="flex items-center justify-center gap-1.5 text-[14px] font-semibold text-n-ink">
+                    <Icon name="lock" size={15} className="text-n-accent" />
+                    Private message to {business?.name ?? 'the business'}
+                  </p>
+                  <p className="mt-1.5">
+                    Only their team can read it. It goes to their Nessa inbox, and their reply will show up here and in
+                    your Messages.
+                  </p>
+                  <p className="mt-1.5">Ask about availability, prices or opening hours — messages are translated automatically.</p>
                 </div>
               ) : (
                 <div className="flex flex-col items-end">
@@ -202,7 +211,7 @@ export function NewBusinessMessage() {
             ) : (
               <Composer
                 label={`Message ${business?.name ?? 'the business'}`}
-                placeholder={`Message ${business?.name ?? 'the business'}…`}
+                placeholder={`Write to ${business?.name ?? 'the business'}…`}
                 hint={`Translated for ${business?.name ?? 'the business'}`}
                 onSend={text => void deliver(newClientId(), text)}
                 autoFocus

@@ -2,10 +2,12 @@ import type { Metadata } from 'next'
 
 import { MarketingPageShell } from '@/components/landing/marketing-page-shell'
 import { siteConfig } from '@/lib/constants'
+import { PLACE_PUBLIC_ORIGIN } from '@/lib/place-slug'
 
 export const metadata: Metadata = {
   title: `Cookie Policy | ${siteConfig.name}`,
   description: `How ${siteConfig.name} uses cookies and similar technologies on the web.`,
+  alternates: { canonical: `${PLACE_PUBLIC_ORIGIN}/cookie-policy` },
 }
 
 export default function CookiePolicyPage() {

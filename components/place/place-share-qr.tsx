@@ -11,7 +11,7 @@ import QRCode from 'react-qr-code'
 
 import { PlaceSheet } from '@/components/place/place-sheet'
 import { shareUrlWithoutScheme } from '@/lib/chat/format'
-import { isPublicPlaceIdValid } from '@/lib/place-landing'
+import { isPublicPlaceIdValid } from '@/lib/place-public-api'
 import {
   placeChatOutboundUrl,
   placeChatPublicUrl,

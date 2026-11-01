@@ -2,10 +2,13 @@ import type { Metadata } from 'next'
 
 import { MarketingPageShell } from '@/components/landing/marketing-page-shell'
 import { siteConfig } from '@/lib/constants'
+import { PLACE_PUBLIC_ORIGIN } from '@/lib/place-slug'
 
 export const metadata: Metadata = {
   title: `Privacy Policy | ${siteConfig.name}`,
   description: `How ${siteConfig.name} collects, uses, and protects your information.`,
+  // Absolute canonical: the short aliases (/privacy, /terms) redirect here.
+  alternates: { canonical: `${PLACE_PUBLIC_ORIGIN}/privacy-policy` },
 }
 
 export default function PrivacyPolicyPage() {

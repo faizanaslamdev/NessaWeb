@@ -1,92 +1,20 @@
 'use client'
 
 /**
- * Photo credits and the NessaChat gallery on the public Place page.
- *
- * Google Maps Platform terms: a Google photo is shown with its author
- * attribution(s) and a link to the photo on Google Maps; Places content shown
- * outside a Google map carries a "Google Maps" attribution. NessaChat's own
- * photos get a plain credit.
+ * The NessaChat gallery on the public Place page (business / admin uploads).
+ * The photo viewer loads only when a photo is opened.
  */
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 
-import { StoryMediaViewer } from '@/components/place/story-media-viewer'
 import { cx } from '@/components/site/ui'
-import type { GooglePhotoAttribution, PublicPlacePhoto } from '@/lib/place-landing'
+import type { PublicPlacePhoto } from '@/lib/place-landing'
 
-/** "Google Maps" in the attribution style Google asks for (Roboto/Arial, no restyling). */
-export function GoogleMapsMark({ className }: { className?: string }) {
-  return (
-    <span translate="no" className={cx('font-[Roboto,Arial,sans-serif] font-medium whitespace-nowrap', className)}>
-      Google Maps
-    </span>
-  )
-}
-
-/** Small pill over a photo (bottom corner), readable on any image. */
-function CreditPill({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <p
-      className={cx(
-        'max-w-[calc(100%-1.5rem)] truncate rounded-full bg-black/55 px-2.5 py-1 text-[12px] leading-4 text-white backdrop-blur-sm',
-        className,
-      )}
-    >
-      {children}
-    </p>
-  )
-}
-
-export function GooglePhotoCredit({
-  attribution,
-  className,
-}: {
-  attribution?: GooglePhotoAttribution
-  className?: string
-}) {
-  const authors = attribution?.authors ?? []
-  return (
-    <CreditPill className={className}>
-      {authors.length ? (
-        <>
-          Photo:{' '}
-          {authors.map((a, i) => (
-            <span key={`${a.displayName}-${i}`}>
-              {i > 0 ? ', ' : ''}
-              {a.uri ? (
-                <a href={a.uri} target="_blank" rel="noopener noreferrer" className="text-white underline-offset-2 hover:underline">
-                  {a.displayName}
-                </a>
-              ) : (
-                a.displayName
-              )}
-            </span>
-          ))}
-          {' · '}
-        </>
-      ) : null}
-      {attribution?.googleMapsUri ? (
-        <a
-          href={attribution.googleMapsUri}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-white underline-offset-2 hover:underline"
-          aria-label="View this photo on Google Maps (opens in a new tab)"
-        >
-          <GoogleMapsMark />
-        </a>
-      ) : (
-        <GoogleMapsMark />
-      )}
-    </CreditPill>
-  )
-}
-
-export function NessaPhotoCredit({ name, className }: { name?: string; className?: string }) {
-  if (!name) return null
-  return <CreditPill className={className}>Photo: {name}</CreditPill>
-}
+const StoryMediaViewer = dynamic(
+  () => import('@/components/place/story-media-viewer').then(m => m.StoryMediaViewer),
+  { ssr: false },
+)
 
 /** Gallery of photos the Place's business (or Nessa) uploaded. */
 export function PlaceGallerySection({ photos, placeName }: { photos: PublicPlacePhoto[]; placeName: string }) {
@@ -127,13 +55,15 @@ export function PlaceGallerySection({ photos, placeName }: { photos: PublicPlace
           Photos by {[...new Set(photos.map(p => p.creditName).filter(Boolean))].slice(0, 3).join(', ')}
         </p>
       ) : null}
-      <StoryMediaViewer
-        key={viewer === null ? 'gallery-closed' : `gallery-${viewer}`}
-        open={viewer !== null}
-        uris={photos.map(p => p.url)}
-        initialIndex={viewer ?? 0}
-        onClose={() => setViewer(null)}
-      />
+      {viewer !== null ? (
+        <StoryMediaViewer
+          key={`gallery-${viewer}`}
+          open
+          uris={photos.map(p => p.url)}
+          initialIndex={viewer}
+          onClose={() => setViewer(null)}
+        />
+      ) : null}
     </section>
   )
 }

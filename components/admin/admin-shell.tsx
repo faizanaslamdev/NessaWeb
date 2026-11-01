@@ -23,6 +23,14 @@ import { useProfileName } from '@/hooks/use-profile-name'
 import { accountRoutes, ADMIN_HOSTNAME_PREFIX } from '@/lib/account/constants'
 import { ADMIN_ROLE_LABELS, readMyAdminRole, type AdminRole } from '@/lib/admin'
 import { getConsoleOverview, type ConsoleOverview } from '@/lib/admin-console'
+import {
+  OPEN_REPORTS_BADGE_PAGE,
+  decrementOpenReports,
+  openReportsBadge,
+  openReportsFromOverview,
+  type OpenReportsCount,
+} from '@/lib/admin-reports'
+import { listReports } from '@/lib/admin-reports-api'
 import { PLACE_PUBLIC_ORIGIN } from '@/lib/place-slug'
 
 type AdminCtx = {
@@ -35,6 +43,10 @@ type AdminCtx = {
   overview: ConsoleOverview | null
   overviewError: string | null
   refreshOverview: () => Promise<void>
+  /** Open reports for the sidebar badge (null until known). */
+  openReports: OpenReportsCount | null
+  /** Call after resolving an open report so the badge counts down. */
+  noteReportResolved: () => void
 }
 
 const AdminContext = createContext<AdminCtx | null>(null)
@@ -87,6 +99,8 @@ function AdminGate({ children, initialBase }: { children: ReactNode; initialBase
   const [role, setRole] = useState<AdminRole | null | undefined>(undefined)
   const [overview, setOverview] = useState<ConsoleOverview | null>(null)
   const [overviewError, setOverviewError] = useState<string | null>(null)
+  const [fallbackReports, setFallbackReports] = useState<OpenReportsCount | null>(null)
+  const [resolvedHere, setResolvedHere] = useState(0)
 
   useEffect(() => {
     if (!user) return
@@ -101,7 +115,10 @@ function AdminGate({ children, initialBase }: { children: ReactNode; initialBase
 
   const refreshOverview = useCallback(async () => {
     try {
-      setOverview(await getConsoleOverview())
+      const next = await getConsoleOverview()
+      setOverview(next)
+      // A fresh count() already includes the reports resolved before it.
+      if (openReportsFromOverview(next.counts)) setResolvedHere(0)
       setOverviewError(null)
     } catch (e) {
       setOverviewError(e instanceof Error ? e.message : 'Could not load the overview.')
@@ -113,12 +130,47 @@ function AdminGate({ children, initialBase }: { children: ReactNode; initialBase
     if (role) void refreshOverview()
   }, [role, refreshOverview])
 
+  // Open reports: the overview's count() (loaded once with the console, no
+  // listener). A backend without that count → one small page of open
+  // reports instead, shown as "9+" when full.
+  const needsFallback = Boolean(overview) && !openReportsFromOverview(overview?.counts)
+  useEffect(() => {
+    if (!needsFallback) return
+    let cancelled = false
+    listReports({ status: 'open', limit: OPEN_REPORTS_BADGE_PAGE }).then(
+      page => !cancelled && setFallbackReports({ count: page.reports.length, more: page.nextCursor !== null }),
+      () => {
+        /* badge only — the Reports page shows its own errors */
+      },
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [needsFallback])
+  const openReports = useMemo(() => {
+    let open = openReportsFromOverview(overview?.counts) ?? fallbackReports
+    for (let i = 0; i < resolvedHere; i += 1) open = decrementOpenReports(open)
+    return open
+  }, [overview, fallbackReports, resolvedHere])
+  const noteReportResolved = useCallback(() => setResolvedHere(n => n + 1), [])
+
   const ctx = useMemo<AdminCtx | null>(
     () =>
       role && user
-        ? { role, uid: user.uid, email: user.email ?? '', displayName: profileName, base, overview, overviewError, refreshOverview }
+        ? {
+            role,
+            uid: user.uid,
+            email: user.email ?? '',
+            displayName: profileName,
+            base,
+            overview,
+            overviewError,
+            refreshOverview,
+            openReports,
+            noteReportResolved,
+          }
         : null,
-    [role, user, profileName, base, overview, overviewError, refreshOverview],
+    [role, user, profileName, base, overview, overviewError, refreshOverview, openReports, noteReportResolved],
   )
 
   const doSignOut = useCallback(() => {
@@ -136,7 +188,7 @@ function AdminGate({ children, initialBase }: { children: ReactNode; initialBase
 }
 
 function AdminFrame({ children, onSignOut }: { children: ReactNode; onSignOut: () => void }) {
-  const { role, email, displayName, base, overview } = useAdmin()
+  const { role, email, displayName, base, overview, openReports } = useAdmin()
   const section = useSection()
   const href = (p: string) => (p ? `${base}/${p}` : base || '/')
   const top = section.split('/')[0]
@@ -147,8 +199,8 @@ function AdminFrame({ children, onSignOut }: { children: ReactNode; onSignOut: (
       items: [
         { href: href(''), label: 'Overview', icon: 'home', active: top === '' },
         { href: href('places'), label: 'Places', icon: 'pin', active: top === 'places' || top === 'chats' },
-        { href: href('business'), label: 'Business claims', icon: 'briefcase', active: top === 'business', badge: pending || null },
-        { href: href('reports'), label: 'Reports', icon: 'flag', active: top === 'reports' },
+        { href: href('business'), label: 'Business claims', icon: 'briefcase', active: top === 'business', badge: pending || null, badgeLabel: 'pending' },
+        { href: href('reports'), label: 'Reports', icon: 'flag', active: top === 'reports', badge: openReportsBadge(openReports), badgeLabel: 'open' },
         { href: href('audit'), label: 'Audit log', icon: 'log', active: top === 'audit' },
       ],
     },

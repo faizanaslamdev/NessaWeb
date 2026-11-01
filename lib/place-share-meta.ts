@@ -7,10 +7,9 @@ import { unstable_cache } from 'next/cache'
 
 import { sanitizePublicBusiness, type PublicBusinessFields } from '@/lib/business-profile'
 import { placeShareUrl, siteConfig } from '@/lib/constants'
-import {
-  isPublicPlaceIdValid,
-  type PublicPlaceLanding,
-} from '@/lib/place-landing'
+import type { PublicPlaceLanding } from '@/lib/place-landing'
+import { isPublicPlaceIdValid } from '@/lib/place-public-api'
+import { hasNessaCover, toPublicPlaceView, type PublicPlaceView } from '@/lib/place-public-view'
 import { isValidPlaceSlug } from '@/lib/place-slug'
 import { PLACE_SHARE_BRAND, buildPlacePageTitle } from '@/lib/place-title'
 
@@ -28,9 +27,9 @@ export type PublicPlaceShareMeta = {
   city?: string
   country?: string
   placeType?: string
+  /** NessaChat's own cover only (Google's photo is never kept here). */
   coverImageUrl?: string
-  /** `google` covers never go into JSON-LD. */
-  coverSource?: 'nessa' | 'google'
+  coverSource?: 'nessa'
   slug?: string
   recommenderCount?: number
   storyCount?: number
@@ -116,9 +115,12 @@ export function mapCallableResult(raw: unknown): PublicPlaceShareMeta | null {
   if (placeType) {
     meta.placeType = placeType
   }
+  // Our own photo only: Google's (even a key-less URL) never reaches OG tags or JSON-LD.
   const coverImageUrl = safeHttpsUrl(data.coverImageUrl)
-  if (coverImageUrl) {
+  const coverSource = data.coverSource === 'nessa' || data.coverSource === 'google' ? data.coverSource : undefined
+  if (coverImageUrl && hasNessaCover({ coverImageUrl, coverSource })) {
     meta.coverImageUrl = coverImageUrl
+    meta.coverSource = 'nessa'
   }
   if (typeof data.slug === 'string' && isValidPlaceSlug(data.slug)) {
     meta.slug = data.slug
@@ -128,9 +130,6 @@ export function mapCallableResult(raw: unknown): PublicPlaceShareMeta | null {
   }
   if (typeof data.storyCount === 'number' && data.storyCount >= 0) {
     meta.storyCount = Math.floor(data.storyCount)
-  }
-  if (data.coverSource === 'nessa' || data.coverSource === 'google') {
-    meta.coverSource = data.coverSource
   }
   const business = sanitizePublicBusiness(data.business)
   if (business) {
@@ -187,6 +186,16 @@ async function fetchPublicPlaceLandingUncached(
   }
 }
 
+/** Two attempts: the first call after a deploy can hit a cold function. */
+async function fetchPublicPlaceLandingWithRetry(placeId: string): Promise<PublicPlaceLanding | null> {
+  const first = await fetchPublicPlaceLandingUncached(placeId)
+  if (first) {
+    return first
+  }
+  await new Promise(resolve => setTimeout(resolve, 1000))
+  return fetchPublicPlaceLandingUncached(placeId)
+}
+
 /**
  * Cached full public Place landing (one callable round trip per Place per
  * revalidate window, shared by generateMetadata and the server-rendered page
@@ -203,7 +212,7 @@ export async function getCachedPublicPlaceLanding(
   try {
     return await unstable_cache(
       async () => {
-        const landing = await fetchPublicPlaceLandingUncached(trimmed)
+        const landing = await fetchPublicPlaceLandingWithRetry(trimmed)
         if (!landing) {
           // Do not cache misses — a timeout/error would pin "Place on Nessa"
           // in the helmet for the full revalidate window.
@@ -220,19 +229,16 @@ export async function getCachedPublicPlaceLanding(
 }
 
 /**
- * Copy of a landing that is safe to embed in server-rendered HTML:
- * - drops a cover URL that carries a Google API key;
- * - drops public Wi-Fi (network + password) so crawlers never index or cache
- *   passwords. The client fetches its own full copy after hydration, exactly
- *   as before SSR existed, so visitors still see the Wi-Fi card;
- * - re-validates the verified business (malformed / non-https links dropped).
+ * Copy of a landing that is safe to embed in server-rendered HTML and the
+ * page's RSC payload:
+ * - no Google photo URL or photo attribution (only a `googlePhoto` flag; the
+ *   browser loads and credits the photo — see lib/place-public-view.ts);
+ * - public Wi-Fi reduced to `hasWifi`, so crawlers and caches never see
+ *   passwords. The browser fetches the Wi-Fi card itself;
+ * - the verified business re-validated (malformed / non-https links dropped).
  */
-export function toSsrSafeLanding(landing: PublicPlaceLanding): PublicPlaceLanding {
+export function toSsrSafeLanding(landing: PublicPlaceLanding): PublicPlaceView {
   const copy = { ...landing }
-  if (copy.coverImageUrl && !safeHttpsUrl(copy.coverImageUrl)) {
-    delete copy.coverImageUrl
-  }
-  delete copy.wifi
   // Business links are rendered into hrefs: only validated fields.
   const business = sanitizePublicBusiness(landing.business)
   if (business) {
@@ -240,7 +246,7 @@ export function toSsrSafeLanding(landing: PublicPlaceLanding): PublicPlaceLandin
   } else {
     delete copy.business
   }
-  return copy
+  return toPublicPlaceView(copy)
 }
 
 /**

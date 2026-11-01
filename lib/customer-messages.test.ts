@@ -13,6 +13,7 @@ import {
   customerThreadPreview,
   customerUnreadLabel,
   expectedThreadId,
+  hasMessageSlot,
   messageButtonAction,
   messageStartTarget,
   newMessageDecision,
@@ -90,6 +91,14 @@ describe('Message button visibility', () => {
     assert.equal(canMessageBusiness({ ...business, messagingEnabled: false }), false)
     assert.equal(canMessageBusiness(null), false)
     assert.equal(canMessageBusiness({ ...business, businessId: '' }), false)
+  })
+
+  it('keeps a Message slot (desktop section and phone bar) for the team even with messaging off', () => {
+    assert.equal(hasMessageSlot(business), true)
+    // Travelers see nothing, but the business's own team still gets "Open inbox".
+    assert.equal(hasMessageSlot({ ...business, messagingEnabled: false }), true)
+    assert.equal(hasMessageSlot(null), false)
+    assert.equal(hasMessageSlot({ ...business, businessId: '' }), false)
   })
 
   it('the public profile keeps messagingEnabled only when it is false', () => {

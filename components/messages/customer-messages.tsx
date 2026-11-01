@@ -15,6 +15,7 @@ import { Button, EmptyState, Notice, Skeleton, cx } from '@/components/dash/ui'
 import { CustomerThreadView } from '@/components/messages/customer-thread'
 import { ThreadAvatar } from '@/components/messaging/conversation'
 import { useThreadList } from '@/components/messaging/use-thread-list'
+import { VerifiedSeal } from '@/components/site/verified-seal'
 import { useAccountAuth } from '@/hooks/use-account-auth'
 import { shortRelativeTime, type BusinessThread } from '@/lib/business-messaging'
 import {
@@ -182,14 +183,23 @@ function ThreadRow({ thread, href, active }: { thread: BusinessThread; href: str
         <span className="flex items-baseline gap-2">
           <span className={cx('flex min-w-0 flex-1 items-center gap-1 text-sm text-n-ink', unread ? 'font-semibold' : 'font-medium')}>
             <span className="truncate">{thread.businessName}</span>
-            <Icon name="check" size={13} strokeWidth={2.5} className="shrink-0 text-n-accent-strong" />
+            <VerifiedSeal className="size-3.5 text-n-accent" />
             <span className="sr-only">(verified business)</span>
           </span>
           <span className={cx('shrink-0 text-xs tabular-nums', unread ? 'font-medium text-n-accent-strong' : 'text-n-subtle')}>{time}</span>
         </span>
         <span className="mt-0.5 flex items-center gap-1.5 text-xs text-n-subtle">
-          <Icon name="pin" size={12} className="shrink-0" />
-          <span className="truncate">{thread.placeName}</span>
+          {thread.placeName && thread.placeName !== thread.businessName ? (
+            <>
+              <Icon name="pin" size={12} className="shrink-0" />
+              <span className="truncate">{thread.placeName}</span>
+            </>
+          ) : (
+            <>
+              <Icon name="lock" size={12} className="shrink-0" />
+              <span className="truncate">Private chat</span>
+            </>
+          )}
           {label ? (
             <span className="shrink-0 rounded-full bg-n-sunken px-1.5 text-[11px] leading-[18px] text-n-ink-2">{label}</span>
           ) : null}

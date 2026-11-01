@@ -50,6 +50,7 @@ export type IconName =
   | 'image'
   | 'compass'
   | 'badge-check'
+  | 'lock'
   | 'share'
   | 'phone'
   | 'arrow-up-right'
@@ -266,10 +267,18 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="m15.5 8.5-2 5-5 2 2-5 5-2Z" />
     </>
   ),
+  // Lucide "badge-check" (ISC): a symmetric 8-lobed seal. The filled
+  // verified mark is VerifiedSeal (components/site/verified-seal.tsx).
   'badge-check': (
     <>
-      <path d="M12 2.8l2.3 1.6 2.8-.1.9 2.6 2.2 1.7-.8 2.7.8 2.7-2.2 1.7-.9 2.6-2.8-.1L12 21.2l-2.3-1.6-2.8.1-.9-2.6-2.2-1.7.8-2.7-.8-2.7 2.2-1.7.9-2.6 2.8.1L12 2.8Z" />
-      <path d="m8.8 12 2.2 2.2 4.2-4.4" />
+      <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
+      <path d="m9 12 2 2 4-4" />
+    </>
+  ),
+  lock: (
+    <>
+      <rect x="4" y="11" width="16" height="10" rx="2.5" />
+      <path d="M8 11V7.5a4 4 0 0 1 8 0V11" />
     </>
   ),
   share: (

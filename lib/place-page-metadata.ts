@@ -10,6 +10,7 @@ import {
   PLACE_SHARE_BRAND,
   type PublicPlaceShareMeta,
 } from '@/lib/place-share-meta'
+import { placeShareImageUrl } from '@/lib/place-public-view'
 import {
   buildPlaceSeoDescription,
   buildPlaceSeoTitle,
@@ -50,9 +51,11 @@ export function buildPlaceSeoMetadata(
 ): Metadata {
   const title = buildPlaceSeoTitle(share)
   const description = buildPlaceSeoDescription(share)
-  // Cover only when public HTTPS without API keys; otherwise compact brand icon.
-  const hasCover = Boolean(share.coverImageUrl)
-  const ogImage = share.coverImageUrl ?? PLACE_FALLBACK_OG_IMAGE.url
+  // Our own cover (or the business's); never Google's photo. Otherwise the
+  // compact brand icon.
+  const cover = placeShareImageUrl(share)
+  const hasCover = Boolean(cover)
+  const ogImage = cover ?? PLACE_FALLBACK_OG_IMAGE.url
   return {
     title,
     description,

@@ -1,5 +1,6 @@
 import { Icon } from '@/components/dash/icons'
 import { cx } from '@/components/site/ui'
+import { VerifiedSeal } from '@/components/site/verified-seal'
 
 /**
  * Product illustration of a Place live chat (example content, decorative):
@@ -24,7 +25,7 @@ export function ChatPreview({ className }: { className?: string }) {
 
         <div className="space-y-3 bg-n-surface-2 px-4 py-4">
           <div className="flex items-start gap-2.5 rounded-xl border border-n-accent-line bg-n-accent-soft px-3 py-2.5">
-            <Icon name="badge-check" size={16} className="mt-0.5 shrink-0 text-n-accent" strokeWidth={2} />
+            <VerifiedSeal className="mt-0.5 size-4 text-n-accent" />
             <p className="text-[12.5px] leading-5 text-n-ink-2">
               <span className="font-semibold text-n-ink">Pousada Ventos · pinned</span> — Breakfast 7–10. Ask us
               anything here.

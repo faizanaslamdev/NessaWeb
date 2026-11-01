@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import { permanentRedirect } from 'next/navigation'
 
 import PlaceChatRoom from '@/components/chat/place-chat-room'
-import { isPublicPlaceIdValid } from '@/lib/place-landing'
+import { isPublicPlaceIdValid } from '@/lib/place-public-api'
 import {
   PLACE_SHARE_BRAND,
   getCachedPublicPlaceShareMeta,

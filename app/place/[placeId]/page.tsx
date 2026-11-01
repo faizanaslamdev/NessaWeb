@@ -1,11 +1,13 @@
 import type { Metadata } from 'next'
 import { permanentRedirect } from 'next/navigation'
 
-import { PlaceLandingClient } from './place-landing-client'
 import { PlaceVisitTracker } from '@/components/place/place-visit-tracker'
+import { PlaceStatus, PlaceView } from '@/components/place/place-view'
 import { SiteShell } from '@/components/site/site-shell'
-import { isPublicPlaceIdValid } from '@/lib/place-landing'
+import { getPlaceSurroundings } from '@/lib/place-hubs-server'
+import { isPublicPlaceIdValid } from '@/lib/place-public-api'
 import { buildPlaceSeoMetadata, placeOgImages } from '@/lib/place-page-metadata'
+import { placeShareImageUrl } from '@/lib/place-public-view'
 import { placeRobots } from '@/lib/place-seo'
 import {
   PLACE_SHARE_BRAND,
@@ -102,9 +104,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const title = buildPlacePageTitle(share.name)
   const description = buildPlaceShareDescription(share)
-  // Cover only when public HTTPS without API keys; otherwise compact brand icon.
-  const hasCover = Boolean(share.coverImageUrl)
-  const ogImage = share.coverImageUrl ?? generic.ogImage
+  // Our own cover (or the business's); never Google's photo.
+  const cover = placeShareImageUrl(share)
+  const hasCover = Boolean(cover)
+  const ogImage = cover ?? generic.ogImage
 
   return {
     title,
@@ -132,10 +135,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 /**
  * Legacy Place URL: `/place/{googlePlaceId}` (every QR/link shared before
- * slugs). Places that have a public slug permanently redirect (308) to the
- * canonical `/places/{slug}` page, keeping the query string so tracking params
- * survive. Places without a slug — or if the slug lookup is unavailable —
- * render here exactly as before, so no existing link ever breaks.
+ * slugs, and today's QR / Share links). Places that have a public slug
+ * permanently redirect (308) to the canonical `/places/{slug}` page, keeping
+ * the query string so tracking params survive. Places without a slug — or if
+ * the slug lookup is unavailable — render here (dynamic, per request), so no
+ * existing link ever breaks.
  */
 export default async function PlaceLandingPage({ params, searchParams }: PageProps) {
   const { placeId: raw } = await params
@@ -155,12 +159,41 @@ export default async function PlaceLandingPage({ params, searchParams }: PagePro
     permanentRedirect(`${placeCanonicalPath(slug)}${query}`)
   }
 
+  if (!valid) {
+    return (
+      <SiteShell>
+        <PlaceStatus
+          title="This place link isn’t valid"
+          body="The QR code or link doesn’t point to a place on NessaChat."
+        />
+      </SiteShell>
+    )
+  }
+  if (!landing) {
+    // Rendered per request (this route is dynamic), so "Try again" refetches.
+    return (
+      <SiteShell>
+        <PlaceVisitTracker placeId={placeId} />
+        <PlaceStatus
+          title="Couldn’t load this place"
+          body="Please try again in a moment, or open it in the NessaChat app."
+          placeId={placeId}
+          retryHref={`/place/${encodeURIComponent(placeId)}`}
+        />
+      </SiteShell>
+    )
+  }
+
+  const place = toSsrSafeLanding(landing)
+  const surroundings = await getPlaceSurroundings({ placeId, city: place.city, country: place.country })
   return (
     <SiteShell bottomBar>
       <PlaceVisitTracker placeId={placeId} />
-      <PlaceLandingClient
+      <PlaceView
+        place={place}
         placeId={placeId}
-        initialPlace={landing ? toSsrSafeLanding(landing) : null}
+        hubs={{ country: surroundings.country, city: surroundings.city }}
+        moreInCity={surroundings.more}
       />
     </SiteShell>
   )

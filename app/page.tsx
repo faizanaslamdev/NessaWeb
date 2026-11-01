@@ -10,6 +10,7 @@ import { Container, Eyebrow, SectionHeading, SiteButton, StoreBadges } from '@/c
 import { siteConfig, siteRoutes } from '@/lib/constants'
 import { topTowns } from '@/lib/place-directory'
 import { getPlaceDirectory } from '@/lib/place-directory-server'
+import { buildPlaceHubs, cityHubForTown } from '@/lib/place-geo'
 import { PLACE_PUBLIC_ORIGIN } from '@/lib/place-slug'
 
 export const revalidate = 600
@@ -44,6 +45,9 @@ export default async function HomePage() {
   const places = directory?.places ?? []
   const featured = places.slice(0, 8)
   const towns = topTowns(places, 10)
+  // Towns with a destination page link there (crawlable); others filter /places.
+  const hubs = buildPlaceHubs(places)
+  const townHref = (town: string) => cityHubForTown(hubs, town)?.path ?? `/places?town=${encodeURIComponent(town)}`
   const searchList = places.map(p => ({ ...p, photoUrl: undefined, lastActivityAt: undefined }))
 
   const jsonLd = {
@@ -95,7 +99,7 @@ export default async function HomePage() {
                 {towns.slice(0, 5).map(t => (
                   <Link
                     key={t.town}
-                    href={`/places?town=${encodeURIComponent(t.town)}`}
+                    href={townHref(t.town)}
                     className="rounded-full border border-n-line bg-n-surface px-3 py-1.5 text-[13px] font-medium text-n-ink-2 no-underline hover:border-n-line-strong hover:text-n-ink"
                   >
                     {t.town}
@@ -164,7 +168,7 @@ export default async function HomePage() {
               {towns.map(t => (
                 <li key={t.town}>
                   <Link
-                    href={`/places?town=${encodeURIComponent(t.town)}`}
+                    href={townHref(t.town)}
                     className="flex h-full items-center justify-between gap-3 rounded-2xl border border-n-line bg-n-surface px-4 py-4 text-n-ink no-underline transition-colors hover:border-n-line-strong hover:bg-n-surface-2"
                   >
                     <span className="min-w-0">

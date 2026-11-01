@@ -275,3 +275,31 @@ export function describeReportsError(err: unknown, fallback = 'Something went wr
   }
   return { code, message: fallback }
 }
+
+/* ───────────── Navigation badge ───────────── */
+
+/** Fallback page size when the overview has no open-reports count. */
+export const OPEN_REPORTS_BADGE_PAGE = 9
+
+/** Open reports for the sidebar badge; `more` = there are more than `count`. */
+export type OpenReportsCount = { count: number; more: boolean }
+
+/** The overview's count() of open reports, or null when the backend doesn't send one. */
+export function openReportsFromOverview(counts: { openReports?: unknown } | null | undefined): OpenReportsCount | null {
+  const n = counts?.openReports
+  return typeof n === 'number' && Number.isFinite(n) && n >= 0 ? { count: Math.floor(n), more: false } : null
+}
+
+/** Sidebar badge: nothing at 0, "9+" when the fallback page was full. */
+export function openReportsBadge(open: OpenReportsCount | null): string | number | null {
+  if (!open || open.count <= 0) return null
+  return open.more ? `${open.count}+` : open.count
+}
+
+/** After a report is resolved in the console: one fewer, never below 0. */
+export function decrementOpenReports(open: OpenReportsCount | null): OpenReportsCount | null {
+  if (!open) return open
+  // A full fallback page ("9+") stays a lower bound: we can't know the new total.
+  if (open.more) return open
+  return { count: Math.max(0, open.count - 1), more: false }
+}
